@@ -1,0 +1,58 @@
+name: FitFlow CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build-and-verify:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './server/package-lock.json'
+
+      - name: Install Server Dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: ./server
+        run: npm run db:generate
+
+      # Descomente o bloco abaixo quando criar testes no projeto
+      # - name: Run Tests
+      #   working-directory: ./server
+      #   run: npm test
+
+  deploy:
+    name: Deploy to Production
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    # Executa apenas na branch principal
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -- INSTRUÇÕES DE DEPLOY --
+      # Abaixo deve entrar a sua lógica de deploy da aplicação.
+      # Pode ser para Render, AWS, DigitalOcean, Heroku, etc.
+      # O cliente (client/) pode ir para Vercel/Netlify.
+      - name: Placeholder Deploy
+        run: echo "Nesta etapa, configure suas credenciais e script de deploy em serviços da nuvem."
