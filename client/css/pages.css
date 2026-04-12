@@ -1,0 +1,369 @@
+/* ============================================
+   FitFlow Caraguá — Estilos de Páginas
+   ============================================
+   Login + Dashboard + páginas específicas.
+   ============================================ */
+
+/* ========================
+   TELA DE LOGIN
+   ======================== */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  padding: var(--space-4);
+}
+
+.login-container {
+  display: flex;
+  width: 100%;
+  max-width: 960px;
+  min-height: 600px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  animation: scaleIn var(--transition-slow);
+}
+
+/* --- Branding (lado esquerdo) --- */
+.login-branding {
+  flex: 1;
+  background: linear-gradient(135deg, var(--bg-base) 0%, #111827 50%, var(--bg-elevated) 100%);
+  padding: var(--space-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-branding::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.login-branding::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -30%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+  animation: pulse 6s ease-in-out infinite reverse;
+}
+
+.login-branding-content {
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo {
+  margin-bottom: var(--space-8);
+}
+
+.login-logo-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--primary-400);
+  margin-bottom: var(--space-3);
+}
+
+.login-logo h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-400), var(--accent-400));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+
+.login-logo-subtitle {
+  display: block;
+  font-size: var(--font-size-lg);
+  color: var(--primary-300);
+  font-weight: 500;
+  margin-top: var(--space-1);
+}
+
+.login-tagline {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-8);
+  line-height: 1.5;
+}
+
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.login-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.login-feature svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-400);
+}
+
+/* --- Formulário de login (lado direito) --- */
+.login-form-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-10);
+  max-width: 440px;
+}
+
+.login-form h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-2);
+}
+
+.login-form-subtitle {
+  color: var(--text-muted);
+  margin-bottom: var(--space-8);
+}
+
+.login-footer {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-8);
+}
+
+/* Responsivo — Login */
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    max-width: 420px;
+    min-height: auto;
+  }
+
+  .login-branding {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .login-logo h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .login-features {
+    display: none;
+  }
+
+  .login-form-wrapper {
+    max-width: none;
+    padding: var(--space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .login-screen {
+    padding: 0;
+  }
+
+  .login-container {
+    border-radius: 0;
+    min-height: 100vh;
+    border: none;
+  }
+
+  .login-branding {
+    padding: var(--space-6) var(--space-5);
+  }
+
+  .login-tagline {
+    display: none;
+  }
+}
+
+/* ========================
+   DASHBOARD
+   ======================== */
+.dashboard-welcome {
+  margin-bottom: var(--space-6);
+}
+
+.dashboard-welcome h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-1);
+}
+
+.dashboard-welcome p {
+  color: var(--text-muted);
+}
+
+.dashboard-section {
+  margin-top: var(--space-8);
+}
+
+.dashboard-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+}
+
+/* ========================
+   TASK 06 — FORM SELECT
+   ======================== */
+/* Estilo do select nos filtros de página (grupo muscular, aluno) */
+.form-select {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M8 10.5l-5-5h10l-5 5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  padding-right: 2rem;
+}
+
+.form-select:focus {
+  border-color: var(--primary-500);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+}
+
+/* ========================
+   TASK 06 — EXERCÍCIO ITEM (formulário dinâmico)
+   ======================== */
+/* Cada exercício adicionado ao formulário de criação/edição de treino */
+.exercicio-item {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  border-left: 3px solid var(--primary-500);
+  position: relative;
+  animation: slideIn 0.3s ease-out;
+}
+
+.exercicio-item:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.exercicio-numero {
+  background: var(--primary-500);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ========================
+   TASK 06 — CARD DE TREINO DO ALUNO
+   ======================== */
+/* Cards exibidos na visão "Meu Treino" do aluno */
+.treino-card-aluno {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--transition-base);
+}
+
+.treino-card-aluno:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Cada exercício na lista do aluno */
+.meu-exercicio-item {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid var(--primary-400);
+  transition: transform var(--transition-fast);
+}
+
+.meu-exercicio-item:hover {
+  transform: translateX(4px);
+}
+
+/* Detalhes do exercício no modal de visualização */
+.treino-exercicio-card {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid var(--primary-500);
+  transition: background var(--transition-fast);
+}
+
+.treino-exercicio-card:hover {
+  background: var(--bg-hover);
+}
+
+/* ========================
+   ANIMAÇÕES
+   ======================== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Respeita preferências de acessibilidade do usuário */
+@media (prefers-reduced-motion: reduce) {
+  .exercicio-item,
+  .treino-card-aluno,
+  .meu-exercicio-item,
+  .treino-exercicio-card {
+    animation: none;
+    transition: none;
+  }
+}

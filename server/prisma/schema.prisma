@@ -1,0 +1,242 @@
+// ============================================
+// FitFlow Caraguá — Prisma Schema
+// ============================================
+// Modelagem completa do banco de dados para
+// gestão de academias. MySQL como provider.
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MODELO: User (Usuários do sistema)
+// ============================================
+// Armazena credenciais e perfil de acesso.
+// Roles: admin (dono/gerente), instructor, student
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(student)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  student          Student?
+  createdWorkouts  Workout[]  @relation("InstructorWorkouts")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  admin
+  instructor
+  student
+}
+
+// ============================================
+// MODELO: Plan (Planos de mensalidade)
+// ============================================
+// Planos disponíveis na academia com valor e duração.
+model Plan {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  durationDays Int     @map("duration_days") @default(30)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  students Student[]
+  payments Payment[]
+
+  @@map("plans")
+}
+
+// ============================================
+// MODELO: Student (Perfil do aluno)
+// ============================================
+// Dados cadastrais do aluno. Vinculado 1:1 a User.
+// Status controla bloqueio por inadimplência.
+model Student {
+  id          Int           @id @default(autoincrement())
+  userId      Int           @unique @map("user_id")
+  cpf         String?       @unique @db.VarChar(14)
+  phone       String?       @db.VarChar(20)
+  birthDate   DateTime?     @map("birth_date") @db.Date
+  address     String?       @db.VarChar(255)
+  notes       String?       @db.Text
+  status      StudentStatus @default(active)
+  planId      Int?          @map("plan_id")
+  planStartDate DateTime?   @map("plan_start_date") @db.Date
+  planEndDate   DateTime?   @map("plan_end_date") @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  plan        Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
+  workouts    Workout[]
+  workoutLogs WorkoutLog[]
+  payments    Payment[]
+  checkins    Checkin[]
+
+  @@index([planId])
+  @@index([status])
+  @@index([planEndDate])
+  @@map("students")
+}
+
+enum StudentStatus {
+  active
+  inactive
+  blocked
+}
+
+// ============================================
+// MODELO: Workout (Ficha de treino)
+// ============================================
+// Treinos criados por instrutores para alunos.
+// Apenas o instrutor pode alterar a estrutura.
+// Soft-delete via campo active para preservar histórico.
+model Workout {
+  id           Int      @id @default(autoincrement())
+  studentId    Int      @map("student_id")
+  instructorId Int      @map("instructor_id")
+  name         String   @db.VarChar(100)
+  description  String?  @db.Text
+  notes        String?  @db.Text
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  instructor User       @relation("InstructorWorkouts", fields: [instructorId], references: [id], onDelete: Restrict)
+  exercises  Exercise[]
+
+  @@index([studentId])
+  @@index([instructorId])
+  @@index([active])
+  @@map("workouts")
+}
+
+// ============================================
+// MODELO: Exercise (Exercícios de um treino)
+// ============================================
+// Cada exercício pertence a um treino específico.
+// Estrutura definida pelo instrutor — aluno não edita.
+model Exercise {
+  id           Int      @id @default(autoincrement())
+  workoutId    Int      @map("workout_id")
+  name         String   @db.VarChar(100)
+  muscleGroup  String?  @map("muscle_group") @db.VarChar(50)
+  sets         Int      @default(3)
+  reps         String   @default("12") @db.VarChar(50)
+  restSeconds  Int?     @map("rest_seconds") @default(60)
+  suggestedLoad String? @map("suggested_load") @db.VarChar(50)
+  notes        String?  @db.Text
+  orderIndex   Int      @default(0) @map("order_index")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  workout     Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutLogs WorkoutLog[]
+
+  @@index([workoutId])
+  @@index([workoutId, orderIndex])
+  @@map("exercises")
+}
+
+// ============================================
+// MODELO: WorkoutLog (Histórico de cargas)
+// ============================================
+// Registro de cargas executadas pelo aluno.
+// Append-only: sem UPDATE/DELETE para preservar histórico.
+model WorkoutLog {
+  id            Int      @id @default(autoincrement())
+  studentId     Int      @map("student_id")
+  exerciseId    Int      @map("exercise_id")
+  weight        Decimal  @db.Decimal(6, 2)
+  repsCompleted Int?     @map("reps_completed")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([exerciseId])
+  @@index([createdAt])
+  @@map("workout_logs")
+}
+
+// ============================================
+// MODELO: Payment (Pagamentos de mensalidade)
+// ============================================
+// Registro financeiro. Preservado para relatórios.
+model Payment {
+  id            Int           @id @default(autoincrement())
+  studentId     Int           @map("student_id")
+  planId        Int?          @map("plan_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod String?       @map("payment_method") @db.VarChar(50)
+  paymentDate   DateTime      @map("payment_date") @db.Date
+  dueDate       DateTime      @map("due_date") @db.Date
+  status        PaymentStatus @default(pending)
+  notes         String?       @db.Text
+  registeredBy  Int?          @map("registered_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  plan    Plan?   @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  paid
+  pending
+  overdue
+}
+
+// ============================================
+// MODELO: Checkin (Presença diária)
+// ============================================
+// Registro de presença. UNIQUE por aluno/dia.
+// Sem DELETE permitido (regra de negócio).
+model Checkin {
+  id          Int      @id @default(autoincrement())
+  studentId   Int      @map("student_id")
+  checkinDate DateTime @map("checkin_date") @db.Date
+  checkinTime DateTime? @map("checkin_time") @db.Time(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relacionamentos
+  student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  // Constraint: 1 check-in por aluno por dia
+  @@unique([studentId, checkinDate], name: "unique_checkin_per_day")
+  @@index([checkinDate])
+  @@index([studentId])
+  @@map("checkins")
+}

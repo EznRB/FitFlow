@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FitFlow Caraguá — Sistema de Gestão de Academias em Caraguatatuba-SP. Controle de alunos, treinos, pagamentos e check-ins.">
+  <meta name="theme-color" content="#0f172a">
+
+  <title>FitFlow Caraguá — Gestão de Academias</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons (CDN) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+  <!-- ============================================ -->
+  <!-- TELA DE LOGIN -->
+  <!-- ============================================ -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-container">
+      <!-- Lado esquerdo — branding -->
+      <div class="login-branding">
+        <div class="login-branding-content">
+          <div class="login-logo">
+            <i data-lucide="dumbbell" class="login-logo-icon"></i>
+            <h1>FitFlow</h1>
+            <span class="login-logo-subtitle">Caraguá</span>
+          </div>
+          <p class="login-tagline">Sistema inteligente de gestão para sua academia.</p>
+          <div class="login-features">
+            <div class="login-feature">
+              <i data-lucide="users"></i>
+              <span>Gestão de Alunos</span>
+            </div>
+            <div class="login-feature">
+              <i data-lucide="clipboard-list"></i>
+              <span>Treinos Personalizados</span>
+            </div>
+            <div class="login-feature">
+              <i data-lucide="credit-card"></i>
+              <span>Controle Financeiro</span>
+            </div>
+            <div class="login-feature">
+              <i data-lucide="bar-chart-3"></i>
+              <span>Relatórios Completos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lado direito — formulário -->
+      <div class="login-form-wrapper">
+        <form id="login-form" class="login-form" autocomplete="on">
+          <h2>Bem-vindo de volta</h2>
+          <p class="login-form-subtitle">Faça login para acessar o sistema</p>
+
+          <div class="form-group">
+            <label for="login-email">
+              <i data-lucide="mail"></i>
+              E-mail
+            </label>
+            <input 
+              type="email" 
+              id="login-email" 
+              name="email"
+              placeholder="seu@email.com" 
+              required 
+              autocomplete="email"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">
+              <i data-lucide="lock"></i>
+              Senha
+            </label>
+            <div class="input-password-wrapper">
+              <input 
+                type="password" 
+                id="login-password" 
+                name="senha"
+                placeholder="••••••••" 
+                required 
+                minlength="6"
+                autocomplete="current-password"
+              >
+              <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="login-error" class="alert alert-error" style="display: none;"></div>
+
+          <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+            <i data-lucide="log-in"></i>
+            <span>Entrar</span>
+          </button>
+        </form>
+
+        <p class="login-footer">
+          FitFlow Caraguá © 2026 — Caraguatatuba, SP
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- DASHBOARD (após login) -->
+  <!-- ============================================ -->
+  <div id="app-screen" class="app-screen" style="display: none;">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <i data-lucide="dumbbell"></i>
+          <span>FitFlow</span>
+        </div>
+        <button id="btn-close-sidebar" class="btn-icon sidebar-close" aria-label="Fechar menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Itens do menu serão inseridos via JS baseado na role -->
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user" id="sidebar-user">
+          <div class="sidebar-user-avatar">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-name" id="sidebar-user-name">Carregando...</span>
+            <span class="sidebar-user-role" id="sidebar-user-role">—</span>
+          </div>
+        </div>
+        <button id="btn-logout" class="btn btn-ghost btn-full btn-sm">
+          <i data-lucide="log-out"></i>
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Overlay mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Conteúdo principal -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="btn-open-sidebar" class="btn-icon topbar-menu-btn" aria-label="Abrir menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <h2 id="page-title" class="topbar-title">Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-date" id="topbar-date"></span>
+        </div>
+      </header>
+
+      <!-- Área de conteúdo das páginas -->
+      <div id="page-content" class="page-content">
+        <div class="page-loading">
+          <div class="spinner"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- TOAST NOTIFICATIONS -->
+  <!-- ============================================ -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ============================================ -->
+  <!-- MODAL GENÉRICO -->
+  <!-- ============================================ -->
+  <div id="modal-overlay" class="modal-overlay" style="display: none;">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Título</h3>
+        <button class="btn-icon modal-close" id="btn-modal-close" aria-label="Fechar modal">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <!-- Conteúdo dinâmico -->
+      </div>
+      <div class="modal-footer" id="modal-footer">
+        <!-- Botões dinâmicos -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SCRIPTS -->
+  <!-- ============================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/components/toast.js"></script>
+  <script src="js/components/modal.js"></script>
+  <script src="js/components/sidebar.js"></script>
+  <script src="js/alunos.js"></script>
+  <script src="js/planos.js"></script>
+  <script src="js/exercicios-catalogo.js"></script>
+  <script src="js/treinos.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
