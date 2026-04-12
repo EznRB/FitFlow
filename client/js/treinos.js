@@ -298,6 +298,14 @@ const TreinosView = {
     }
   },
 
+  /**
+   * Renderiza o layout principal do construtor de treinos (Hevy-Style).
+   * Este layout é dividido em duas colunas: Catálogo de Exercícios e Rotina Atual.
+   * @param {string} alunosOptions - Opções HTML do select de alunos
+   * @param {boolean} isEdit - Define se é modo edição
+   * @param {object} t - Dados do treino caso seja edição
+   * @returns {string} HTML completo do layout
+   */
   renderizarConstrutorTreinoLayout(alunosOptions, isEdit = false, t = null) {
     return `
       <style>
@@ -382,6 +390,10 @@ const TreinosView = {
     `;
   },
 
+  /**
+   * Inicializa a lógica do construtor após o modal ser aberto.
+   * Configura o Sortable.js para drag-and-drop e renderiza o catálogo inicial.
+   */
   iniciarConstrutor() {
     setTimeout(() => {
       this.renderizarCatalogoLista();
@@ -399,6 +411,10 @@ const TreinosView = {
     }, 100);
   },
 
+  /**
+   * Renderiza a lista de exercícios no painel esquerdo (Catálogo).
+   * @param {string} filtro - Termo de busca para filtrar exercícios
+   */
   renderizarCatalogoLista(filtro = '') {
     const listEl = document.getElementById('catalogo-list');
     if (!listEl) return;
@@ -430,10 +446,18 @@ const TreinosView = {
     if (window.lucide) lucide.createIcons({ nodes: [listEl] });
   },
 
+  /**
+   * Handler para o campo de busca do catálogo.
+   * @param {string} valor - Valor digitado no input
+   */
   filtrarCatalogo(valor) {
     this.renderizarCatalogoLista(valor);
   },
 
+  /**
+   * Adiciona um exercício do catálogo diretamente na lista da rotina.
+   * @param {number} idCatalogo - ID do exercício no banco
+   */
   adicionarExercicioFromCatalogo(idCatalogo) {
     const catData = this.catalogoCache.find(c => c.id === idCatalogo);
     if (catData) {

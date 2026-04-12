@@ -1,3 +1,12 @@
+/**
+ * ============================================
+ * FitFlow Caraguá — Seed de Exercícios
+ * ============================================
+ * Script para popular a base de dados com o catálogo
+ * inicial de exercícios (fotos, nomes e categorias).
+ * 
+ * Execução: node seed_direct.js
+ */
 const mysql = require('mysql2/promise');
 
 async function seed() {
