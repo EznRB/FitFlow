@@ -1,0 +1,737 @@
+/* ============================================================================
+   FitFlow Caraguá — CSS da Área do Aluno (TASK 10)
+   ============================================================================
+   Estilos mobile-first dedicados para a experiência do aluno.
+   
+   Princípio de design:
+   - Base: layout mobile (< 768px) com stacking vertical
+   - Enhancement: desktop (>= 768px) com grids expandidos
+   - Touch targets: mínimo 48px para interações no celular
+   - Tipografia: Barlow/Barlow Condensed (design system do FitFlow)
+   
+   Cores e tokens: 100% reusados de variables.css
+   ============================================================================ */
+
+/* ========================
+   BANNER DE BLOQUEIO
+   ========================
+   Exibido no topo de TODAS as views quando o aluno está inadimplente.
+   Posição fixa no fluxo para não ser ignorado. */
+.aluno-banner-blocked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: linear-gradient(135deg, #991b1b, #dc2626);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-5);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  animation: fadeInDown 0.4s ease-out;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+}
+
+.aluno-banner-blocked svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  animation: pulseIcon 2s ease-in-out infinite;
+}
+
+.aluno-banner-blocked .banner-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+/* ========================
+   SAUDAÇÃO DO ALUNO
+   ======================== */
+.aluno-welcome {
+  margin-bottom: var(--space-6);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.aluno-welcome h2 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.aluno-welcome p {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+/* ========================
+   GRID DE KPIs DO ALUNO
+   ========================
+   Mobile: 1 coluna | Desktop: 3 colunas */
+.aluno-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.aluno-kpi-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.aluno-kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.aluno-kpi-card:nth-child(2) { animation-delay: 0.10s; }
+.aluno-kpi-card:nth-child(3) { animation-delay: 0.15s; }
+
+.aluno-kpi-card:hover {
+  border-color: var(--primary-400);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.aluno-kpi-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aluno-kpi-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.aluno-kpi-icon.green  { background: var(--success-bg); color: var(--success); }
+.aluno-kpi-icon.orange { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.aluno-kpi-icon.blue   { background: var(--info-bg); color: var(--info); }
+.aluno-kpi-icon.red    { background: var(--error-bg); color: var(--error); }
+.aluno-kpi-icon.yellow { background: var(--warning-bg); color: var(--warning); }
+.aluno-kpi-icon.purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+
+.aluno-kpi-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.aluno-kpi-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.aluno-kpi-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========================
+   CARD DE TREINO DO DIA
+   ======================== */
+.aluno-treino-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+  animation: fadeInUp 0.5s ease-out both;
+  box-shadow: var(--shadow-sm);
+}
+
+.aluno-treino-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+}
+
+.aluno-treino-header h3 {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-xl);
+  color: var(--primary-400);
+  margin: 0;
+}
+
+.aluno-treino-header .treino-meta {
+  text-align: right;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.aluno-treino-body {
+  padding: var(--space-4);
+}
+
+/* ========================
+   CARD DE EXERCÍCIO DO ALUNO
+   ========================
+   Otimizado para toque: botões grandes, espaçamento generoso */
+.aluno-exercicio {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border-left: 4px solid var(--primary-500);
+  transition: all var(--transition-fast);
+}
+
+.aluno-exercicio:last-child {
+  margin-bottom: 0;
+}
+
+.aluno-exercicio:active {
+  transform: scale(0.99);
+}
+
+.aluno-exercicio-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+  gap: var(--space-2);
+}
+
+.aluno-exercicio-nome {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.aluno-exercicio-numero {
+  background: var(--bg-base);
+  color: var(--primary-400);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.aluno-exercicio-nome strong {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botão de registrar carga — touch target mínimo de 48px */
+.aluno-btn-carga {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--primary-500);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 40px;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.3);
+}
+
+.aluno-btn-carga:hover {
+  background: var(--primary-400);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.aluno-btn-carga:active {
+  transform: translateY(0);
+}
+
+.aluno-btn-carga:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.aluno-btn-carga svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Grid de métricas do exercício */
+.aluno-metricas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.aluno-metrica {
+  background: var(--bg-base);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.aluno-metrica-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: var(--space-1);
+}
+
+.aluno-metrica-valor {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.aluno-metrica-valor.destaque {
+  color: var(--accent-400);
+}
+
+.aluno-exercicio-notas {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  font-style: italic;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.aluno-exercicio-notas svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ========================
+   BOTÃO GIGANTE DE CHECK-IN
+   ========================
+   Centralizado, 100% da largura no mobile. */
+.aluno-checkin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-4);
+}
+
+.aluno-checkin-btn {
+  width: 100%;
+  max-width: 360px;
+  padding: var(--space-6) var(--space-8);
+  background: linear-gradient(135deg, var(--accent-600), var(--accent-500));
+  color: white;
+  border: none;
+  border-radius: var(--radius-xl);
+  font-family: var(--font-heading);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  transition: all var(--transition-base);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+  min-height: 72px;
+}
+
+.aluno-checkin-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.45);
+}
+
+.aluno-checkin-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.aluno-checkin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.aluno-checkin-btn svg {
+  width: 28px;
+  height: 28px;
+}
+
+.aluno-checkin-btn.success {
+  background: linear-gradient(135deg, var(--accent-500), var(--accent-400));
+  animation: pulseSuccess 0.5s ease-out;
+}
+
+.aluno-checkin-btn.error {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  animation: shakeError 0.4s ease-out;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+}
+
+.aluno-checkin-feedback {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  min-height: 24px;
+}
+
+.aluno-checkin-feedback.ok {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.aluno-checkin-feedback.fail {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* ========================
+   CARD DE STATUS (MENSALIDADE)
+   ======================== */
+.aluno-status-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.aluno-status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  font-weight: 700;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-lg);
+}
+
+.aluno-status-badge.em_dia {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+  color: var(--success);
+  border-bottom: 2px solid var(--success);
+}
+
+.aluno-status-badge.vencendo {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+  color: var(--warning);
+  border-bottom: 2px solid var(--warning);
+}
+
+.aluno-status-badge.vencido,
+.aluno-status-badge.bloqueado {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+  color: var(--error);
+  border-bottom: 2px solid var(--error);
+}
+
+.aluno-status-badge.indefinido {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.aluno-status-badge svg {
+  width: 24px;
+  height: 24px;
+}
+
+.aluno-status-body {
+  padding: var(--space-5);
+}
+
+.aluno-status-detalhes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.aluno-status-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.aluno-status-item label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aluno-status-item span {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ========================
+   HISTÓRICO (ITENS DE LISTA)
+   ======================== */
+.aluno-historico-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.aluno-historico-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  animation: fadeInUp 0.3s ease-out both;
+}
+
+.aluno-historico-item:hover {
+  border-color: var(--primary-400);
+  background: var(--bg-elevated);
+}
+
+.aluno-historico-icone {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aluno-historico-icone.check { background: var(--success-bg); color: var(--success); }
+.aluno-historico-icone.cancel { background: var(--error-bg); color: var(--error); }
+.aluno-historico-icone.peso { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.aluno-historico-icone.pago { background: var(--success-bg); color: var(--success); }
+.aluno-historico-icone.pendente { background: var(--warning-bg); color: var(--warning); }
+
+.aluno-historico-icone svg {
+  width: 20px;
+  height: 20px;
+}
+
+.aluno-historico-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.aluno-historico-titulo {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.aluno-historico-sub {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.aluno-historico-data {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ========================
+   SEÇÃO COM TÍTULO
+   ======================== */
+.aluno-section {
+  margin-bottom: var(--space-6);
+}
+
+.aluno-section-title {
+  font-family: var(--font-heading);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.aluno-section-title svg {
+  width: 20px;
+  height: 20px;
+  color: var(--primary-400);
+}
+
+/* ========================
+   EVOLUÇÃO DE CARGA (MINI-CHART WRAPPER)
+   ======================== */
+.aluno-evolucao-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.aluno-evolucao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.aluno-evolucao-nome {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.aluno-evolucao-grupo {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+}
+
+.aluno-evolucao-chart {
+  height: 120px;
+  position: relative;
+}
+
+.aluno-evolucao-registros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.aluno-evolucao-reg-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.aluno-evolucao-reg-peso {
+  font-weight: 700;
+  color: var(--primary-400);
+}
+
+.aluno-evolucao-reg-data {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+/* ========================
+   ANIMAÇÕES
+   ======================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+@keyframes pulseIcon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ========================
+   RESPONSIVO: DESKTOP (>= 768px)
+   ======================== */
+@media (min-width: 768px) {
+  .aluno-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .aluno-status-detalhes {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .aluno-checkin-btn {
+    max-width: 400px;
+  }
+}
+
+/* Reduz animações para usuários que preferem menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .aluno-banner-blocked,
+  .aluno-kpi-card,
+  .aluno-treino-card,
+  .aluno-status-card,
+  .aluno-historico-item,
+  .aluno-evolucao-card,
+  .aluno-welcome {
+    animation: none !important;
+  }
+
+  .aluno-banner-blocked svg {
+    animation: none !important;
+  }
+}

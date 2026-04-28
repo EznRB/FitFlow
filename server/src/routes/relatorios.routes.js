@@ -18,5 +18,8 @@ router.use(authenticate, authorize('admin'));
 router.get('/dashboard', relatoriosController.dashboard);
 router.get('/financeiro', relatoriosController.financeiro);
 router.get('/frequencia', relatoriosController.frequencia);
+router.get('/inadimplencia', relatoriosController.inadimplencia);
+router.get('/checkins', relatoriosController.checkins);
+router.get('/alunos', relatoriosController.alunos);
 
 module.exports = router;

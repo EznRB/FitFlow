@@ -219,17 +219,27 @@ enum PaymentStatus {
   overdue
 }
 
+enum CheckinStatus {
+  present
+  cancelled
+}
+
 // ============================================
 // MODELO: Checkin (Presença diária)
 // ============================================
 // Registro de presença. UNIQUE por aluno/dia.
 // Sem DELETE permitido (regra de negócio).
 model Checkin {
-  id          Int      @id @default(autoincrement())
-  studentId   Int      @map("student_id")
-  checkinDate DateTime @map("checkin_date") @db.Date
-  checkinTime DateTime? @map("checkin_time") @db.Time(0)
-  createdAt   DateTime @default(now()) @map("created_at")
+  id            Int           @id @default(autoincrement())
+  studentId     Int           @map("student_id")
+  checkinDate   DateTime      @map("checkin_date") @db.Date
+  checkinTime   DateTime?     @map("checkin_time") @db.Time(0)
+  registeredBy  Int?          @map("registered_by")
+  status        CheckinStatus @default(present)
+  cancelReason  String?       @map("cancel_reason") @db.VarChar(255)
+  cancelledBy   Int?          @map("cancelled_by")
+  cancelledAt   DateTime?     @map("cancelled_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
 
   // Relacionamentos
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
@@ -238,5 +248,26 @@ model Checkin {
   @@unique([studentId, checkinDate], name: "unique_checkin_per_day")
   @@index([checkinDate])
   @@index([studentId])
+  @@index([status])
   @@map("checkins")
+}
+
+// ============================================
+// MODELO: CatalogoExercicio (Catálogo Geral)
+// ============================================
+// Biblioteca de exercícios disponíveis na academia.
+// Usado pelo serviço de exercicios.service.js
+model CatalogoExercicio {
+  id             Int      @id @default(autoincrement())
+  nome           String   @db.VarChar(100)
+  grupo_muscular String   @db.VarChar(50)
+  instrucoes     String?  @db.Text
+  imagem_url     String?  @db.VarChar(255)
+  ativo          Boolean  @default(true)
+  criado_em      DateTime @default(now())
+  atualizado_em  DateTime @updatedAt
+
+  @@index([grupo_muscular])
+  @@index([ativo])
+  @@map("exercicios")
 }

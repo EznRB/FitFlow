@@ -10,7 +10,9 @@
     "db:generate": "npx prisma generate",
     "db:seed": "npx prisma db seed",
     "db:reset": "npx prisma migrate reset",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "db:mock": "node scripts/seed-mock.js",
+    "db:cleanup": "node scripts/cleanup-mock.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

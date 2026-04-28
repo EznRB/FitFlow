@@ -32,43 +32,68 @@ const AlunosView = {
       const response = await API.get('/alunos');
       this.dados = response.data;
 
-      if (this.dados.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5">Nenhum aluno cadastrado.</td></tr>`;
-        return;
-      }
-
-      tableBody.innerHTML = this.dados.map(aluno => `
-        <tr data-id="${aluno.id}" class="${aluno.status === 'inactive' ? 'aluno-inativo' : ''}">
-          <td>
-            <strong>${aluno.user.name}</strong><br>
-            <small style="color:var(--text-muted)">${aluno.user.email}</small>
-          </td>
-          <td>${aluno.cpf || '-'}</td>
-          <td>${aluno.plan ? aluno.plan.name : '<span class="badge badge-warning">Sem Plano</span>'}</td>
-          <td>
-             <span class="badge ${aluno.status === 'active' ? 'badge-success' : 'badge-danger'}">
-               ${aluno.status === 'active' ? 'Ativo' : 'Inativo'}
-             </span>
-          </td>
-          <td>
-            <button class="btn btn-icon btn-outline-primary" title="Editar" onclick="AlunosView.abrirModalEdicao(${aluno.id})">
-              <i data-lucide="edit-3"></i>
-            </button>
-            <button class="btn btn-icon btn-outline-danger" title="Inativar" onclick="AlunosView.inativarAluno(${aluno.id})">
-              <i data-lucide="user-x"></i>
-            </button>
-          </td>
-        </tr>
-      `).join('');
-
-      // Renderiza ícones injetados
-      if (window.lucide) {
-        lucide.createIcons({ nodes: [tableBody] });
-      }
+      this.renderTabela(this.dados);
+      this.iniciarAutocomplete();
 
     } catch (error) {
       Toast.error('Erro ao buscar lista de alunos: ' + error.message);
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger)">Erro ao carregar dados.</td></tr>`;
+    }
+  },
+
+  renderTabela(dados) {
+    const tableBody = document.getElementById('alunos-table-body');
+    if (!tableBody) return;
+
+    if (dados.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5">Nenhum aluno cadastrado/encontrado.</td></tr>`;
+      return;
+    }
+
+    tableBody.innerHTML = dados.map(aluno => `
+      <tr data-id="${aluno.id}" class="${aluno.status === 'inactive' ? 'aluno-inativo' : ''}">
+        <td>
+          <strong>${aluno.user.name}</strong><br>
+          <small style="color:var(--text-muted)">${aluno.user.email}</small>
+        </td>
+        <td>${aluno.cpf || '-'}</td>
+        <td>${aluno.plan ? aluno.plan.name : '<span class="badge badge-warning">Sem Plano</span>'}</td>
+        <td>
+           <span class="badge ${aluno.status === 'active' ? 'badge-success' : 'badge-danger'}">
+             ${aluno.status === 'active' ? 'Ativo' : 'Inativo'}
+           </span>
+        </td>
+        <td>
+          <button class="btn btn-icon btn-outline-primary" title="Editar" onclick="AlunosView.abrirModalEdicao(${aluno.id})">
+            <i data-lucide="edit-3"></i>
+          </button>
+          <button class="btn btn-icon btn-outline-danger" title="Inativar" onclick="AlunosView.inativarAluno(${aluno.id})">
+            <i data-lucide="user-x"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    // Renderiza ícones injetados
+    if (window.lucide) {
+      lucide.createIcons({ nodes: [tableBody] });
+    }
+  },
+
+  iniciarAutocomplete() {
+    if (typeof Autocomplete !== 'undefined') {
+      const autocompleteData = this.dados.map(a => ({
+        id: a.id,
+        label: a.user ? a.user.name : `Aluno #${a.id}`
+      }));
+      Autocomplete.init('filtro-nome-aluno', autocompleteData, (selected) => {
+        if (selected) {
+          const filtrado = this.dados.filter(a => a.id === selected.id);
+          this.renderTabela(filtrado);
+        } else {
+          this.renderTabela(this.dados);
+        }
+      });
     }
   },
 

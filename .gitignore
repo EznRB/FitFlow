@@ -22,4 +22,23 @@ Thumbs.db
 
 # Build
 dist/
-build/
+# Internal Documentation & Debug Tools (Ignored for Presentation)
+PROGRESS.md
+RULES.md
+CONTEXT_HANDOVER.md
+SKILLS_GUIDE.md
+TASK_07_PLAN.md
+server/out.txt
+server/check.js
+server/check_db.js
+server/fix_lock.js
+server/seed_exercicios.js
+server/prisma/examples.js
+server_err.txt
+server_out.txt
+
+# AI Agent Metadata
+.agent/
+.gemini/
+tmp/
+server/tmp/

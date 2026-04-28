@@ -23,6 +23,7 @@ router.use(authenticate, authorize('admin'));
 
 // Rota de grupos musculares (ANTES de /:id para evitar conflito)
 router.get('/grupos', exerciciosController.listarGrupos);
+router.post('/sync', exerciciosController.sincronizarAPI);
 
 router.get('/', exerciciosController.listar);
 router.get('/:id', exerciciosController.buscarPorId);

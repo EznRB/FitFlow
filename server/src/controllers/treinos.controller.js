@@ -20,6 +20,7 @@
 
 const { sendSuccess } = require('../utils/helpers');
 const treinosService = require('../services/treinos.service');
+const businessRules = require('../utils/businessRules');
 
 const treinosController = {
 
@@ -85,6 +86,7 @@ const treinosController = {
    */
   async criar(req, res, next) {
     try {
+      businessRules.validateInstructorAccess(req.user);
       const instructorId = req.user.id; // ID extraído do JWT
       const treino = await treinosService.criar(req.body, instructorId);
       sendSuccess(res, 201, 'Treino criado com sucesso', treino);
@@ -100,6 +102,7 @@ const treinosController = {
    */
   async atualizar(req, res, next) {
     try {
+      businessRules.validateInstructorAccess(req.user);
       const instructorId = req.user.id;
       const treino = await treinosService.atualizar(req.params.id, req.body, instructorId);
 
@@ -121,6 +124,7 @@ const treinosController = {
    */
   async desativar(req, res, next) {
     try {
+      businessRules.validateInstructorAccess(req.user);
       await treinosService.desativar(req.params.id);
       sendSuccess(res, 200, 'Treino desativado com sucesso. Histórico preservado.');
     } catch (error) {

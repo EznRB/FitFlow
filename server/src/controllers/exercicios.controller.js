@@ -16,6 +16,7 @@
 
 const { sendSuccess } = require('../utils/helpers');
 const exerciciosService = require('../services/exercicios.service');
+const wgerService = require('../services/wger.service');
 
 const exerciciosController = {
 
@@ -113,6 +114,22 @@ const exerciciosController = {
       next(error);
     }
   },
+
+  /**
+   * POST /api/exercicios/sync
+   * Sincroniza exercícios com a Wger API (Open-source)
+   */
+  async sincronizarAPI(req, res, next) {
+    try {
+      // Pega o limite do query, ou usa 50
+      const limit = parseInt(req.query.limit) || 100;
+      const resultado = await wgerService.sincronizar(limit);
+      
+      sendSuccess(res, 200, `Sincronização concluída. Inseridos: ${resultado.inseridos}, Ignorados (já existem): ${resultado.ignorados}`, resultado);
+    } catch (error) {
+      next(error);
+    }
+  }
 };
 
 module.exports = exerciciosController;

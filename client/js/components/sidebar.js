@@ -27,11 +27,15 @@ const Sidebar = {
     { id: 'relatorios',  icon: 'bar-chart-3',      label: 'Relatórios',   page: 'relatorios' },
   ],
 
-  /** Itens do menu para ALUNO */
+  /** Itens do menu para ALUNO (TASK 10 — Área do Aluno expandida) */
   alunoMenu: [
     { section: 'Meu Espaço' },
-    { id: 'meu-treino',  icon: 'clipboard-list',   label: 'Meu Treino',   page: 'meu-treino' },
-    { id: 'meu-checkin', icon: 'calendar-check',   label: 'Check-in',     page: 'checkins' },
+    { id: 'aluno-painel',      icon: 'layout-dashboard', label: 'Meu Painel',   page: 'aluno-painel' },
+    { id: 'aluno-treino',      icon: 'dumbbell',         label: 'Meu Treino',   page: 'aluno-treino' },
+    { id: 'aluno-historico',   icon: 'trending-up',      label: 'Evolução',     page: 'aluno-historico' },
+    { section: 'Financeiro' },
+    { id: 'aluno-mensalidade', icon: 'credit-card',      label: 'Mensalidade',  page: 'aluno-mensalidade' },
+    { id: 'aluno-checkin',     icon: 'calendar-check',   label: 'Check-in',     page: 'aluno-checkin' },
   ],
 
   /**

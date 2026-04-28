@@ -20,6 +20,7 @@
 const treinosRepo = require('../repositories/treinos.repository');
 const AppError = require('../utils/AppError');
 const { prisma } = require('../config/prisma');
+const businessRules = require('../utils/businessRules');
 
 class TreinosService {
 
@@ -152,6 +153,9 @@ class TreinosService {
       throw new AppError('Perfil de aluno não encontrado.', 404);
     }
 
+    // REGRA DE NEGÓCIO CENTRAL: Bloqueia a visualização se inadimplente > 5 dias
+    businessRules.validateWorkoutView(aluno);
+
     return treinosRepo.findByStudentId(aluno.id);
   }
 
@@ -169,6 +173,9 @@ class TreinosService {
     if (!aluno) {
       throw new AppError('Perfil de aluno não encontrado.', 404);
     }
+
+    // REGRA DE NEGÓCIO CENTRAL: Bloqueia a visualização se inadimplente > 5 dias
+    businessRules.validateWorkoutView(aluno);
 
     return treinosRepo.findHistoryByStudentId(aluno.id);
   }

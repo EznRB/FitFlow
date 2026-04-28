@@ -27,6 +27,7 @@ const treinosRoutes = require('./routes/treinos.routes');
 const pagamentosRoutes = require('./routes/pagamentos.routes');
 const checkinsRoutes = require('./routes/checkins.routes');
 const relatoriosRoutes = require('./routes/relatorios.routes');
+const alunoRoutes = require('./routes/aluno.routes');
 
 const app = express();
 
@@ -119,6 +120,7 @@ app.use('/api/treinos', treinosRoutes);   // Vínculo entre Exercícios e Alunos
 app.use('/api/pagamentos', pagamentosRoutes); // Histórico Financeiro
 app.use('/api/checkins', checkinsRoutes); // Registro de Frequência
 app.use('/api/relatorios', relatoriosRoutes); // Agregadores de Dados
+app.use('/api/aluno', alunoRoutes);           // Área do Aluno (TASK 10)
 
 /**
  * Health Check:

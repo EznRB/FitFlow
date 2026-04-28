@@ -286,6 +286,8 @@ textarea {
 .kpi-icon.green  { background: var(--success-bg); color: var(--success); }
 .kpi-icon.yellow { background: var(--warning-bg); color: var(--warning); }
 .kpi-icon.red    { background: var(--error-bg); color: var(--error); }
+.kpi-icon.orange { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.kpi-icon.purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
 
 .kpi-content {
   flex: 1;
@@ -624,4 +626,54 @@ textarea {
 
 .empty-state p {
   max-width: 360px;
+}
+
+/* ========================
+   AUTOCOMPLETE
+   ======================== */
+.autocomplete-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+}
+
+.autocomplete-item,
+.autocomplete-empty {
+  padding: 0.75rem 1rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--transition-fast);
+}
+
+.autocomplete-item:last-child,
+.autocomplete-empty:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover {
+  background: var(--bg-hover);
+}
+
+.autocomplete-empty {
+  color: var(--text-muted);
+  cursor: default;
 }

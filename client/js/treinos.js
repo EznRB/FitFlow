@@ -24,13 +24,15 @@ const TreinosView = {
   /** Cache de alunos e exercícios do catálogo para use nos selects */
   alunosCache: [],
   catalogoCache: [],
+  currentStudentId: null,
 
   /**
    * Inicializa a página de treinos.
    * Carrega dados e configura eventos de interface.
    */
   async inicializar() {
-    await this.carregarTreinos();
+    this.currentStudentId = null;
+    await this.carregarAlunosParaPerfis();
     this.configurarEventos();
   },
 
@@ -40,59 +42,106 @@ const TreinosView = {
   configurarEventos() {
     const btnNovo = document.getElementById('btn-novo-treino');
     if (btnNovo) {
-      btnNovo.addEventListener('click', () => this.abrirModalCriar());
-    }
-
-    // Filtro por aluno
-    const selectAluno = document.getElementById('filtro-aluno-treino');
-    if (selectAluno) {
-      selectAluno.addEventListener('change', () => this.carregarTreinos());
+      // Remover event listeners antigos clonando o nó para evitar multiplos listeners
+      const newBtn = btnNovo.cloneNode(true);
+      btnNovo.parentNode.replaceChild(newBtn, btnNovo);
+      newBtn.addEventListener('click', () => this.abrirModalCriar());
     }
   },
 
   /**
-   * Carrega a lista de treinos via API.
-   * Aplica filtro de aluno se selecionado.
+   * Carrega a lista de alunos e exibe como perfis (cards).
    */
-  async carregarTreinos() {
-    try {
-      let endpoint = '/treinos';
-      const selectAluno = document.getElementById('filtro-aluno-treino');
-      if (selectAluno && selectAluno.value) {
-        endpoint += `?studentId=${selectAluno.value}`;
-      }
-
-      const resp = await API.get(endpoint);
-      this.renderizarTabela(resp.data || []);
-
-      // Carrega alunos para o filtro (primeira vez)
-      if (selectAluno && selectAluno.options.length <= 1) {
-        await this.carregarAlunosParaFiltro();
-      }
-    } catch (error) {
-      console.error('Erro ao carregar treinos:', error);
-      Toast.error('Erro ao carregar treinos.');
-    }
-  },
-
-  /**
-   * Carrega alunos para preencher selects de filtro e criação.
-   */
-  async carregarAlunosParaFiltro() {
+  async carregarAlunosParaPerfis() {
     try {
       const resp = await API.get('/alunos');
       this.alunosCache = resp.data || [];
-      const selectAluno = document.getElementById('filtro-aluno-treino');
-      if (selectAluno) {
-        this.alunosCache.forEach(a => {
-          const opt = document.createElement('option');
-          opt.value = a.id;
-          opt.textContent = a.user?.name || `Aluno #${a.id}`;
-          selectAluno.appendChild(opt);
-        });
-      }
+      this.renderizarGradeAlunos(this.alunosCache);
     } catch (error) {
-      console.warn('Erro ao carregar alunos:', error.message);
+      console.error('Erro ao carregar alunos:', error);
+      Toast.error('Erro ao carregar alunos.');
+    }
+  },
+
+  /**
+   * Renderiza os cards de alunos na grade
+   */
+  renderizarGradeAlunos(alunos) {
+    const grid = document.getElementById('treinos-alunos-grid');
+    if (!grid) return;
+
+    if (alunos.length === 0) {
+      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum aluno encontrado.</div>';
+      return;
+    }
+
+    grid.innerHTML = alunos.map(a => {
+      const nome = a.user?.name || 'Aluno Sem Nome';
+      const email = a.user?.email || '';
+      const status = a.active ? 'Ativo' : 'Inativo';
+      const badgeClass = a.active ? 'badge-success' : 'badge-secondary';
+      return `
+        <div class="kpi-card" onclick="TreinosView.abrirPerfilAluno(${a.id}, '${nome.replace(/'/g, "\\'")}')" style="cursor: pointer; transition: transform 0.2s ease; display:flex; flex-direction:column; gap:1rem;">
+          <div style="display:flex; align-items:center; gap:1rem;">
+            <div class="kpi-icon blue"><i data-lucide="user"></i></div>
+            <div class="kpi-content" style="flex:1;">
+              <div class="kpi-label" style="font-size:1.1rem; font-weight:600; color:var(--text-primary);">${nome}</div>
+              <div style="font-size:0.85rem; color:var(--text-muted);">${email}</div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+            <span class="badge ${badgeClass}">${status}</span>
+            <span style="color:var(--primary-500); font-size:0.9rem; font-weight:500; display:flex; align-items:center; gap:0.25rem;">
+              Ver Treinos <i data-lucide="arrow-right" style="width:14px;height:14px"></i>
+            </span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) lucide.createIcons({ nodes: [grid] });
+  },
+
+  filtrarAlunos(termo) {
+    termo = termo.toLowerCase();
+    const filtrados = this.alunosCache.filter(a => {
+      const nome = (a.user?.name || '').toLowerCase();
+      const email = (a.user?.email || '').toLowerCase();
+      return nome.includes(termo) || email.includes(termo);
+    });
+    this.renderizarGradeAlunos(filtrados);
+  },
+
+  async abrirPerfilAluno(studentId, studentName) {
+    this.currentStudentId = studentId;
+    document.getElementById('treinos-view-alunos').style.display = 'none';
+    document.getElementById('treinos-view-fichas').style.display = 'block';
+    
+    const titulo = document.getElementById('treinos-aluno-nome');
+    if (titulo) titulo.textContent = `Treinos de ${studentName}`;
+    
+    await this.carregarTreinos(studentId);
+  },
+
+  voltarParaPerfis() {
+    this.currentStudentId = null;
+    document.getElementById('treinos-view-alunos').style.display = 'block';
+    document.getElementById('treinos-view-fichas').style.display = 'none';
+    // Limpa a tabela para não vazar info visualmente
+    const tbody = document.getElementById('treinos-table-body');
+    if (tbody) tbody.innerHTML = '';
+  },
+
+  /**
+   * Carrega a lista de treinos via API para o aluno selecionado.
+   */
+  async carregarTreinos(studentId) {
+    try {
+      const resp = await API.get(`/treinos?studentId=${studentId}`);
+      this.renderizarTabela(resp.data || []);
+    } catch (error) {
+      console.error('Erro ao carregar treinos:', error);
+      Toast.error('Erro ao carregar treinos.');
     }
   },
 
@@ -108,10 +157,6 @@ const TreinosView = {
     }
   },
 
-  /**
-   * Renderiza a tabela de treinos no DOM.
-   * @param {Array} treinos - Lista de treinos da API
-   */
   renderizarTabela(treinos) {
     const tbody = document.getElementById('treinos-table-body');
     if (!tbody) return;
@@ -119,7 +164,7 @@ const TreinosView = {
     if (treinos.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted)">
+          <td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted)">
             <i data-lucide="clipboard-list" style="width:40px;height:40px;opacity:0.3;display:block;margin:0 auto 0.5rem"></i>
             Nenhum treino cadastrado ainda.
           </td>
@@ -129,9 +174,6 @@ const TreinosView = {
     }
 
     tbody.innerHTML = treinos.map(t => {
-      // Nome do aluno via relação student > user
-      const nomeAluno = t.student?.user?.name || 'N/A';
-      const nomeInstrutor = t.instructor?.name || 'N/A';
       const qtdExercicios = t.exercises?.length || 0;
       const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
 
@@ -141,7 +183,6 @@ const TreinosView = {
             <div style="font-weight:600; color:var(--text-primary)">${t.name}</div>
             ${t.description ? `<div style="font-size:var(--font-size-xs); color:var(--text-muted); margin-top:2px">${t.description}</div>` : ''}
           </td>
-          <td style="padding:0.75rem 0.5rem; color:var(--text-secondary)">${nomeAluno}</td>
           <td style="padding:0.75rem 0.5rem; text-align:center">
             <span class="badge badge-info">${qtdExercicios}</span>
           </td>
@@ -249,9 +290,10 @@ const TreinosView = {
     }
     await this.carregarCatalogo();
 
-    const alunosOptions = this.alunosCache.map(a =>
-      `<option value="${a.id}">${a.user?.name || 'Aluno'} — ${a.user?.email || ''}</option>`
-    ).join('');
+    const alunosOptions = this.alunosCache.map(a => {
+      const selected = (this.currentStudentId && a.id == this.currentStudentId) ? 'selected' : '';
+      return `<option value="${a.id}" ${selected}>${a.user?.name || 'Aluno'} — ${a.user?.email || ''}</option>`;
+    }).join('');
 
     const html = this.renderizarConstrutorTreinoLayout(alunosOptions, false);
 
@@ -617,7 +659,9 @@ const TreinosView = {
       }
 
       Modal.close();
-      await this.carregarTreinos();
+      if (this.currentStudentId) {
+        await this.carregarTreinos(this.currentStudentId);
+      }
     } catch (error) {
       Toast.error(error.message || 'Erro ao salvar treino.');
     }
@@ -635,7 +679,9 @@ const TreinosView = {
         try {
           await API.delete(`/treinos/${id}`);
           Toast.success('Treino desativado com sucesso!');
-          await this.carregarTreinos();
+          if (this.currentStudentId) {
+            await this.carregarTreinos(this.currentStudentId);
+          }
         } catch (error) {
           Toast.error(error.message || 'Erro ao desativar treino.');
         }

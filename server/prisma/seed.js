@@ -90,56 +90,44 @@ async function main() {
   console.log(`✅ 3 alunos criados (senha: aluno123)`);
 
   // ============================================
-  // 2. PLANOS
+  // 2. PLANOS (Padrão de mercado — editáveis pelo admin)
   // ============================================
   const planoMensal = await prisma.plan.upsert({
     where: { id: 1 },
     update: {},
     create: {
-      name: 'Mensal',
-      description: 'Acesso completo à academia por 30 dias.',
-      price: 89.90,
+      name: 'Plano Mensal',
+      description: 'Acesso completo a todos os equipamentos e aulas coletivas. Pagamento recorrente mensal. Sem fidelidade — cancele quando quiser.',
+      price: 129.90,
       durationDays: 30,
       active: true,
     },
   });
 
-  const planoTrimestral = await prisma.plan.upsert({
+  const planoSemestral = await prisma.plan.upsert({
     where: { id: 2 },
     update: {},
     create: {
-      name: 'Trimestral',
-      description: 'Acesso completo à academia por 90 dias. Economia de 10%.',
-      price: 242.73,
-      durationDays: 90,
-      active: true,
-    },
-  });
-
-  const planoSemestral = await prisma.plan.upsert({
-    where: { id: 3 },
-    update: {},
-    create: {
-      name: 'Semestral',
-      description: 'Acesso completo à academia por 180 dias. Economia de 15%.',
-      price: 458.49,
+      name: 'Plano Semestral',
+      description: 'Acesso completo com avaliação física inclusa. Pagamento recorrente a cada 6 meses. Economia de 23% em relação ao plano mensal.',
+      price: 599.40,
       durationDays: 180,
       active: true,
     },
   });
 
   const planoAnual = await prisma.plan.upsert({
-    where: { id: 4 },
+    where: { id: 3 },
     update: {},
     create: {
-      name: 'Anual',
-      description: 'Acesso completo à academia por 365 dias. Melhor custo-benefício!',
-      price: 862.08,
+      name: 'Plano Anual',
+      description: 'Acesso completo, avaliação física trimestral e acesso a área VIP. Pagamento recorrente anual. Economia de 39% — melhor custo-benefício!',
+      price: 958.80,
       durationDays: 365,
       active: true,
     },
   });
-  console.log('✅ 4 planos criados (Mensal, Trimestral, Semestral, Anual)');
+  console.log('✅ 3 planos padrão criados (Mensal R$129,90 · Semestral R$599,40 · Anual R$958,80)');
 
   // ============================================
   // 3. ALUNOS (perfis vinculados a users)
@@ -148,8 +136,8 @@ async function main() {
   const thirtyDaysFromNow = new Date(today);
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-  const ninetyDaysFromNow = new Date(today);
-  ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
+  const sixMonthsFromNow = new Date(today);
+  sixMonthsFromNow.setDate(sixMonthsFromNow.getDate() + 180);
 
   // Aluno com plano vencido (para testar bloqueio)
   const tenDaysAgo = new Date(today);
@@ -183,9 +171,9 @@ async function main() {
       address: 'Av. da Praia, 500 - Martim de Sá, Caraguatatuba',
       notes: 'Foco em emagrecimento.',
       status: 'active',
-      planId: planoTrimestral.id,
+      planId: planoSemestral.id,
       planStartDate: today,
-      planEndDate: ninetyDaysFromNow,
+      planEndDate: sixMonthsFromNow,
     },
   });
 
@@ -435,7 +423,7 @@ async function main() {
       {
         studentId: student1.id,
         planId: planoMensal.id,
-        amount: 89.90,
+        amount: 129.90,
         paymentMethod: 'PIX',
         paymentDate: today,
         dueDate: thirtyDaysFromNow,
@@ -444,11 +432,11 @@ async function main() {
       },
       {
         studentId: student2.id,
-        planId: planoTrimestral.id,
-        amount: 242.73,
-        paymentMethod: 'Cartão de Crédito',
+        planId: planoSemestral.id,
+        amount: 599.40,
+        paymentMethod: 'cartao_credito',
         paymentDate: today,
-        dueDate: ninetyDaysFromNow,
+        dueDate: sixMonthsFromNow,
         status: 'paid',
         registeredBy: admin.id,
       },

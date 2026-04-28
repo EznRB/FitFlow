@@ -43,6 +43,12 @@ const ExerciciosCatalogoView = {
     if (selectGrupo) {
       selectGrupo.addEventListener('change', () => this.carregarExercicios());
     }
+
+    // Botão de sincronização API
+    const btnSync = document.getElementById('btn-sync-wger');
+    if (btnSync) {
+      btnSync.addEventListener('click', () => this.sincronizarAPI());
+    }
   },
 
   /**
@@ -290,4 +296,42 @@ const ExerciciosCatalogoView = {
       'Desativar'
     );
   },
+
+  /**
+   * Sincroniza o catálogo com a Wger API.
+   */
+  async sincronizarAPI() {
+    try {
+      const btnSync = document.getElementById('btn-sync-wger');
+      if (btnSync) {
+        btnSync.disabled = true;
+        btnSync.innerHTML = '<div class="spinner spinner-sm"></div> <span>Sincronizando...</span>';
+      }
+
+      const resp = await API.post('/exercicios/sync?limit=100');
+      
+      Toast.success(resp.message || 'Sincronização concluída!');
+      
+      // Recarrega a lista
+      await this.carregarExercicios();
+      
+      // Recarrega grupos musculares no select (caso novos tenham sido criados)
+      const selectGrupo = document.getElementById('filtro-grupo-muscular');
+      if (selectGrupo) {
+        selectGrupo.innerHTML = '<option value="">Todos os grupos</option>';
+        await this.carregarGruposMusculares();
+      }
+
+    } catch (error) {
+      console.error('Erro na sincronização:', error);
+      Toast.error('Erro ao sincronizar com a API externa.');
+    } finally {
+      const btnSync = document.getElementById('btn-sync-wger');
+      if (btnSync) {
+        btnSync.disabled = false;
+        btnSync.innerHTML = '<i data-lucide="refresh-cw"></i> <span>API Sync</span>';
+        if (window.lucide) lucide.createIcons({ nodes: [btnSync] });
+      }
+    }
+  }
 };
