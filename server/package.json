@@ -12,7 +12,8 @@
     "db:reset": "npx prisma migrate reset",
     "db:studio": "npx prisma studio",
     "db:mock": "node scripts/seed-mock.js",
-    "db:cleanup": "node scripts/cleanup-mock.js"
+    "db:cleanup": "node scripts/cleanup-mock.js",
+    "vercel-build": "npx prisma generate"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
