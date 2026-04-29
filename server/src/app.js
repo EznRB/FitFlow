@@ -63,7 +63,7 @@ app.use(cors({
  */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // Janela de 15 minutos.
-  max: 100,                 // Cada IP pode fazer no máximo 100 requisições por janela.
+  max: 500,                 // Aumentado para desenvolvimento (era 100)
   message: {
     status: 'fail',
     message: 'Muitas requisições originadas deste IP. Tente novamente em 15 minutos.',

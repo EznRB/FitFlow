@@ -25,9 +25,9 @@ const { authenticate, authorize } = require('../middleware/auth');
 router.use(authenticate);
 
 // --- Rotas do Aluno (devem vir ANTES das rotas com :id) ---
-router.get('/meus', authorize('aluno'), treinosController.meusTreinos);
-router.post('/carga', authorize('aluno'), treinosController.registrarCarga);
-router.get('/historico', authorize('aluno'), treinosController.historicoCarga);
+router.get('/meus', authorize('student'), treinosController.meusTreinos);
+router.post('/carga', authorize('student'), treinosController.registrarCarga);
+router.get('/historico', authorize('student'), treinosController.historicoCarga);
 
 // --- Rotas do Admin ---
 router.get('/', authorize('admin'), treinosController.listar);

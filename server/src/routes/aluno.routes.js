@@ -11,7 +11,7 @@
  * GET /api/aluno/historico-carga  — Histórico de cargas
  *
  * Segurança:
- * ⚠️ Todas as rotas exigem autenticação (JWT) + role 'aluno'.
+ * ⚠️ Todas as rotas exigem autenticação (JWT) + role 'student'.
  * ⚠️ Um aluno NÃO consegue acessar dados de outro aluno.
  */
 
@@ -21,7 +21,7 @@ const alunoPainelController = require('../controllers/aluno-painel.controller');
 const { authenticate, authorize } = require('../middleware/auth');
 
 // Middleware global: autenticação + autorização por role
-router.use(authenticate, authorize('aluno'));
+router.use(authenticate, authorize('student'));
 
 // Endpoints da área do aluno
 router.get('/painel', alunoPainelController.painel);

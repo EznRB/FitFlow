@@ -15,7 +15,8 @@
  * pois a tabela `exercicios` do SQL não tem modelo Prisma dedicado.
  */
 
-const { pool } = require('../config/database');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const AppError = require('../utils/AppError');
 
 class ExerciciosService {
@@ -27,27 +28,27 @@ class ExerciciosService {
    * @returns {Promise<Array>} Lista de exercícios
    */
   async listar(filtros = {}) {
-    let query = 'SELECT * FROM exercicios WHERE 1=1';
-    const params = [];
+    const where = {};
 
     // Filtro por grupo muscular (ex: "Peito", "Costas")
     if (filtros.grupoMuscular) {
-      query += ' AND grupo_muscular = ?';
-      params.push(filtros.grupoMuscular);
+      where.grupo_muscular = filtros.grupoMuscular;
     }
 
     // Filtro por status ativo (por padrão, mostra apenas ativos)
     if (filtros.ativo !== undefined) {
-      query += ' AND ativo = ?';
-      params.push(filtros.ativo);
+      where.ativo = filtros.ativo;
     } else {
-      query += ' AND ativo = TRUE';
+      where.ativo = true;
     }
 
-    query += ' ORDER BY grupo_muscular ASC, nome ASC';
-
-    const [rows] = await pool.execute(query, params);
-    return rows;
+    return await prisma.catalogoExercicio.findMany({
+      where,
+      orderBy: [
+        { grupo_muscular: 'asc' },
+        { nome: 'asc' }
+      ]
+    });
   }
 
   /**
@@ -57,16 +58,15 @@ class ExerciciosService {
    * @returns {Promise<object>} Exercício encontrado
    */
   async buscarPorId(id) {
-    const [rows] = await pool.execute(
-      'SELECT * FROM exercicios WHERE id = ?',
-      [parseInt(id)]
-    );
+    const exercicio = await prisma.catalogoExercicio.findUnique({
+      where: { id: parseInt(id) }
+    });
 
-    if (rows.length === 0) {
+    if (!exercicio) {
       throw new AppError('Exercício não encontrado no catálogo.', 404);
     }
 
-    return rows[0];
+    return exercicio;
   }
 
   /**
@@ -78,14 +78,15 @@ class ExerciciosService {
   async criar(data) {
     this.validarDados(data);
 
-    const [result] = await pool.execute(
-      `INSERT INTO exercicios (nome, grupo_muscular, instrucoes, imagem_url, ativo) 
-       VALUES (?, ?, ?, ?, TRUE)`,
-      [data.nome.trim(), data.grupo_muscular.trim(), data.instrucoes || null, data.imagem_url || null]
-    );
-
-    // Retorna o exercício recém-criado
-    return this.buscarPorId(result.insertId);
+    return await prisma.catalogoExercicio.create({
+      data: {
+        nome: data.nome.trim(),
+        grupo_muscular: data.grupo_muscular.trim(),
+        instrucoes: data.instrucoes || null,
+        imagem_url: data.imagem_url || null,
+        ativo: true
+      }
+    });
   }
 
   /**
@@ -99,14 +100,15 @@ class ExerciciosService {
     await this.buscarPorId(id); // Garante que existe
     this.validarDados(data);
 
-    await pool.execute(
-      `UPDATE exercicios 
-       SET nome = ?, grupo_muscular = ?, instrucoes = ?, imagem_url = ?, atualizado_em = NOW() 
-       WHERE id = ?`,
-      [data.nome.trim(), data.grupo_muscular.trim(), data.instrucoes || null, data.imagem_url || null, parseInt(id)]
-    );
-
-    return this.buscarPorId(id);
+    return await prisma.catalogoExercicio.update({
+      where: { id: parseInt(id) },
+      data: {
+        nome: data.nome.trim(),
+        grupo_muscular: data.grupo_muscular.trim(),
+        instrucoes: data.instrucoes || null,
+        imagem_url: data.imagem_url || null
+      }
+    });
   }
 
   /**
@@ -118,10 +120,10 @@ class ExerciciosService {
   async desativar(id) {
     await this.buscarPorId(id); // Garante que existe
 
-    await pool.execute(
-      'UPDATE exercicios SET ativo = FALSE, atualizado_em = NOW() WHERE id = ?',
-      [parseInt(id)]
-    );
+    await prisma.catalogoExercicio.update({
+      where: { id: parseInt(id) },
+      data: { ativo: false }
+    });
   }
 
   /**
@@ -130,10 +132,14 @@ class ExerciciosService {
    * @returns {Promise<Array<string>>} Lista de grupos musculares
    */
   async listarGruposMusculares() {
-    const [rows] = await pool.execute(
-      'SELECT DISTINCT grupo_muscular FROM exercicios WHERE ativo = TRUE ORDER BY grupo_muscular ASC'
-    );
-    return rows.map(r => r.grupo_muscular);
+    const grupos = await prisma.catalogoExercicio.findMany({
+      where: { ativo: true },
+      distinct: ['grupo_muscular'],
+      select: { grupo_muscular: true },
+      orderBy: { grupo_muscular: 'asc' }
+    });
+    
+    return grupos.map(r => r.grupo_muscular);
   }
 
   /**

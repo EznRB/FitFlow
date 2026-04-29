@@ -1,9 +1,10 @@
 /**
  * ============================================
  * FitFlow Caraguá — Middleware de Autenticação
+ * ⚠️ Todas as rotas exigem autenticação + role 'student'.
  * ============================================
  * Verifica JWT em cookies httpOnly e controla
- * acesso baseado em roles (admin/aluno).
+ * acesso baseado em roles (admin/student).
  */
 
 const jwt = require('jsonwebtoken');
@@ -12,6 +13,7 @@ const AppError = require('../utils/AppError');
 
 /**
  * Middleware que verifica se o usuário está autenticado.
+ * ⚠️ Todas as rotas exigem autenticação (JWT) + role 'student'.
  * Extrai o token do cookie httpOnly ou do header Authorization.
  */
 function authenticate(req, res, next) {
@@ -37,7 +39,7 @@ function authenticate(req, res, next) {
     // Anexa os dados do usuário ao request
     req.user = {
       id: decoded.id,
-      nome: decoded.nome,
+      name: decoded.name,
       email: decoded.email,
       role: decoded.role,
     };
@@ -59,7 +61,7 @@ function authenticate(req, res, next) {
 
 /**
  * Middleware factory que restringe acesso por role.
- * @param  {...string} roles - Roles permitidas ('admin', 'aluno')
+ * @param  {...string} roles - Roles permitidas ('admin', 'student')
  * @returns {Function} Middleware do Express
  * 
  * Uso: router.get('/rota', authenticate, authorize('admin'), controller.metodo)

@@ -76,9 +76,29 @@ const wgerService = {
           continue;
         }
 
-        // Determinar grupo muscular
-        let grupoMuscularEn = ex.category.name;
-        let grupoMuscularBr = CATEGORY_MAPPING[grupoMuscularEn] || 'Outros';
+        // Determinar grupo muscular (Prioridade: Palavras-chave no nome > Categoria da API)
+        let grupoMuscularBr = 'Outros';
+        const nomeLower = nomeFinal.toLowerCase();
+
+        if (nomeLower.includes('abdômen') || nomeLower.includes('abdominal') || nomeLower.includes('core') || nomeLower.includes('prancha')) {
+          grupoMuscularBr = 'Abdômen';
+        } else if (nomeLower.includes('bíceps') || nomeLower.includes('tríceps') || nomeLower.includes('braço') || nomeLower.includes('antebraço')) {
+          grupoMuscularBr = 'Braços';
+        } else if (nomeLower.includes('agachamento') || nomeLower.includes('leg press') || nomeLower.includes('perna') || nomeLower.includes('coxa') || nomeLower.includes('extensora') || nomeLower.includes('flexora')) {
+          grupoMuscularBr = 'Pernas';
+        } else if (nomeLower.includes('peito') || nomeLower.includes('supino') || nomeLower.includes('crucifixo')) {
+          grupoMuscularBr = 'Peito';
+        } else if (nomeLower.includes('costas') || nomeLower.includes('puxada') || nomeLower.includes('remada') || nomeLower.includes('lombar')) {
+          grupoMuscularBr = 'Costas';
+        } else if (nomeLower.includes('ombro') || nomeLower.includes('elevação lateral') || nomeLower.includes('desenvolvimento')) {
+          grupoMuscularBr = 'Ombros';
+        } else if (nomeLower.includes('panturrilha')) {
+          grupoMuscularBr = 'Panturrilhas';
+        } else {
+          // Fallback para o mapeamento da API se não encontrou palavra-chave
+          let grupoMuscularEn = ex.category.name;
+          grupoMuscularBr = CATEGORY_MAPPING[grupoMuscularEn] || 'Outros';
+        }
 
         // Instruções
         let instrucoes = transBase.description ? transBase.description.replace(/(<([^>]+)>)/gi, '').trim() : '';

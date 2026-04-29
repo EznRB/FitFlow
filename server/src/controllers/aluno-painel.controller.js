@@ -12,7 +12,7 @@
  * GET /api/aluno/historico-carga  — Histórico de cargas por exercício
  *
  * Segurança:
- * ⚠️ Todas as rotas exigem autenticação + role 'aluno'.
+ * ⚠️ Todas as rotas exigem autenticação + role 'student'.
  * ⚠️ O userId é extraído do token JWT — o aluno NUNCA informa seu próprio ID.
  */
 

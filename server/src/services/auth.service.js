@@ -87,7 +87,7 @@ class AuthService {
     // Esse token funciona como o "crachá" do usuário na aplicação.
     const payload = {
       id: user.id,
-      nome: user.name, // O DB usa 'name', mas o frontend e middleware esperam 'nome'
+      name: user.name, // O DB usa 'name'
       email: user.email,
       role: user.role,
     };
@@ -101,7 +101,7 @@ class AuthService {
     return {
       user: {
         id: userWithoutPassword.id,
-        nome: userWithoutPassword.name,
+        name: userWithoutPassword.name,
         email: userWithoutPassword.email,
         role: userWithoutPassword.role,
       },
