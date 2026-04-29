@@ -78,8 +78,8 @@ const TreinosView = {
     grid.innerHTML = alunos.map(a => {
       const nome = a.user?.name || 'Aluno Sem Nome';
       const email = a.user?.email || '';
-      const status = a.active ? 'Ativo' : 'Inativo';
-      const badgeClass = a.active ? 'badge-success' : 'badge-secondary';
+      const status = a.status === 'active' ? 'Ativo' : 'Inativo';
+      const badgeClass = a.status === 'active' ? 'badge-success' : 'badge-secondary';
       return `
         <div class="kpi-card" onclick="TreinosView.abrirPerfilAluno(${a.id}, '${nome.replace(/'/g, "\\'")}')" style="cursor: pointer; transition: transform 0.2s ease; display:flex; flex-direction:column; gap:1rem;">
           <div style="display:flex; align-items:center; gap:1rem;">
