@@ -13,7 +13,6 @@ const AppError = require('../utils/AppError');
 
 /**
  * Middleware que verifica se o usuário está autenticado.
- * ⚠️ Todas as rotas exigem autenticação (JWT) + role 'student'.
  * Extrai o token do cookie httpOnly ou do header Authorization.
  */
 function authenticate(req, res, next) {

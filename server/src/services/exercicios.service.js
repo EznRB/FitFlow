@@ -11,12 +11,10 @@
  * - Catálogo (esta camada) = exercícios genéricos disponíveis
  * - Exercise (Prisma) = exercícios vinculados a um treino específico
  * 
- * Utiliza queries SQL diretas com mysql2/promise pool,
- * pois a tabela `exercicios` do SQL não tem modelo Prisma dedicado.
+ * Utiliza o Prisma Client para acessar a tabela `exercicios` (modelo CatalogoExercicio).
  */
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 
 class ExerciciosService {

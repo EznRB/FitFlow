@@ -38,7 +38,7 @@ const API = {
 
       if (!response.ok) {
         // Se token expirou, tenta refresh ou redireciona
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           // Dispara evento para o auth.js tratar
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
         }

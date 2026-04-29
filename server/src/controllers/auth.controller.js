@@ -56,6 +56,7 @@ const authController = {
         httpOnly: true,
         secure: env.nodeEnv === 'production', // Em prod, exige HTTPS
         sameSite: 'lax', // Proteção contra CSRF
+        path: '/', // Garante que o cookie seja acessível em todas as rotas
         maxAge: 24 * 60 * 60 * 1000, // 1 dia em milissegundos
       };
 
@@ -80,6 +81,7 @@ const authController = {
         httpOnly: true,
         secure: env.nodeEnv === 'production',
         sameSite: 'lax',
+        path: '/',
       });
 
       sendSuccess(res, 200, 'Logout realizado com sucesso', null);

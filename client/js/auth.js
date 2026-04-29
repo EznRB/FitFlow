@@ -17,6 +17,9 @@ const Auth = {
    * @returns {Promise<object>} Dados do usuário
    */
   async login(email, senha) {
+    // Limpa qualquer rastro de sessão anterior antes de tentar novo login
+    localStorage.removeItem('fitflow_user');
+    
     const response = await API.post('/auth/login', { email, password: senha });
     this.user = response.data.user;
     this.saveUserLocal(response.data.user);
@@ -35,6 +38,7 @@ const Auth = {
     }
     this.user = null;
     localStorage.removeItem('fitflow_user');
+    localStorage.clear(); // Limpa tudo para garantir isolamento total
     window.dispatchEvent(new CustomEvent('auth:logout'));
   },
 
