@@ -21,6 +21,7 @@
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const businessRules = require('../utils/businessRules');
+const pagamentosService = require('./pagamentos.service');
 
 class AlunoPainelService {
 
@@ -421,6 +422,38 @@ class AlunoPainelService {
     }
 
     return alertas;
+  }
+
+  /**
+   * Processa um pagamento realizado pelo próprio aluno via checkout.
+   * Como é um MVP, apenas delegamos para o PagamentosService.registrar
+   * simulando um sucesso após validações básicas.
+   *
+   * @param {number} userId - ID do user logado
+   * @param {object} data - { paymentMethod, planId }
+   */
+  async processarCheckout(userId, data) {
+    const { paymentMethod, planId } = data;
+    const aluno = await this._getStudentByUserId(userId);
+
+    if (!aluno.planId && !planId) {
+      throw new AppError('Você precisa selecionar um plano para realizar o pagamento.', 400);
+    }
+
+    const targetPlanId = planId ? parseInt(planId) : aluno.planId;
+    const plano = await prisma.plan.findUnique({ where: { id: targetPlanId } });
+    
+    if (!plano) throw new AppError('Plano não encontrado.', 404);
+
+    // Delega para o serviço central de pagamentos
+    // O registeredBy fica null pois foi um auto-pagamento
+    return pagamentosService.registrar({
+      studentId: aluno.id,
+      planId: targetPlanId,
+      amount: plano.price,
+      paymentMethod: paymentMethod || 'Simulado',
+      notes: 'Pagamento realizado pelo aluno via checkout SPA.'
+    }, null);
   }
 }
 

@@ -85,6 +85,20 @@ const alunoPainelController = {
       next(error);
     }
   },
+  /**
+   * POST /api/aluno/checkout
+   * Processa o pagamento simulado do aluno.
+   * Body: { paymentMethod, planId }
+   */
+  async checkout(req, res, next) {
+    try {
+      const { paymentMethod, planId } = req.body;
+      const resultado = await alunoPainelService.processarCheckout(req.user.id, { paymentMethod, planId });
+      sendSuccess(res, 200, 'Pagamento processado com sucesso!', resultado);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 module.exports = alunoPainelController;

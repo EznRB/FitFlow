@@ -735,3 +735,44 @@
     animation: none !important;
   }
 }
+
+/* ========================
+   CHECKOUT E TABS (TASK 11)
+   ======================== */
+.checkout-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.checkout-tabs .btn {
+  flex: 1;
+  font-size: var(--font-size-xs);
+  padding: var(--space-3) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.checkout-tabs .btn.active {
+  background: var(--primary-500);
+  color: white;
+  border-color: var(--primary-500);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+}
+
+#checkout-content {
+  background: var(--bg-elevated);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  margin-bottom: var(--space-4);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

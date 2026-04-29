@@ -28,5 +28,6 @@ router.get('/painel', alunoPainelController.painel);
 router.get('/mensalidade', alunoPainelController.mensalidade);
 router.get('/checkins', alunoPainelController.checkins);
 router.get('/historico-carga', alunoPainelController.historicoCarga);
+router.post('/checkout', alunoPainelController.checkout);
 
 module.exports = router;

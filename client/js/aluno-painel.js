@@ -306,6 +306,14 @@ const AlunoMensalidadeView = {
       return `<div class="aluno-historico-item"><div class="aluno-historico-icone ${icone}"><i data-lucide="${p.status === 'paid' ? 'check-circle' : 'clock'}"></i></div><div class="aluno-historico-info"><div class="aluno-historico-titulo">R$ ${parseFloat(p.valor).toFixed(2)} ${statusBadge}</div><div class="aluno-historico-sub">${p.metodo || '—'} · ${p.plano}</div></div><div class="aluno-historico-data">${data}</div></div>`;
     }).join('');
 
+    const btnPagar = s !== 'em_dia' ? `
+      <div style="margin-top: 1.5rem;">
+        <button class="btn btn-primary btn-block" onclick="AlunoMensalidadeView.abrirCheckout()">
+          <i data-lucide="credit-card"></i> Pagar Mensalidade Agora
+        </button>
+      </div>
+    ` : '';
+
     container.innerHTML = `
       ${alertaHtml}
       <div class="aluno-status-card">
@@ -317,11 +325,143 @@ const AlunoMensalidadeView = {
             <div class="aluno-status-item"><label>Vencimento</label><span>${vencimento}</span></div>
             <div class="aluno-status-item"><label>Restante</label><span>${diasRest}</span></div>
           </div>
+          ${btnPagar}
         </div>
       </div>
       ${pagamentosHtml ? `<div class="aluno-section"><div class="aluno-section-title"><i data-lucide="receipt"></i> Últimos Pagamentos</div><div class="aluno-historico-lista">${pagamentosHtml}</div></div>` : ''}
     `;
     if (window.lucide) lucide.createIcons({ nodes: [container] });
+  },
+
+  abrirCheckout() {
+    const html = `
+      <div class="checkout-container">
+        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Escolha a forma de pagamento preferida para renovar sua mensalidade:</p>
+        
+        <div class="checkout-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+          <button class="btn btn-outline-primary active" id="tab-pix" onclick="AlunoMensalidadeView.mudarTabCheckout('pix')">PIX</button>
+          <button class="btn btn-outline-primary" id="tab-card" onclick="AlunoMensalidadeView.mudarTabCheckout('card')">Cartão</button>
+          <button class="btn btn-outline-primary" id="tab-boleto" onclick="AlunoMensalidadeView.mudarTabCheckout('boleto')">Boleto</button>
+        </div>
+
+        <div id="checkout-content" style="min-height: 200px;">
+          ${this._renderPix()}
+        </div>
+      </div>
+    `;
+
+    Modal.open('Checkout FitFlow', html, [
+      { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
+      { text: 'Confirmar Pagamento', id: 'btn-confirmar-pagamento', class: 'btn-primary', action: () => this.confirmarPagamento() },
+    ]);
+  },
+
+  mudarTabCheckout(tipo) {
+    const content = document.getElementById('checkout-content');
+    const tabs = ['pix', 'card', 'boleto'];
+    
+    tabs.forEach(t => {
+      const el = document.getElementById(`tab-${t}`);
+      if (el) el.classList.remove('active');
+    });
+
+    const activeTab = document.getElementById(`tab-${tipo}`);
+    if (activeTab) activeTab.classList.add('active');
+
+    if (tipo === 'pix') content.innerHTML = this._renderPix();
+    if (tipo === 'card') content.innerHTML = this._renderCard();
+    if (tipo === 'boleto') content.innerHTML = this._renderBoleto();
+    
+    if (window.lucide) lucide.createIcons({ nodes: [content] });
+  },
+
+  _renderPix() {
+    return `
+      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=fitflow-pix-mockup" alt="QR Code PIX" style="display: block;">
+        </div>
+        <div style="width: 100%;">
+          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Copia e Cola (Chave Aleatória)</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" value="00020126580014br.gov.bcb.pix0136e2f1b8a-9801-4757-9c81-f97d164964f7" readonly style="flex: 1; font-family: monospace; font-size: 0.75rem;">
+            <button class="btn btn-sm btn-outline-secondary" onclick="Toast.info('Chave copiada!')"><i data-lucide="copy" style="width:14px;height:14px"></i></button>
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);"><i data-lucide="info" style="width:14px;height:14px;vertical-align:middle;"></i> Após o pagamento, o sistema identificará automaticamente em alguns segundos.</p>
+        <input type="hidden" id="checkout-method" value="Pix">
+      </div>
+    `;
+  },
+
+  _renderCard() {
+    return `
+      <div class="form-grid" style="gap: 1rem;">
+        <div class="form-group" style="grid-column: span 2;">
+          <label>Número do Cartão</label>
+          <input type="text" placeholder="0000 0000 0000 0000" maxlength="19">
+        </div>
+        <div class="form-group">
+          <label>Validade</label>
+          <input type="text" placeholder="MM/AA" maxlength="5">
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input type="text" placeholder="123" maxlength="3">
+        </div>
+        <div class="form-group" style="grid-column: span 2;">
+          <label>Nome no Cartão</label>
+          <input type="text" placeholder="Como impresso no cartão">
+        </div>
+        <input type="hidden" id="checkout-method" value="Cartão de Crédito">
+      </div>
+    `;
+  },
+
+  _renderBoleto() {
+    return `
+      <div style="text-align: center; padding: 1.5rem 0; display: flex; flex-direction: column; gap: 1rem;">
+        <i data-lucide="barcode" style="width: 64px; height: 64px; margin: 0 auto; opacity: 0.5;"></i>
+        <p>O boleto será gerado e enviado para seu e-mail cadastrado.</p>
+        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px dashed var(--border-color);">
+          <code style="font-size: 0.9rem;">34191.09008 63561.760009 12345.670007 8 95820000015000</code>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="Toast.info('Código de barras copiado!')">Copiar Código</button>
+        <input type="hidden" id="checkout-method" value="Boleto">
+      </div>
+    `;
+  },
+
+  async confirmarPagamento() {
+    const btn = document.getElementById('btn-confirmar-pagamento');
+    const metodo = document.getElementById('checkout-method')?.value || 'Simulado';
+    
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner spinner-sm" style="border-top-color:white"></div> Processando...';
+    }
+
+    try {
+      // Simula delay de processamento
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      await API.post('/aluno/checkout', { paymentMethod: metodo });
+      
+      Toast.success('Pagamento confirmado com sucesso! Sua matrícula foi renovada.');
+      Modal.close();
+      this.inicializar(); // Recarrega tela de mensalidade
+      
+      // Se estiver no dashboard, recarrega também
+      if (typeof AlunoPainelView !== 'undefined' && AlunoPainelView.dados) {
+        AlunoPainelView.inicializar();
+      }
+    } catch (error) {
+      Toast.error('Erro ao confirmar pagamento: ' + error.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Confirmar Pagamento';
+      }
+    }
   }
 };
 
