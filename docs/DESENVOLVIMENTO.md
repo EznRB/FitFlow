@@ -111,15 +111,15 @@ node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
 
 O gate hospedado usa autenticação autorizada para o Preview protegido e confere health/banco, login/me nos três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. O script não divulga token/senha e não realiza cobrança. `.vercelignore` exclui arquivos privados, bancos nativos, testes e documentação do pacote.
 
-O [domínio Production](https://fit-flow-indol.vercel.app) está READY, deployment `dpl_6EYbxgErP4HK7QBtWevwkgMn2j5V`, Node 24.x e função `gru1`. O gate HTTPS passou também no domínio final. No navegador, aluno autenticado com cookie HttpOnly permaneceu após recarga; uma sessão de teste explicitamente identificada, com uma série 20 kg × 8 e RIR 2, foi finalizada e recuperada após nova recarga no histórico, com volume 160 kg·reps. Captura em `docs/evidence/16-vercel-neon-sessao-persistida.png`.
+O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_9TiPE1WdMZaCyhy1WtsX6H93rPiy`, revisão `24e77b4`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/37991180996) aprovada. Gate HTTPS de gestão passou após o deploy, incluindo replay manual, conflito 409 e sessão divergente 403. Navegador restaurou admin e confirmou modal, data brasileira 09/10/2026 e orientação de registro manual, captura 23; nenhum formulário submetido. Fundamentos conferido na revisão `65fb32c`, captura 21.
 
-Essa prova foi obtida na implantação inicial. O alias atual aponta ao deployment READY `dpl_5keW3LmJW9PX16PzaNnUs4rngMD1`, revisão `dad6d9c`; health e arquivo de sessões com texto atualizado retornaram 200. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/37873364828) concluída com sucesso.
+Gates no mesmo domínio confirmaram três perfis, autorização, CSRF e logout. Treino demonstrativo finalizado persistiu após recarga: 20 kg × 8, RIR 2, 160 kg·reps. Nutrição fictícia foi salva/restaurada no navegador com escopo desmarcado até nova confirmação, captura 20. Gestão HTTPS foi repetida após `24e77b4`: CRUD, perfis, nutrição consentida/isolada, presença auditável, duas renovações de sete dias concorrentes e replay do mesmo UUID sem terceiro registro/renovação.
 
-O login publicado foi recuperado com o novo Neon e as senhas novas do arquivo privado. As antigas credenciais do GitHub e os dados Aiven não foram restaurados. O aplicativo foi enviado em `dad6d9c` à branch `codex/science-ux-foundation`, com [PR draft](https://github.com/EznRB/FitFlow/pull/1); landing em `c6b43ba` à branch `codex/landing-improvements`, com [PR draft](https://github.com/EznRB/fitflow-LP/pull/1). Nenhum merge à branch principal foi realizado. Demais fluxos, integrações reais de teste e telefone físico continuam pendentes. Estado completo em [BANCO_REMOTO_VERCEL.md](BANCO_REMOTO_VERCEL.md).
+O login foi recuperado com Neon e senhas novas; credenciais antigas do GitHub e dados Aiven não foram restaurados. Código nas branches `codex/science-ux-foundation` e `codex/landing-improvements`, PRs draft [do app](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1). Nenhum merge realizado. Estado e pendências em [STATUS_ENTREGA.md](STATUS_ENTREGA.md).
 
-O papel API administrativo não utilizado `fitflow_runtime` foi removido após autorização explícita do usuário. A branch principal contém somente `fitflow_app` e `fitflow_owner`, e o teste runtime passou novamente após a remoção. Para conferir os candidatos de publicação contra os segredos locais conhecidos: `node scripts/check-private-files.cjs`; última execução aprovada para 256 arquivos. Não cobre todo o histórico Git nem segredos desconhecidos.
+O papel API administrativo não utilizado `fitflow_runtime` foi removido após autorização explícita do usuário. A branch principal contém somente `fitflow_app` e `fitflow_owner`, e o teste runtime passou novamente após a remoção. Para conferir candidatos de publicação contra segredos locais conhecidos: `node scripts/check-private-files.cjs`. Não cobre todo o histórico Git nem segredos desconhecidos.
 
-A [landing publicada](https://fitflow-lp.vercel.app) está READY, deployment `dpl_GgjuMMHUXcdYXLL3ZfjWHAUTVzc9`. Gate público sem bypass confirmou HTML/JS/CSS/hero HTTP 200 e CTA para o domínio final do aplicativo. Captura em `docs/evidence/18-landing-vercel-publicada.png`.
+A [landing publicada](https://fitflow-lp.vercel.app) está READY, revisão `c6b43ba`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`. Gate público sem bypass confirmou HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou estado publicado e fotografia nova. Captura 18 registra a implantação anterior.
 
 ### Política de conteúdo
 
@@ -130,20 +130,45 @@ A Vercel precisa alcançar o banco remoto com TLS e ter os valores definidos par
 ## Testes
 
 - `npm test`: lógica, API com doubles, autorização, matemática, catálogo, fila e PWA; sem cobrança de provedor.
+- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **233 aprovados, zero falhas e zero ignorados** na revisão `24e77b4`.
 - `npm audit`: auditoria de dependências conhecidas. Não equivale a uma auditoria completa de segurança.
 - `node scripts/with-local-env.cjs node scripts/smoke-local.cjs`: login e persistência via HTTP no servidor local ativo.
 - `node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs`: concorrência real de sessões/séries no MariaDB.
 - `node scripts/with-local-env.cjs node tests/checkout-local.integration.cjs`: conciliação e renovação no banco local com provedor simulado.
 - `node scripts/with-local-env.cjs node tests/quota-local.integration.cjs`: incremento concorrente e limite conjunto de duas instâncias.
 - `node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs`: DATE/TIME, calendário brasileiro, duplicidade e cancelamento.
+- `node scripts/with-local-env.cjs node tests/manual-payment-local.integration.cjs`: replay/conflitos, ator, sessão, consulta restrita, CHECK e concorrência de lançamentos manuais no MariaDB.
+- `node scripts/with-postgresql-test-env.cjs node tests/manual-payment-local.integration.cjs`: o mesmo gate no PostgreSQL nativo isolado; esse teste recusa qualquer host remoto.
 
 Os testes integrados são optativos. Smoke/sessões preservam o histórico demonstrativo gerado; financeiro/quotas/datas removem somente suas fixtures temporárias. Não executá-los com uma URL de produção.
+
+No Windows, não chamar `npm test` pelo wrapper `with-local-env.cjs`: o executável é `npm.cmd` e essa combinação falhou. A receita validada passa `node --test` diretamente. Os wrappers continuam substituindo variáveis herdadas sem mudar o ambiente global.
+
+### Exceção guardada: gestão no FitFlow publicado
+
+O gate abaixo usa exclusivamente o domínio HTTPS canônico e a branch Neon principal já identificada, com execução explícita. Não aceita destinos arbitrários nem `NODE_ENV=production` no processo de teste:
+
+```powershell
+node tests/hosted-management.integration.cjs --execute-hosted-fixtures
+```
+
+Seu constructor Prisma recebe a URL privada guardada explicitamente, sem usar a URL herdada. O owner prepara dois usuários de teste e limpa somente UUIDs próprios; os fluxos funcionais passam pela API HTTPS com administrador/instrutor/aluno. Antes de qualquer escrita confirma ausência de colisões. A execução aprovada usou três logins e removeu quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins sintéticos; não resetou quotas nem alterou contas demonstrativas. Repetir somente para resolver uma mudança relevante, respeitando a quota real de login.
 
 ## Integrações opcionais
 
 Sem `GEMINI_API_KEY`, a IA informa indisponibilidade e fórmulas/fontes continuam acessíveis. O modelo padrão é `gemini-3.5-flash-lite`; a chave fica exclusivamente no servidor. Antes da geração real, configure quotas e limites de gasto no provedor.
 
 Checkout depende dos campos Mercado Pago de `server/.env.example`, conta de teste e webhook HTTPS. O modo implementado é sandbox. Testes com provedor simulado não substituem confirmação canônica de um pagamento real de teste.
+
+### Lançamento manual e migração aditiva
+
+O modal registra **pagamento já recebido**; não cobra, gera Pix nem valida cartão. Cada intenção tem UUID persistido único, hash canônico dos dados e ator autenticado. Retry idêntico retorna o registro existente sem nova renovação; outro ator ou payload divergente recebe 409. Consulta `/api/pagamentos/solicitacoes/:requestId` reconcilia resposta perdida somente para o mesmo ator; caso contrário responde 404. A expectativa de conta divergente é recusada com 403 antes da consulta ao banco.
+
+O frontend mantém a intenção para reconciliação/retry e usa Web Locks entre abas. Essa proteção de interface complementa a constraint única do servidor. Intenções diferentes continuam sendo lançamentos diferentes; o UUID não substitui a conferência administrativa do recebimento.
+
+`20261009_manual_payment_idempotency` adiciona UUID/hash e CHECK de par completo/ator, preservando pagamentos legados com campos nulos e a baseline aplicada. Aplicada nos bancos nativos e nas duas branches Neon; totais: cinco migrations MySQL, duas PostgreSQL e onze CHECKs PostgreSQL. Os Clients precisam ser gerados após atualizar o schema, usando o wrapper correspondente, e a migration deve anteceder a publicação do código. Gates manuais passaram nos dois bancos nativos, core atualizado passou na branch Neon de verificação e gestão HTTPS passou após o deploy `24e77b4`.
+
+Checkout do provedor possui conciliação idempotente separada; suas credenciais e eventos reais de sandbox continuam pendentes.
 
 ## Mobile
 

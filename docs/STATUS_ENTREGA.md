@@ -1,92 +1,104 @@
-# Estado da entrega — 08/10/2026
+# Estado da entrega — 09/10/2026
 
-A meta completa está ativa. Aplicativo e landing foram publicados pela CLI. Login e persistência de treino no domínio final passaram com Neon; a landing está publicamente acessível. Código enviado às branches, com PRs draft criados e anexados; nada foi mesclado à branch principal. Este documento diferencia implementação, verificação e dependências externas.
+A meta completa está ativa. O login publicado foi recuperado com Neon; aplicativo e landing têm evidências públicas. Código enviado aos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum merge à branch principal foi realizado.
+
+## Implantação atual
+
+| Aplicação | Revisão e verificação |
+|---|---|
+| [FitFlow](https://fit-flow-indol.vercel.app) | `24e77b4`, branch `codex/science-ux-foundation`, deployment `dpl_9TiPE1WdMZaCyhy1WtsX6H93rPiy`, READY e alias canônico confirmado. URL exata: `https://fit-flow-9lm1kdi4d-eznrbs-projects.vercel.app`. Gate HTTPS de gestão aprovado após o deploy. |
+| [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
+
+[CI GitHub da revisão 24e77b4 — execução 15](https://github.com/EznRB/FitFlow/actions/runs/37991180996): sucesso. Node 24.x, função `gru1`, Client PostgreSQL Prisma 6.19.3 gerado no Linux. Gestão/nutrição/presença/renovação e idempotência manual passaram em HTTPS depois dessa publicação. Navegador restaurou conta admin após recarga e confirmou modal de recebimento, data brasileira 09/10/2026, orientação e botão, captura 23; nenhum formulário submetido. Fundamentos conferidos na revisão anterior `65fb32c`, captura 21.
 
 ## Evidências obtidas
 
 | Frente | Implementação e verificação |
 |---|---|
-| Banco e login local | MariaDB 11.8.8 nativo em loopback, quatro migrations, contas fictícias com senhas individuais. Smoke HTTP confirmou login e permissões. Sem Docker ou alteração do banco antigo. |
-| Banco remoto | Neon Free confirmado, PostgreSQL 17 em São Paulo; baseline aplicada nas branches principal e de verificação. Três gates reais passaram pelo pooler com TLS. Papel runtime separado passou em operações reais e recusou DDL/alteração de séries/exclusões protegidas. Demonstração remota: cinco contas, três alunos, duas fichas, 798 exercícios e senhas novas. |
-| Vercel publicada | Preview e Production READY, Node 24.x, função São Paulo (`gru1`), Prisma PostgreSQL 6.19.3 gerado no Linux. Gate HTTPS aprovado nos dois ambientes: banco pronto, três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. No navegador remoto, aluno permaneceu autenticado após recarga e reencontrou sessão finalizada com uma série 20 kg × 8, RIR 2, volume 160 kg·reps. |
-| Segurança | Papel/atividade consultados no banco, cadastro somente por administrador, CSRF por origens exatas, API no-store, quotas HMAC compartilhadas. Scripts restritos à mesma origem, handlers HTML inline removidos; estilos inline legados continuam permitidos. Logout sem servidor mantém intenção persistente e bloqueia restauração automática; navegador confirmou permanência no login após reconexão. Bootstrap testado sem reset na branch remota isolada. Credenciais runtime na Vercel como Secret; JWT de produção independente do Preview. |
-| Gestão | Planos, cancelamento auditável de presença, edição de fichas com revisão preservando histórico, relatórios com escape e soma de decimais. Testes de instrutor/aluno sem acesso à gestão financeira. |
-| Exercícios | Importação real local completa: 919 avaliados, 795 incorporados, 124 ignorados, 10 páginas. Identidade externa única, licenças/autoria por conteúdo e mídia; curadoria local preservada. Catálogo descritivo não é prescrição. |
-| Treinos | Séries de trabalho/aquecimento, carga externa/reps/RIR, snapshots e UUIDs idempotentes. Toda edição cria revisão sem substituir IDs da ficha anterior, inclusive sem logs no servidor. Sessões com envios rejeitados têm arquivamento local confirmado, preservando evidência e liberando nova sessão; isso não conclui a sessão remota. Catálogo no editor tem páginas de 30. |
-| Nutrição | Equações determinísticas e hipóteses explícitas. Navegador confirmou cálculo, salvamento optativo e restauração exigindo nova confirmação de escopo. |
-| Mobile/PWA | Produção em viewport emulada 375 × 812: largura do documento 369, menor que largura interna 375, sem overflow horizontal; captura 17. Não é telefone físico nem teste de instalação. Localmente, com servidor desligado, série 27 kg × 8 permaneceu pendente; após reconexão, banco confirmou exatamente uma série, volume 216 kg·reps. Recarregamento offline exibiu somente fallback público. |
-| Pagamento | Adaptador Checkout Pro sandbox, assinatura HMAC, confirmação canônica, ownership e renovação preservando vigência. Testes com banco real e provedor simulado confirmaram conciliação única; não houve chamada de cobrança ao Mercado Pago. |
-| IA | Temas/fontes curados, chave exclusivamente no servidor, resposta estruturada validada. Modelo padrão e contrato atualizados pela documentação oficial; provedor simulado nos testes. |
-| Datas | Calendário operacional `America/Sao_Paulo`, validação de filtros antes da consulta, colunas DATE preservadas como datas civis e agrupamento de instantes em UTC convertido ao calendário brasileiro. Coluna TIME legada não foi reescrita. |
-| Landing | React/Vite, laranja/navy e Barlow preservados, fotografia ilustrativa nova, autoria e estado real. Dependências/páginas obsoletas removidas. Build com TypeScript. Produção pública READY, HTML/JS/CSS/hero com HTTP 200 sem bypass e CTA para o aplicativo confirmado. Hero conferido no navegador, captura 18. |
+| Banco local | MariaDB 11.8.8 nativo, loopback 3308, cinco migrations MySQL e senhas demonstrativas individuais. Smoke HTTP e concorrência real passaram. Sem Docker e sem alteração do banco antigo. |
+| Banco remoto | Neon Free, PostgreSQL 17, São Paulo; baseline preservada e migration aditiva `20261009_manual_payment_idempotency` aplicada nas duas branches e nos bancos nativos. Cinco migrations MySQL e duas PostgreSQL; onze CHECKs PostgreSQL. Três gates reais passaram pelo pooler com TLS; core foi repetido para replay, conflitos e nova constraint. `fitflow_app` recusou DDL, alteração de séries e exclusões protegidas. Cinco contas, três alunos, duas fichas e 798 exercícios demonstrativos. |
+| Login publicado | Preview e Production passaram em HTTPS: banco pronto, três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. Navegador confirmou autenticação após recarga. |
+| Inicialização | Espera acessível e login desabilitado durante verificação; AbortController de 15 segundos somente em `/auth/me`, descarte de resposta obsoleta e proteção por geração. Logout pendente tratado em segundo plano, com login aguardando a conclusão necessária. Testes aprovados; restauração real confirmada na revisão publicada. |
+| Gestão publicada | Gate HTTPS passou com três logins: criação/leitura/edição de plano, matrícula/leitura de alunos, acesso por papel, relatórios, filtros civis de datas e arquivamento lógico. Fluxos usaram a API publicada. |
+| Presença publicada | Registro próprio, autoria, duplicidade, bloqueio de outro aluno, restrições de cancelamento e cancelamento administrativo com motivo/ator/data passaram. Cancelamento não permite nova presença duplicada na mesma data. |
+| Segurança | Papel/atividade consultados no banco, cadastro somente por administrador, CSRF por origem exata, API no-store e quotas HMAC compartilhadas. CSP restringe scripts à mesma origem; estilos inline legados continuam permitidos. Logout offline impede restauração automática. Owner não foi enviado à Vercel. |
+| Exercícios | Importação real wger: 919 avaliados, 795 incorporados, 124 ignorados, dez páginas. Identidade externa, licenças e autoria individuais; três exercícios locais preservados. Catálogo descritivo não comprova prescrição. |
+| Treinos | Trabalho/aquecimento, carga/reps/RIR, snapshots e UUIDs idempotentes. Revisão de ficha preserva IDs/histórico anterior. Rejeições preservam séries localmente sem fabricar sincronização/conclusão remota. No navegador publicado, treino finalizado reapareceu com 20 kg × 8, RIR 2 e 160 kg·reps. |
+| Ciência | Grupos genéricos como Múltiplos, Outros, Não informado, Cardio e Funcional ficam como não classificados, preservando snapshot e volume. Fundamentos atualizados para os recursos existentes. Fontes, população e hipóteses explícitas; auditoria em [AUDITORIA_CIENTIFICA_FINAL.md](AUDITORIA_CIENTIFICA_FINAL.md). |
+| Nutrição publicada | Gate HTTPS: consentimento obrigatório, persistência JSONB, isolamento por conta e exclusão de fixture própria. Mifflin, 80 kg/180 cm/30 anos/homem/fator 1,5: repouso 1780 kcal, estimativa 2670 kcal, proteína 128 g, carboidratos 372,6 g, gordura 74,2 g. Navegador salvou/restaurou cenário fictício; restauração exige nova confirmação de escopo. Captura 20. |
+| Mobile/PWA | Viewport emulada 375 × 812 sem overflow horizontal, captura 17. Localmente, série 27 kg × 8 permaneceu pendente offline e sincronizou uma vez, 216 kg·reps. Recarga offline apresenta fallback público. Telefone físico/instalação não testados. |
+| Pagamentos | Lançamento manual recebido tem UUID único, hash da intenção e ator, consulta de reconciliação e proteção de sessão/abas. HTTPS após deploy confirmou duas renovações distintas de sete dias, replay sem terceiro registro/renovação, conflito 409 e sessão divergente 403. Não cobra nem valida Pix/cartão. Checkout Pro sandbox tem HMAC, ownership, confirmação canônica e conciliação idempotente com provedor simulado; nenhuma cobrança ao Mercado Pago. |
+| IA | Corpus curado, chave somente no servidor, resposta estruturada validada, sem envio de medidas corporais. Provedor simulado nos testes; chave e teste reais pendentes. |
+| Datas | `America/Sao_Paulo`, filtros validados, datas civis DATE e instantes UTC agrupados no calendário brasileiro. TIME legado preservado. Gates publicados de presença e financeiro passaram. |
+| Landing | Laranja/navy e Barlow, fotografia ilustrativa nova, autoria e estado real. Build TypeScript e audit aprovados. Gate público e navegador confirmaram a implantação atual. |
+| Limpeza | Repositório de pagamentos sem imports removido após busca global. Documentação corrente consolidada; migrations aplicadas preservadas. Papel administrativo não utilizado `fitflow_runtime` removido pelo MCP com autorização explícita; restaram `fitflow_app` e `fitflow_owner`. |
+
+O gate `hosted-management.integration.cjs` criou e removeu exclusivamente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins identificados por UUID. O owner preparou credenciais sintéticas e limpou seus IDs; fluxos funcionais usaram HTTPS com os papéis da API. Quotas reais e contas demonstrativas foram preservadas.
+
+**Banco e credenciais novos recuperaram o login publicado.** Diagnóstico antigo: Aiven `ENOTFOUND` e login HTTP 500. Credenciais do GitHub não foram restauradas; dados antigos não foram recuperados.
 
 ## Reproduzir os testes
 
-No diretório `server`, com o banco demonstrativo em execução:
+No diretório `server`, com MariaDB demonstrativo em execução:
 
 ```powershell
-npm test
+node scripts/with-local-env.cjs node --test tests/*.test.cjs
 npm audit
 node scripts/with-local-env.cjs node scripts/smoke-local.cjs
-node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 node scripts/with-local-env.cjs node tests/checkout-local.integration.cjs
 node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-O smoke/sessões mantém registros demonstrativos para inspeção. Fixtures temporárias dos testes financeiros, quotas e datas são removidas pelos próprios testes. Não execute em produção. Os resultados devem ser novamente conferidos após mudanças relevantes.
+Suíte integral da revisão `24e77b4`: **233 aprovados, zero falhas e zero ignorados**. Revisão final focada: 26/26 aprovados. Gate manual passou em MariaDB e PostgreSQL nativos; core PostgreSQL passou novamente na branch Neon isolada, incluindo replay, ator divergente 409, consulta não autorizada 404 e a 11ª CHECK. No Windows, chamar `npm` dentro desse wrapper falha porque o executável é `npm.cmd`; a receita validada chama `node --test` diretamente. Smoke/sessões preservam histórico demonstrativo; financeiro/quotas/datas removem somente suas fixtures. Não use produção nesses gates locais.
 
-Na landing: `npm run build` e `npm audit`. `lint` atualmente verifica tipos; não representa análise ESLint.
+Três gates PostgreSQL passaram no cluster nativo isolado 17.10 (`127.0.0.1:5448/fitflow_pg_test`) e na branch Neon de verificação, pelo pooler com TLS. Cobertura: três perfis, bloqueio, bootstrap sem reset, quota compartilhada, idempotência JSONB, concorrência de séries/conclusão, DATE/TIME, duas renovações, conciliação única com provedor simulado e constraints. Core atualizado validou onze CHECKs. Fixtures próprias removidas. [Comandos e destinos](DESENVOLVIMENTO.md).
 
-Verificação integrada de 08/10: suíte com wrapper MariaDB local **195 testes aprovados, zero falhas, zero ignorados**, executada com `node scripts/with-local-env.cjs npm test`, incluindo concorrência real, retries PostgreSQL e guards de destino/origem. Smoke HTTP, financeiro, quotas compartilhadas e DATE/TIME também passaram no banco local. Login de admin/instrutor/aluno, salvamento de revisão, catálogo, relatórios, evolução e navegação para registros avulsos foram conferidos no navegador. Credenciais de provedores não foram simuladas como integração real. Runtime e CI estão fixados em Node 24.x.
+Gates adicionais, somente com arquivos privados ignorados e destinos guardados:
 
-PostgreSQL: baseline aplicada ao cluster dedicado `127.0.0.1:5448/fitflow_pg_test`, com binários 17.10 já instalados, e às branches principal e de verificação do Neon. Os três gates reais passaram também na branch remota isolada usando pooler e TLS: login HTTP dos três perfis, cookie Secure/HttpOnly, autorização e bloqueio, bootstrap sem reset, quota compartilhada com 20 incrementos concorrentes, sessões idempotentes após normalização JSONB, concorrência de séries/finalização, datas civis, duas renovações concorrentes, conciliação única com provedor simulado e rejeição das dez CHECK constraints. Os gates usaram dados sintéticos e removeram suas fixtures. O teste HTTP envia cookie manualmente; não comprova o navegador HTTPS nem o domínio publicado. A versão nativa é usada somente para testes; o recurso cloud confirmou PostgreSQL 17, sem comprovação aqui da versão minor do servidor.
+```powershell
+node scripts/check-neon-runtime.cjs
+node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
+# Exceção explícita: fixtures UUID no FitFlow HTTPS; três logins por execução.
+node tests/hosted-management.integration.cjs --execute-hosted-fixtures
+```
 
-O papel runtime `fitflow_app` teve os atributos administrativos conferidos como ausentes. Logs e séries recebem `SELECT`/`INSERT`, sem `UPDATE`/`DELETE`. O teste real `check-neon-runtime.cjs` aprovou leitura/inserção/atualização em transação revertida e confirmou SQLSTATE `42501` para DDL, atualização de séries e exclusão de logs, pagamentos e usuários. Credenciais owner, verificação e runtime ficam em arquivos privados ignorados, separados; somente runtime foi enviado à Vercel.
+Executar o gate de gestão uma vez por verificação necessária, sem repetir logins para contornar quotas. Recusa destinos arbitrários, confirma ausência de colisões antes de escrever e remove somente dados próprios. Runtime usa transações revertidas e comprovou recusas SQLSTATE `42501`. Segredos owner/verificação/runtime separados; somente runtime na Vercel. O guard de arquivos privados cobre candidatos atuais e segredos locais conhecidos, sem afirmar auditoria de todo o histórico Git ou de segredos desconhecidos.
 
-O papel API administrativo não utilizado `fitflow_runtime` foi removido pelo MCP Neon após autorização explícita do usuário. A listagem da branch principal confirmou apenas `fitflow_app` e `fitflow_owner`. `check-private-files.cjs` passou para 256 arquivos candidatos e segredos locais conhecidos; não examinou todo o histórico Git nem segredos desconhecidos.
-
-[Preview validado](https://fit-flow-aii93048s-eznrbs-projects.vercel.app): o script `check-hosted-fitflow.cjs` passou via HTTPS nos três perfis, com autorização, catálogo, painel, CSRF e logout. A implantação tem proteção de acesso. O gate confere respostas e atributos dos cookies; não substitui os testes finais no navegador/telefone. Credenciais demonstrativas remotas novas estão em `server/.demo-credentials.remote.local.json`; não há histórico de QA copiado do banco local.
-
-[Production validada](https://fit-flow-indol.vercel.app): deployment `dpl_6EYbxgErP4HK7QBtWevwkgMn2j5V`, READY, função `gru1`, Node 24.x e pacote de 9,68 MB. O mesmo gate HTTPS passou. No navegador, login do aluno usou cookie HttpOnly real; recarga manteve autenticação. A sessão demonstrativa com nota explícita de teste acadêmico recebeu uma série de trabalho 20 kg × 8, RIR 2; foi finalizada e reapareceu após recarga/reabertura/expansão do histórico, com uma série e 160 kg·reps. A captura 16 registra essa verificação.
-
-O alias canônico agora aponta ao deployment READY `dpl_5keW3LmJW9PX16PzaNnUs4rngMD1`, revisão `dad6d9c`, com o ajuste de texto plural. Na revisão atual, o navegador também restaurou a autenticação após recarga e mostrou a sessão já finalizada, a série 20 kg × 8, RIR 2 e o volume 160 kg·reps; captura `evidence/19-vercel-revisao-atual-historico.png`. As capturas 16–18 preservam as verificações anteriores.
-
-**Login recuperado no domínio final com banco e credenciais novos.** Credenciais antigas do GitHub não foram restauradas; registros do Aiven não foram recuperados. A prova obtida abrange os fluxos registrados, sem declarar toda a entrega concluída.
-
-[Landing publicada](https://fitflow-lp.vercel.app): deployment `dpl_GgjuMMHUXcdYXLL3ZfjWHAUTVzc9`, READY. Gate público sem bypass confirmou HTML, JavaScript, CSS e imagem hero com HTTP 200, além do CTA para `https://fit-flow-indol.vercel.app`. O navegador confirmou a imagem nova e a composição publicada.
-
-GitHub: aplicativo commit `dad6d9c` em `codex/science-ux-foundation`, [PR draft #1](https://github.com/EznRB/FitFlow/pull/1); landing commit `c6b43ba` em `codex/landing-improvements`, [PR draft #1](https://github.com/EznRB/fitflow-LP/pull/1). Ambos foram enviados e anexados à tarefa. Revisão e merge permanecem pendentes; nenhum merge à branch principal foi realizado.
-
-[CI GitHub — FitFlow verification #12](https://github.com/EznRB/FitFlow/actions/runs/37873364828), ID `37873364828`, concluída com sucesso para `dad6d9c`. Após remover o papel não utilizado, o teste runtime passou novamente; no domínio final, health retornou HTTP 200 com banco pronto e `js/sessoes` retornou 200 com o texto atualizado. Essas verificações específicas não representam repetição de toda a suíte ou do fluxo de navegador.
+Na landing: `npm run build` e `npm audit`; `lint` verifica tipos, sem representar ESLint.
 
 ## Pendências obrigatórias
 
-1. **Demais fluxos publicados:** login e persistência essenciais passaram em Production; ampliar a verificação aos fluxos de gestão, nutrição e reconexão no domínio final. Diagnóstico antigo Aiven `ENOTFOUND`/login 500 preservado; dados demonstrativos novos não recuperam registros antigos. Ver [pesquisa e critérios](BANCO_REMOTO_VERCEL.md).
-2. **Mercado Pago de teste:** configurar vendedor/comprador sandbox, token, segredo de webhook e URL HTTPS. Confirmar/rejeitar eventos reais de teste antes de declarar integração operacional. Nenhuma credencial deve ser enviada no chat ou ao frontend.
-3. **IA:** configurar chave e quota/limite de gasto no provedor e realizar teste real de explicação. Validação de IDs de fontes não comprova a veracidade de cada frase gerada.
-4. **Telefone físico:** testar instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Tela responsiva e testes de fila no navegador não substituem esse teste.
-5. **Validação final e revisão:** concluir os demais fluxos de publicação, conferir headers e reconexão e revisar visualmente as áreas de gestão. Modais e revisão visual por papel passaram localmente; aluno/persistência e landing foram conferidos no navegador publicado. Código já enviado aos PRs draft; revisão e merge à branch principal estão pendentes.
+1. **Mercado Pago sandbox:** vendedor/comprador de teste, token, segredo de webhook e URL HTTPS; confirmar/rejeitar eventos reais de teste. Segredos não vão ao chat/frontend.
+2. **IA real:** chave, quota, limite de gasto e explicação real com referências. IDs válidos de fontes não comprovam cada frase gerada.
+3. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate.
+4. **Revisão final:** áreas de gestão publicadas, reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal.
 
-## Roteiro de apresentação local
+## Roteiro de apresentação
 
-1. Abrir landing em `http://127.0.0.1:3108/` e seguir ao app em `http://127.0.0.1:3107/`.
-2. Usar as contas demonstrativas do arquivo privado `server/.demo-credentials.local.json`.
-3. Aluno: consultar ficha, iniciar sessão, registrar carga/reps/RIR, sincronizar e consultar evolução. Dados de teste estão identificados como demonstração.
-4. Nutrição: confirmar escopo adulto saudável, informar parâmetros, conferir fórmula/unidades, salvar somente se desejar e restaurar com nova confirmação.
-5. Instrutor: criar/editar ficha própria sem dose automática do catálogo. Administrador: alunos/planos/presença/relatórios.
-6. Pagamentos e IA sem credenciais mostram sua indisponibilidade; não apresentar essa condição como pagamento aprovado ou geração real.
+1. Abrir a [landing pública](https://fitflow-lp.vercel.app) e seguir ao [aplicativo](https://fit-flow-indol.vercel.app). Alternativa local: portas 3108 e 3107.
+2. Contas do arquivo privado correspondente: `server/.demo-credentials.remote.local.json` ou `.demo-credentials.local.json`.
+3. Aluno: ficha, sessão, carga/reps/RIR, sincronização e evolução. Registros demonstrativos são fictícios e identificados.
+4. Nutrição: confirmar escopo adulto saudável, conferir equação/unidades e salvar somente por opção. Restaurar exige nova confirmação.
+5. Instrutor: criar/revisar ficha própria. Administrador: alunos, planos, presença auditável e relatórios.
+6. Sem credenciais externas, IA e checkout mostram indisponibilidade; não apresentar geração ou pagamento efetivos.
 
 ## Capturas
 
-- `evidence/09-serie-mobile-pendente.png`: registro no dispositivo, antes da reconexão.
+- `evidence/09-serie-mobile-pendente.png`: série offline antes da reconexão.
 - `evidence/10-pwa-fallback-mobile.png`: abertura offline pública.
-- `evidence/11-painel-aluno-refinado.png`: painel do aluno em tela de 375 pixels após refinamento.
-- `evidence/12-landing-refinada-final.png`: landing em desktop com a nova fotografia ilustrativa.
-- `evidence/13-fichas-revisao-preservada.png`: ficha revisada e anterior arquivada, após gravação no navegador.
-- `evidence/14-logout-sem-servidor.png`: aviso explícito de saída pendente, sem restauração automática.
-- `evidence/15-sessao-arquivada-preservada.png`: série rejeitada preservada no dispositivo, com nova sessão disponível e sem volume sincronizado fabricado.
-- `evidence/16-vercel-neon-sessao-persistida.png`: histórico remoto expandido após recarga, com uma série demonstrativa 20 kg × 8, RIR 2, nota de teste e 160 kg·reps.
-- `evidence/17-vercel-mobile-375.png`: aplicativo publicado em viewport emulada 375 × 812, sem overflow horizontal; não comprova teste em telefone físico.
-- `evidence/18-landing-vercel-publicada.png`: hero e composição da landing pública implantada na Vercel.
-- Capturas anteriores registram fases intermediárias; não comprovam automaticamente a interface final.
+- `evidence/11-painel-aluno-refinado.png`: painel em 375 pixels.
+- `evidence/12-landing-refinada-final.png`: landing com fotografia nova.
+- `evidence/13-fichas-revisao-preservada.png`: revisão e ficha anterior arquivada.
+- `evidence/14-logout-sem-servidor.png`: saída pendente sem restauração automática.
+- `evidence/15-sessao-arquivada-preservada.png`: série rejeitada preservada localmente.
+- `evidence/16-vercel-neon-sessao-persistida.png`: treino remoto 20 kg × 8, RIR 2, 160 kg·reps.
+- `evidence/17-vercel-mobile-375.png`: viewport emulada, sem comprovar telefone físico.
+- `evidence/18-landing-vercel-publicada.png`: composição pública anterior.
+- `evidence/19-vercel-revisao-atual-historico.png`: histórico na revisão `dad6d9c`.
+- `evidence/20-nutricao-vercel-restaurada.png`: cálculo do cenário fictício restaurado no domínio final.
+- `evidence/21-fundamentos-vercel-atualizados.png`: fundamentos corrigidos na revisão `65fb32c`.
+- `evidence/22-landing-estado-publicado.png`: recarga e seção O projeto confirmando arquitetura Neon e estado publicado na landing atual; fotografia registrada na captura 18.
+- `evidence/23-recebimento-manual-vercel.png`: modal publicado, data civil brasileira e orientação de que registro manual não cobra nem verifica Pix/cartão; captura sem submissão do formulário.
+
+Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.

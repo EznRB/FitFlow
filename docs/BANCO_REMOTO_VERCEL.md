@@ -1,6 +1,6 @@
 # Banco remoto do FitFlow na Vercel
 
-Pesquisa e decisão: **08/10/2026**. Este documento registra a implantação, as verificações obtidas e os critérios restantes. Uma migração preparada ou um teste local não comprova o funcionamento publicado.
+Pesquisa e decisão: **08/10/2026**; estado atualizado em **09/10/2026**. Este documento registra a implantação, as verificações obtidas e os critérios restantes. Uma migração preparada ou um teste local não comprova o funcionamento publicado.
 
 ## Decisão
 
@@ -10,7 +10,7 @@ A escolha combina Postgres com transações e constraints, pooling para funçõe
 
 O código do engine Neon é Apache 2.0. **Open source não significa hospedagem sem limites**: o serviço Free tem quotas e condições próprias; hospedar o engine por conta própria exigiria outra infraestrutura. Não se instala um servidor de banco dentro de uma função Vercel. [Repositório e licença](https://github.com/neondatabase/neon), [preços do serviço](https://neon.com/pricing).
 
-## Estado verificado em 08/10/2026
+## Estado verificado em 09/10/2026
 
 - Vercel CLI **63.1.0** autenticado como `eznrb`, com destino `eznrbs-projects`; checkout vinculado ao projeto existente `fit-flow`.
 - O diagnóstico da publicação antiga identificou MySQL Aiven com host `ENOTFOUND` e login HTTP 500. A resposta 200 do health check antigo não verificava a conexão com o banco. A publicação foi substituída pela implantação Neon e o login no domínio final foi validado.
@@ -20,13 +20,15 @@ O código do engine Neon é Apache 2.0. **Open source não significa hospedagem 
 - Criado o papel SQL **`fitflow_app`**, sem `CREATEDB`, `CREATEROLE`, `BYPASSRLS` ou associação a `neon_superuser`. As permissões estão versionadas em `server/prisma/postgresql/runtime-privileges.sql`; logs e séries recebem somente `SELECT`/`INSERT`. O teste real `check-neon-runtime.cjs` passou: leitura, inserção e atualização em transação revertida; DDL, atualização de séries e exclusão de logs, pagamentos e usuários foram negados com SQLSTATE `42501`.
 - Arquivos privados ignorados: `server/.env.remote.local` para administração, `server/.env.remote.verify.local` para verificação e `server/.env.remote.runtime.local` para execução. Preview e Production receberam somente a credencial runtime, com variáveis sensíveis do tipo Secret; JWT de produção é independente do Preview. Valores não são publicados neste documento.
 - [Preview HTTPS](https://fit-flow-aii93048s-eznrbs-projects.vercel.app) em estado READY, função em `gru1`, Node **24.x** e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. O gate HTTPS passou para health com banco pronto, login/me dos três perfis, cookie Secure/HttpOnly/SameSite=Lax, autorização, catálogo, painel do aluno, CSRF e logout. O Preview tem proteção de acesso; o gate usa autenticação autorizada sem divulgar token.
-- [Production](https://fit-flow-indol.vercel.app): gate HTTPS e persistência no navegador passaram inicialmente no deployment `dpl_6EYbxgErP4HK7QBtWevwkgMn2j5V`, Node 24.x, função `gru1`, pacote de função 9,68 MB. O alias final agora aponta ao deployment READY `dpl_5keW3LmJW9PX16PzaNnUs4rngMD1`, revisão `dad6d9c`, que inclui o ajuste de texto plural. Código enviado à branch `codex/science-ux-foundation`, com [PR draft do aplicativo](https://github.com/EznRB/FitFlow/pull/1); não houve merge à branch principal.
+- [Production](https://fit-flow-indol.vercel.app): alias final aponta ao deployment READY `dpl_9TiPE1WdMZaCyhy1WtsX6H93rPiy`, revisão `24e77b4`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no Linux. Gestão HTTPS passou após o deploy, incluindo replay manual sem duplicação, conflito 409 e sessão divergente 403. Navegador restaurou conta admin e confirmou modal com data brasileira correta e distinção de cobrança, captura 23; formulário não submetido. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/37991180996) aprovada. [PR draft](https://github.com/EznRB/FitFlow/pull/1); nenhum merge.
 - No navegador do domínio final, aluno entrou com cookie HttpOnly real e permaneceu autenticado após recarga. Uma sessão demonstrativa, identificada como teste acadêmico de persistência, recebeu uma série de trabalho **20 kg × 8, RIR 2**, foi finalizada e reapareceu após recarga/reabertura do histórico, com **uma série e 160 kg·reps**.
+- Gate HTTPS de gestão repetido após `24e77b4`: três logins, CRUD de planos/matrículas, permissões, nutrição com consentimento/JSONB/isolamento/exclusão própria, presença com duplicidade/ownership/cancelamento auditado, duas renovações manuais concorrentes de sete dias e replay sem terceiro registro. Fixtures UUID próprias removidas: quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins. Quotas reais preservadas. Navegador salvou/restaurou nutrição fictícia em revisão anterior, exigindo nova confirmação de escopo; captura 20.
+- Migration aditiva `20261009_manual_payment_idempotency` aplicada em ambas as branches Neon e nos bancos nativos, preservando baseline e registros anteriores. UUID único, hash da intenção e ator permitem replay sem nova renovação; CHECK garante par completo e ator. Totais: cinco migrations MySQL, duas PostgreSQL e onze CHECKs PostgreSQL. Gates manuais nativos e core da branch Neon de verificação passaram.
 - Um papel criado pela API, `fitflow_runtime`, revelou permissões administrativas e não foi usado no deploy. **Foi removido pelo MCP Neon após autorização explícita do usuário.** A listagem da branch principal confirmou somente `fitflow_app` e `fitflow_owner`; não há pendência de remoção desse papel.
 - A tentativa pela integração Marketplace ainda retornou `integration_terms_acceptance_required`. O acesso direto autorizado pelo MCP permitiu criar o recurso sem depender desse fluxo; **não é necessário repetir o aceite para continuar a configuração atual**.
 - Instalações Supabase/Stripe de outros projetos permanecem separadas.
 
-**O login no domínio final foi recuperado e a persistência de treino foi verificada com o novo banco Neon.** Usar as credenciais demonstrativas novas do arquivo privado; as antigas do GitHub não foram restauradas. Isso não recupera os dados Aiven. A meta completa continua ativa: IA, pagamentos de teste reais, telefone físico e demais fluxos ainda têm gates próprios. Credenciais não devem ser enviadas no chat.
+**Login, treino e nutrição persistidos foram verificados no domínio final com Neon.** Usar credenciais novas do arquivo privado; as antigas do GitHub e os dados Aiven não foram recuperados. Suíte integral `24e77b4`: 233 aprovados, zero falhas/ignorados; revisão final focada 26/26. Lançamento manual idempotente publicado e validado em HTTPS registra recebimento informado pelo administrador; não cobra nem valida Pix/cartão. IA, provedor sandbox, telefone físico, reconexão publicada e revisão final têm gates pendentes. Credenciais não devem ser enviadas no chat.
 
 ## Comparação atual dos fornecedores
 
@@ -96,9 +98,9 @@ Antes da importação, identificar a origem acessível, exportar uma cópia e re
 - **Unicidade:** conferir email normalizado, CPF, aluno/data, identidade de catálogo, UUIDs e identificadores do provedor. A collation MySQL e a comparação Postgres não têm automaticamente a mesma semântica de maiúsculas/minúsculas.
 - **Histórico:** preservar fichas arquivadas, snapshots, séries, pagamentos, cancelamentos e vínculos. Dados antigos não devem desaparecer porque não fazem mais parte da ficha ativa.
 
-### Dez CHECK constraints obrigatórias
+### Onze CHECK constraints obrigatórias
 
-Confirmar os dez contratos abaixo no catálogo Postgres e testar que valores inválidos são rejeitados pelo banco, inclusive fora da API:
+Confirmar os onze contratos abaixo no catálogo Postgres e testar que valores inválidos são rejeitados pelo banco, inclusive fora da API:
 
 | Tabela | Constraint / contrato |
 |---|---|
@@ -112,6 +114,7 @@ Confirmar os dez contratos abaixo no catálogo Postgres e testar que valores inv
 | `payment_intents` | `amount` maior que zero. |
 | `payment_intents` | `duration_days` entre 1 e 3650. |
 | `payment_intents` | `currency` igual a `BRL`. |
+| `payments` | `manual_request_id` e `manual_request_hash` ambos nulos (legado) ou ambos preenchidos com `registered_by` presente. |
 
 ### SQL e concorrência
 
@@ -130,15 +133,15 @@ Uma conta autorizada permite automatizar criação, branches, schema, consultas 
 ## Etapas e critérios de liberação
 
 1. **Autorizar o acesso:** concluído pelo MCP oficial autenticado; recurso dedicado FitFlow, plano Free e região São Paulo confirmados. Neon Auth não foi configurado. A integração Marketplace é opcional para o caminho atual.
-2. **Preparar Postgres:** gerar/validar baseline própria e SQL portado; revisar dez CHECKs, FKs, índices, unicidade e permissões. Registrar que a migração ainda não foi aplicada enquanto isso for verdadeiro.
-3. **Provisionar e conectar:** testar DNS, TLS, conexão pooled e direta sem expor segredo; confirmar região efetiva e limites na conta. Associar somente o recurso FitFlow à aplicação correta.
-4. **Aplicar em ambiente isolado:** executar a baseline com `DIRECT_URL`, importar a origem explicitamente escolhida e conferir IDs, sequences, hashes, datas, JSONB e contagens. Guardar exportação verificável da origem.
-5. **Executar testes de banco real:** testar transações concorrentes de séries/conclusão, renovação manual e conciliação idempotente, quotas via duas instâncias, dup/cancelamento de presença e datas na virada de dia/mês. Usar fixtures próprias ou branch isolada; nunca limpar tabelas inteiras da produção.
-6. **Configurar Vercel:** ambiente de Preview/Production correto, runtime Node em região compatível, URLs e JWT seguros, CORS por origem exata e cookie HTTPS. Confirmar que o build gera Client para o schema Postgres correto.
-7. **Validar Preview publicado:** login de admin/instrutor/aluno, bloqueio de conta inativa, ownership/IDOR, CRUD por papel, relatórios, nutrição optativa e persistência de sessão. Testar cookie, CSRF, logout e reconexão da fila usando a implantação real.
+2. **Preparar Postgres:** baseline e SQL portado concluídos; onze CHECKs, FKs, índices, unicidade e permissões conferidos. Migrations futuras precisam de revisão independente, sem editar baseline aplicada.
+3. **Provisionar e conectar:** concluído com DNS/TLS, pooled/direta, região e plano conferidos. Somente recurso FitFlow associado ao aplicativo.
+4. **Aplicar e preparar dados:** baseline nas duas branches; demonstração nova sem importação do Aiven indisponível. IDs, hashes, datas, JSONB e contagens verificados por gates e seed restrito.
+5. **Executar testes de banco real:** gates aprovados para séries/conclusão, renovação, conciliação com provedor simulado, quotas, presença e datas. Fixtures próprias/branch isolada; nenhuma limpeza de tabela inteira.
+6. **Configurar Vercel:** concluído em Preview/Production, Node 24.x/`gru1`, runtime SQL limitado, JWT independente, CORS exato/cookie HTTPS e Client PostgreSQL gerado no Linux.
+7. **Validar publicação:** Preview aprovado em login/papéis/catálogo/painel/CSRF/logout. Production também passou em gestão, nutrição, presença e persistência. Reconexão da fila no domínio publicado permanece pendente.
 8. **Validar disponibilidade:** primeira conexão após suspensão do compute, erro de banco tratado sem detalhes internos, nova chamada em instância aquecida e contagem de conexões. Registrar resultados e duração medida, sem prometer ausência de latência.
-9. **Publicar e conferir Production:** aplicar somente migrações revisadas, repetir login/fluxos críticos no domínio final e verificar que novas séries e pagamentos persistem após outro login/dispositivo. Pagamento e IA reais ainda dependem de suas próprias credenciais e testes.
-10. **Registrar e acompanhar:** guardar evidências sem dados sensíveis, versão implantada, região, migrations aplicadas, quotas e exportação. Só declarar login publicado recuperado após essa prova. Manter o caminho de recuperação compatível com o mesmo schema Postgres; o host Aiven indisponível não é um rollback funcional.
+9. **Publicar e conferir Production:** `24e77b4` READY, gestão/nutrição/presença/replay manual aprovados após deploy; navegador restaurou admin e confirmou modal. Somente migrations revisadas devem ser aplicadas. Provedor sandbox/IA reais e telefone físico continuam pendentes.
+10. **Registrar e acompanhar:** evidências e versões em STATUS_ENTREGA. Login recuperado com prova publicada; manter recuperação compatível com o mesmo schema Postgres. Aiven indisponível não é rollback funcional.
 
 ## Limites operacionais do Free
 
@@ -146,7 +149,7 @@ O serviço prevê suspensão do compute e ativação por conexão, além de limi
 
 ## Implementação e gates de banco real
 
-Schema e baseline próprios em `server/prisma/postgresql/`, com 14 models, 4 enums e dez CHECKs. `prisma.config.ts` seleciona schema/migrations pelo protocolo e provider; `DIRECT_URL` aceita o alias `DATABASE_URL_UNPOOLED` da integração. O runtime usa Client gerado separado. CLI e Client fixados em 6.19.3. O bootstrap aceita PostgreSQL e continua exigindo confirmação de host/nome e arquivo privado.
+Schema e migrations próprios em `server/prisma/postgresql/`, com 14 models, 4 enums e onze CHECKs. Baseline original com dez CHECKs preservada; a migration aditiva de 09/10 introduziu a constraint de recebimento manual. `prisma.config.ts` seleciona schema/migrations pelo protocolo e provider; `DIRECT_URL` aceita o alias `DATABASE_URL_UNPOOLED` da integração. Runtime usa Client gerado separado. CLI e Client 6.19.3. Bootstrap PostgreSQL exige confirmação de host/nome e arquivo privado.
 
 Busca por aluno mantém comparação sem diferenciação de caixa no Postgres. Quota portável mantém UPSERT atômico e relógio compartilhado. Comparação de JSON ignora ordem de chaves; conflitos PostgreSQL de serialização/deadlock reconhecidos com no máximo três tentativas da transação inteira. Falhas de SQL, permissão e CHECK não recebem retry indiscriminado.
 
@@ -176,7 +179,7 @@ node scripts/with-neon-verification-env.cjs node tests/quota-postgresql-local.in
 
 Apesar do nome histórico `local` dos testes, o wrapper e o guard compartilhado aceitam exclusivamente a branch Neon de verificação identificada, com hostname, projeto, banco e TLS conferidos. Recusam a branch principal e URLs arbitrárias. A URL de banco herdada pelo sistema operacional não deve ser usada.
 
-As verificações remotas cobriram JSONB e idempotência, concorrência de séries/conclusão, DATE/TIME/TIMESTAMPTZ, renovação e conciliação única com provedor simulado, dez CHECKs, bootstrap sem reset, três perfis, bloqueio de conta e quota compartilhada. Os testes HTTP de banco enviam cookie manualmente. Além deles, o teste runtime passou e o gate HTTPS confirmou respostas e atributos de cookie no Preview e em Production. O navegador confirmou login do aluno, manutenção da sessão após recarga e persistência de treino finalizado no domínio público. Ainda não foi testado em telefone físico.
+Verificações remotas cobriram JSONB/idempotência, concorrência de séries/conclusão, DATE/TIME/TIMESTAMPTZ, renovação, conciliação única com provedor simulado, onze CHECKs, bootstrap sem reset, perfis, bloqueio e quota compartilhada. Core atualizado passou na branch de verificação para replay manual, ator divergente 409 e consulta não autorizada 404. Testes HTTP de banco enviam cookie manualmente; gate HTTPS de gestão e navegador publicados complementam essa prova. Telefone físico não testado.
 
 No diretório `server`, os gates adicionais utilizam somente arquivos privados ignorados:
 
@@ -188,8 +191,8 @@ node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
 
 O teste runtime usa transações revertidas para suas operações sintéticas. O gate hospedado realiza login/logout e leituras com contas demonstrativas. `.vercelignore` exclui segredos, bancos nativos, testes e documentação do pacote de deploy.
 
-`server/scripts/check-private-files.cjs` passou ao conferir 256 arquivos candidatos contra os segredos locais conhecidos. Esse resultado não cobre todo o histórico Git nem segredos desconhecidos; não representa uma auditoria completa de vazamentos.
+`server/scripts/check-private-files.cjs` passou para os candidatos de publicação contra segredos locais conhecidos. Não cobre todo o histórico Git nem segredos desconhecidos; não representa auditoria completa de vazamentos.
 
-Migrations e administração usam o wrapper `with-neon-owner-env.cjs`, restrito ao projeto/branch principal conhecidos e ao papel `fitflow_owner`. Não usar essa credencial no runtime ou executar gates de fixtures pela conexão administrativa da produção.
+Migrations e administração usam `with-neon-owner-env.cjs`, restrito ao projeto/branch principal conhecidos e a `fitflow_owner`. Não usar owner no runtime. Gates PostgreSQL gerais recusam a produção. Existe somente a exceção explícita `node tests/hosted-management.integration.cjs --execute-hosted-fixtures`: constructor privado guardado, colisões verificadas antes da escrita, owner prepara/limpa UUIDs próprios e fluxos usam HTTPS; três logins, sem reset de quotas. Não permite destino arbitrário nem limpeza abrangente. [Receita e limites](DESENVOLVIMENTO.md).
 
-As evidências atuais estão em [STATUS_ENTREGA.md](STATUS_ENTREGA.md). Preview e login/persistência essenciais em Production foram validados. Dados antigos não foram recuperados; essa prova não encerra a meta completa de desenvolvimento.
+As evidências estão em [STATUS_ENTREGA.md](STATUS_ENTREGA.md). Preview e fluxos publicados registrados passaram; dados antigos não foram recuperados. A meta completa continua ativa.
