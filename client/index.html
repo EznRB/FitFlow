@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons (CDN) -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- Lucide Icons, versão local com licença em vendor/ -->
+  <script src="/vendor/lucide.js"></script>
 
   <!-- CSS -->
   <link rel="stylesheet" href="/css/variables.css">
@@ -22,7 +22,19 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/pages.css">
+  <!-- Novas telas preservam os tokens e corrigem o construtor em telas pequenas. -->
+  <link rel="stylesheet" href="/css/science.css">
   <link rel="stylesheet" href="/css/aluno.css">
+  <link rel="stylesheet" href="/css/aluno-refined.css">
+  <link rel="stylesheet" href="/css/dashboard-redesign.css">
+  <!-- Regras compartilhadas de acabamento mantêm a marca e a legibilidade. -->
+  <link rel="stylesheet" href="/css/professional.css">
+  <link rel="stylesheet" href="/css/sessoes.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/pwa.css">
+  <link rel="stylesheet" href="/css/planejamento-ciencia.css">
+  <link rel="stylesheet" href="/css/progressao.css">
 </head>
 <body>
   <!-- ============================================ -->
@@ -40,7 +52,7 @@
               <span class="login-logo-subtitle">Caraguá</span>
             </div>
           </div>
-          <p class="login-tagline">Sistema inteligente de gestão para<br>sua academia.</p>
+          <p class="login-tagline">Uma rotina mais organizada.<br>Dentro e fora do treino.</p>
           <div class="login-features">
             <div class="login-feature">
               <i data-lucide="users"></i>
@@ -69,9 +81,10 @@
         </div>
         
         <form id="login-form" class="login-form" autocomplete="on">
-          <h2>BEM-VINDO DE VOLTA</h2>
-          <p class="login-form-subtitle">Faça login para acessar o sistema</p>
+          <h2>Bem-vindo de volta.</h2>
+          <p class="login-form-subtitle">Entre na sua conta para acompanhar a academia e sua evolução.</p>
 
+          <label class="login-field-label" for="login-email">E-mail</label>
           <div class="form-group input-with-icon">
             <i data-lucide="mail" class="input-icon"></i>
             <input 
@@ -84,6 +97,7 @@
             >
           </div>
 
+          <label class="login-field-label" for="login-password">Senha</label>
           <div class="form-group input-with-icon">
             <i data-lucide="lock" class="input-icon"></i>
             <input 
@@ -100,13 +114,14 @@
             </button>
           </div>
 
-          <div id="login-error" class="alert alert-error" style="display: none;"></div>
+          <div id="login-error" class="alert alert-error" style="display: none;" role="alert"></div>
 
           <button type="submit" class="btn btn-primary btn-full btn-login-glow" id="btn-login">
-            <span>→] Entrar</span>
+            <span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i>
           </button>
           
-          <a href="#" class="forgot-password-link">Esqueceu a senha?</a>
+          <p class="login-help">Precisa recuperar seu acesso? Fale com a administração da academia.</p>
+          <a class="login-lab-link" href="/laboratorio.html">Consultar nutrição e fundamentos sem entrar <span aria-hidden="true">↗</span></a>
         </form>
 
         <p class="login-footer">
@@ -190,7 +205,7 @@
   <!-- MODAL GENÉRICO -->
   <!-- ============================================ -->
   <div id="modal-overlay" class="modal-overlay" style="display: none;">
-    <div class="modal" id="modal">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-header">
         <h3 id="modal-title">Título</h3>
         <button class="btn-icon modal-close" id="btn-modal-close" aria-label="Fechar modal">
@@ -209,9 +224,11 @@
   <!-- ============================================ -->
   <!-- SCRIPTS -->
   <!-- ============================================ -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="/vendor/chart.js"></script>
+  <script src="/vendor/sortable.js"></script>
   <script src="/js/api.js"></script>
+  <!-- Saída de texto livre é escapada antes de entrar em templates de HTML. -->
+  <script src="/js/security.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/components/toast.js"></script>
   <script src="/js/components/modal.js"></script>
@@ -224,7 +241,17 @@
   <script src="/js/pagamentos.js"></script>
   <script src="/js/checkins.js"></script>
   <script src="/js/aluno-painel.js"></script>
+  <script src="/js/mercado-pago-checkout.js"></script>
   <script src="/js/relatorios.js"></script>
+  <!-- Métodos científicos são carregados antes da navegação principal. -->
+  <script src="/js/science.js"></script>
+  <script src="/js/planejamento-ciencia.js"></script>
+  <script src="/js/evidencias.js"></script>
+  <script src="/js/nutricao.js"></script>
+  <script src="/js/training-store.js"></script>
+  <script src="/js/sessoes.js"></script>
+  <script src="/js/progressao.js"></script>
+  <script src="/js/pwa.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

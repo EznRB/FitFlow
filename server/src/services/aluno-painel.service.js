@@ -21,9 +21,15 @@
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const businessRules = require('../utils/businessRules');
-const pagamentosService = require('./pagamentos.service');
+const { brazilDate, positiveInteger } = require('../utils/civil-date');
 
 class AlunoPainelService {
+  constructor({ db = prisma, now = () => new Date() } = {}) { this.db = db; this.now = now; }
+
+  _monthRange() {
+    const today = brazilDate(this.now());
+    return { gte: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)), lt: new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1)) };
+  }
 
   /**
    * Busca o registro Student vinculado ao userId do JWT.
@@ -33,7 +39,7 @@ class AlunoPainelService {
    * @throws {AppError} 404 se não encontrar perfil de aluno
    */
   async _getStudentByUserId(userId) {
-    const aluno = await prisma.student.findUnique({
+    const aluno = await this.db.student.findUnique({
       where: { userId: parseInt(userId) },
       include: {
         user: { select: { id: true, name: true, email: true, role: true } },
@@ -70,7 +76,7 @@ class AlunoPainelService {
       (async () => {
         try {
           businessRules.validateWorkoutView(aluno);
-          return prisma.workout.findMany({
+          return this.db.workout.findMany({
             where: { studentId: aluno.id, active: true },
             include: {
               exercises: {
@@ -95,7 +101,7 @@ class AlunoPainelService {
       })(),
 
       // Últimos 10 check-ins
-      prisma.checkin.findMany({
+      this.db.checkin.findMany({
         where: { studentId: aluno.id, status: 'present' },
         orderBy: { checkinDate: 'desc' },
         take: 10,
@@ -103,7 +109,7 @@ class AlunoPainelService {
       }),
 
       // Último pagamento registrado
-      prisma.payment.findFirst({
+      this.db.payment.findFirst({
         where: { studentId: aluno.id },
         orderBy: { paymentDate: 'desc' },
         select: {
@@ -114,13 +120,11 @@ class AlunoPainelService {
       }),
 
       // Contagem de check-ins no mês atual
-      prisma.checkin.count({
+      this.db.checkin.count({
         where: {
           studentId: aluno.id,
           status: 'present',
-          checkinDate: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          },
+          checkinDate: this._monthRange(),
         },
       }),
     ]);
@@ -160,6 +164,7 @@ class AlunoPainelService {
           grupoMuscular: ex.muscleGroup,
           series: ex.sets,
           reps: ex.reps,
+          descansoSegundos: ex.restSeconds,
           cargaSugerida: ex.suggestedLoad,
           notas: ex.notes,
           ultimaCarga: ex.workoutLogs[0] ? {
@@ -173,7 +178,7 @@ class AlunoPainelService {
         recentes: checkinsRecentes.map(c => ({
           id: c.id,
           data: c.checkinDate,
-          hora: c.checkinTime,
+          hora: c.createdAt,
           criadoEm: c.createdAt,
         })),
         totalMes: statsCheckins,
@@ -192,7 +197,7 @@ class AlunoPainelService {
   async getMensalidade(userId) {
     const aluno = await this._getStudentByUserId(userId);
 
-    const pagamentos = await prisma.payment.findMany({
+    const pagamentos = await this.db.payment.findMany({
       where: { studentId: aluno.id },
       orderBy: { paymentDate: 'desc' },
       take: 5,
@@ -232,30 +237,32 @@ class AlunoPainelService {
    * @returns {Promise<object>} Check-ins e total
    */
   async getCheckins(userId, limit = 20, offset = 0) {
+    const pageLimit = positiveInteger(limit, 'Limite', 100);
+    if (!((typeof offset === 'number' && Number.isInteger(offset)) || (typeof offset === 'string' && /^(?:0|[1-9]\d*)$/.test(offset)))) throw new AppError('Offset inválido.', 400);
+    const pageOffset = Number(offset);
+    if (!Number.isSafeInteger(pageOffset) || pageOffset < 0 || pageOffset > 1000000) throw new AppError('Offset inválido.', 400);
     const aluno = await this._getStudentByUserId(userId);
 
     const [checkins, total] = await Promise.all([
-      prisma.checkin.findMany({
+      this.db.checkin.findMany({
         where: { studentId: aluno.id },
         orderBy: { checkinDate: 'desc' },
-        take: parseInt(limit),
-        skip: parseInt(offset),
+        take: pageLimit,
+        skip: pageOffset,
         select: {
           id: true, checkinDate: true, checkinTime: true,
           status: true, createdAt: true,
         },
       }),
-      prisma.checkin.count({ where: { studentId: aluno.id, status: 'present' } }),
+      this.db.checkin.count({ where: { studentId: aluno.id } }),
     ]);
 
     // Calcula o total no mês atual
-    const totalMes = await prisma.checkin.count({
+    const totalMes = await this.db.checkin.count({
       where: {
         studentId: aluno.id,
         status: 'present',
-        checkinDate: {
-          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        },
+        checkinDate: this._monthRange(),
       },
     });
 
@@ -263,7 +270,7 @@ class AlunoPainelService {
       checkins: checkins.map(c => ({
         id: c.id,
         data: c.checkinDate,
-        hora: c.checkinTime,
+        hora: c.createdAt,
         status: c.status,
         criadoEm: c.createdAt,
       })),
@@ -286,7 +293,7 @@ class AlunoPainelService {
     const where = { studentId: aluno.id };
     if (exerciseId) where.exerciseId = parseInt(exerciseId);
 
-    const logs = await prisma.workoutLog.findMany({
+    const logs = await this.db.workoutLog.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 100,
@@ -334,14 +341,14 @@ class AlunoPainelService {
    * @returns {object} Dados calculados da mensalidade
    */
   _calcularMensalidade(aluno, ultimoPagamento) {
-    const agora = new Date();
+    const agora = brazilDate(this.now());
     const vencimento = aluno.planEndDate ? new Date(aluno.planEndDate) : null;
 
     let diasRestantes = null;
     let statusVisual = 'indefinido'; // verde, amarelo, vermelho, indefinido
 
     if (vencimento) {
-      diasRestantes = Math.ceil((vencimento - agora) / (1000 * 60 * 60 * 24));
+      diasRestantes = Math.round((vencimento - agora) / 86400000);
 
       if (aluno.status === 'blocked') {
         statusVisual = 'bloqueado';
@@ -424,37 +431,9 @@ class AlunoPainelService {
     return alertas;
   }
 
-  /**
-   * Processa um pagamento realizado pelo próprio aluno via checkout.
-   * Como é um MVP, apenas delegamos para o PagamentosService.registrar
-   * simulando um sucesso após validações básicas.
-   *
-   * @param {number} userId - ID do user logado
-   * @param {object} data - { paymentMethod, planId }
-   */
-  async processarCheckout(userId, data) {
-    const { paymentMethod, planId } = data;
-    const aluno = await this._getStudentByUserId(userId);
 
-    if (!aluno.planId && !planId) {
-      throw new AppError('Você precisa selecionar um plano para realizar o pagamento.', 400);
-    }
-
-    const targetPlanId = planId ? parseInt(planId) : aluno.planId;
-    const plano = await prisma.plan.findUnique({ where: { id: targetPlanId } });
-    
-    if (!plano) throw new AppError('Plano não encontrado.', 404);
-
-    // Delega para o serviço central de pagamentos
-    // O registeredBy fica null pois foi um auto-pagamento
-    return pagamentosService.registrar({
-      studentId: aluno.id,
-      planId: targetPlanId,
-      amount: plano.price,
-      paymentMethod: paymentMethod || 'Simulado',
-      notes: 'Pagamento realizado pelo aluno via checkout SPA.'
-    }, null);
-  }
 }
 
 module.exports = new AlunoPainelService();
+
+module.exports.createAlunoPainelService = options => new AlunoPainelService(options);

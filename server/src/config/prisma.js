@@ -9,8 +9,9 @@
  *      const users = await prisma.user.findMany();
  */
 
-const { PrismaClient } = require('@prisma/client');
 const env = require('./env');
+const { getPrismaClientClass, getDatabaseProvider } = require('./databaseProvider');
+const PrismaClient = getPrismaClientClass();
 
 // Em desenvolvimento, evita criar múltiplas instâncias por hot-reload
 const globalForPrisma = globalThis;
@@ -18,7 +19,7 @@ const globalForPrisma = globalThis;
 const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: env.isDev ? ['query', 'error', 'warn'] : ['error'],
+    log: env.isDev && process.env.DEBUG_SQL === 'true' ? ['query', 'error', 'warn'] : ['error'],
   });
 
 if (env.isDev) {
@@ -31,10 +32,10 @@ if (env.isDev) {
 async function testPrismaConnection() {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ Prisma conectado ao MySQL com sucesso');
+    console.log(`Prisma conectado ao banco ${getDatabaseProvider()}.`);
     return true;
   } catch (error) {
-    console.error('❌ Erro ao conectar via Prisma:', error.message);
+    console.error('Banco indisponível:', error.code || error.name);
     return false;
   }
 }

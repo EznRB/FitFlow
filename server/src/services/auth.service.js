@@ -12,8 +12,10 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/prisma');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
+const { validateAccount } = require('../utils/accountValidation');
 
 class AuthService {
+  constructor({ db = prisma } = {}) { this.db = db; }
   /**
    * Registra um novo usuário no sistema.
    * Criptografa a senha antes de salvar no banco de dados.
@@ -21,16 +23,14 @@ class AuthService {
    * @param {Object} data - { name, email, password, role }
    * @returns {Object} Dados do usuário criado (sem a senha)
    */
-  async register(data) {
-    const { name, email, password, role } = data;
-
-    // 1. Validação de senha (Segurança e Requisito):
-    if (password.length < 6) {
-      throw new AppError('A senha deve ter no mínimo 6 caracteres.', 400);
-    }
+  async register(data, actor = null) {
+    const { name, email, password } = validateAccount(data);
+    const role = data.role === undefined ? 'student' : data.role;
+    if (!['admin', 'instructor', 'student'].includes(role)) throw new AppError('Perfil de usuário inválido.', 400);
+    if (role !== 'student' && actor?.role !== 'admin') throw new AppError('Somente administrador pode criar perfis privilegiados.', 403);
 
     // 2. Verifica se o e-mail já existe no banco
-    const userExists = await prisma.user.findUnique({ where: { email } });
+    const userExists = await this.db.user.findUnique({ where: { email } });
     if (userExists) {
       throw new AppError('Este e-mail já está em uso.', 400); // Bad Request
     }
@@ -42,13 +42,13 @@ class AuthService {
     const passwordHash = await bcrypt.hash(password, salt);
 
     // 3. Salva no banco de dados via Prisma
-    const user = await prisma.user.create({
+    const user = await this.db.user.create({
       data: {
         name,
         email,
         passwordHash,
         // Se a role não for enviada, o default do schema (student) assume.
-        role: role || 'student', 
+        role,
       },
     });
 
@@ -65,8 +65,11 @@ class AuthService {
    * @returns {Object} { user, token }
    */
   async login(email, password) {
+    if (typeof email !== 'string' || email.length > 150 || typeof password !== 'string' || Buffer.byteLength(password, 'utf8') > 72) {
+      throw new AppError('Credenciais inválidas.', 401);
+    }
     // 1. Busca o usuário pelo e-mail
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await this.db.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user) {
       // Usamos mensagens genéricas para não revelar se o erro foi no e-mail ou na senha.
       throw new AppError('Credenciais inválidas.', 401); // Unauthorized
@@ -111,3 +114,4 @@ class AuthService {
 }
 
 module.exports = new AuthService();
+module.exports.createAuthService = options => new AuthService(options);

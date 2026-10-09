@@ -12,7 +12,8 @@ const authService = require('../services/auth.service');
 const AppError = require('../utils/AppError');
 const env = require('../config/env');
 
-const authController = {
+function createAuthController(service = authService) {
+return {
   /**
    * POST /api/auth/register
    * Cria um novo usuário no banco de dados.
@@ -27,7 +28,7 @@ const authController = {
       }
 
       // Repassa para a camada de serviço
-      const user = await authService.register({ name, email, password, role });
+      const user = await service.register({ name, email, password, role }, req.user);
 
       sendSuccess(res, 201, 'Usuário registrado com sucesso', { user });
     } catch (error) {
@@ -48,7 +49,7 @@ const authController = {
       }
 
       // authService.login lança erro se credenciais forem inválidas
-      const { user, token } = await authService.login(email, password);
+      const { user, token } = await service.login(email, password);
 
       // Configuração do Cookie Seguro (HttpOnly)
       // HttpOnly = Impede que JavaScript no navegador (Ex: ataques XSS) roube o token
@@ -110,15 +111,17 @@ const authController = {
 
   /**
    * POST /api/auth/refresh
-   * Placeholder para lógica de refresh token futura.
+   * Retorna erro explícito enquanto não há protocolo de renovação de sessão.
    */
   async refreshToken(req, res, next) {
     try {
-      sendSuccess(res, 200, 'Funcionalidade não implementada nesta fase.', null);
+      throw new AppError('Renovação de sessão indisponível. Faça login novamente.', 501);
     } catch (error) {
       next(error);
     }
   },
 };
+}
 
-module.exports = authController;
+module.exports = createAuthController();
+module.exports.createAuthController = createAuthController;

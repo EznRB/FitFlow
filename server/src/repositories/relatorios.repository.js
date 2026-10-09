@@ -26,7 +26,7 @@ class RelatoriosRepository {
         prisma.student.count({ where: { status: 'active' } }),
         prisma.student.count({ where: { status: 'blocked' } }),
         prisma.checkin.count({
-          where: { checkinDate: { gte: today, lt: tomorrow } },
+          where: { status: 'present', checkinDate: { gte: today, lt: tomorrow } },
         }),
         prisma.payment.aggregate({
           where: {
@@ -85,7 +85,7 @@ class RelatoriosRepository {
 
     return prisma.checkin.groupBy({
       by: ['checkinDate'],
-      where: { checkinDate: { gte: startDate } },
+      where: { status: 'present', checkinDate: { gte: startDate } },
       _count: { checkinDate: true },
       orderBy: { checkinDate: 'asc' },
     });

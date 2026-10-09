@@ -1,0 +1,2 @@
+# PostgreSQL history is separate from the preserved MySQL migrations.
+provider = "postgresql"

@@ -18,6 +18,52 @@
 
 const ExerciciosCatalogoView = {
 
+  escapar(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  },
+
+  urlSegura(value) {
+    if (typeof value !== 'string') return null;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+    } catch { return null; }
+  },
+
+  grupos: ['Peito', 'Costas', 'Pernas', 'Ombros', 'Bíceps', 'Tríceps', 'Abdômen', 'Glúteos', 'Antebraço',
+    'Panturrilhas', 'Braços', 'Cardio', 'Funcional', 'Múltiplos', 'Outros', 'Não informado'],
+
+  opcoesGrupos(selected = '') {
+    const groups = [...new Set([...this.grupos, ...(selected ? [selected] : [])])];
+    return groups.map(g => `<option value="${this.escapar(g)}" ${selected === g ? 'selected' : ''}>${this.escapar(g)}</option>`).join('');
+  },
+
+  renderizarFonte(ex) {
+    if (ex.source !== 'wger') return '<small>Cadastro local · revisão da academia</small>';
+    const meta = ex.sourceMetadata || {};
+    const link = (url, label) => {
+      const safe = this.urlSegura(url);
+      return safe ? `<a href="${this.escapar(safe)}" target="_blank" rel="noopener noreferrer">${this.escapar(label)}</a>` : this.escapar(label);
+    };
+    const credit = item => `${this.escapar(item?.author || 'Autoria não informada')} · ${link(item?.license?.url, item?.license?.code || 'Licença não informada')}`;
+    const names = items => Array.isArray(items) && items.length ? this.escapar(items.map(item => item.name).join(', ')) : 'Não informados';
+    const locale = ex.curated ? 'Edição local; idioma de origem: ' : 'Idioma: ';
+    const language = ex.locale === 'pt' ? 'português' : ex.locale === 'en' ? 'inglês (sem tradução PT elegível)' : this.escapar(ex.locale || 'não informado');
+    const assets = (Array.isArray(meta.media) ? meta.media : []).map(asset =>
+      `<li>${link(asset.url, `Imagem #${asset.id}`)}: ${credit(asset)}</li>`).join('');
+    return `<details style="font-size:var(--font-size-xs); margin-top:0.4rem; white-space:normal; max-width:440px">
+      <summary>wger · ${ex.curated ? 'adaptado pela academia' : 'conteúdo da fonte'} · ${language}</summary>
+      <p>${locale}${language}. ${link(meta.sourceUrl, `Fonte wger #${ex.externalId || ''}`)}</p>
+      <p>Texto de origem: ${this.escapar(meta.text?.originalName || ex.nome)}. ${credit(meta.text)}.
+        HTML convertido em texto simples${ex.curated ? '; conteúdo editado localmente' : ''}.</p>
+      <p>Dados de base: ${credit(meta.base)}.</p>
+      <p>Músculos principais declarados pela fonte: ${names(meta.primaryMuscles)}.<br>
+        Secundários: ${names(meta.secondaryMuscles)}.<br>Equipamentos: ${names(meta.equipment)}.</p>
+      ${assets ? `<ul>${assets}</ul>` : '<p>Sem mídia da fonte com licença e autoria elegíveis.</p>'}
+      <p>Catálogo descritivo de contribuições externas. A seleção, técnica e prescrição exigem avaliação do profissional.</p>
+    </details>`;
+  },
+
   /**
    * Ponto de entrada da página de exercícios.
    * Carrega a lista de exercícios e configura os eventos.
@@ -118,32 +164,33 @@ const ExerciciosCatalogoView = {
       return;
     }
 
-    tbody.innerHTML = exercicios.map(ex => `
+    tbody.innerHTML = exercicios.filter(ex => Number.isSafeInteger(ex.id) && ex.id > 0).map(ex => `
       <tr style="border-bottom: 1px solid var(--border-color); transition: background var(--transition-fast);">
         <td style="padding:0.75rem 0.5rem">
           <div style="display:flex; align-items:center; gap:0.75rem">
             <div style="width:48px;height:48px; flex-shrink:0; border-radius:8px; overflow:hidden; background:var(--bg-subtle)">
-              ${ex.imagem_url ? `<img src="${ex.imagem_url}" style="width:100%;height:100%;object-fit:cover" alt="${ex.nome}">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.5"><i data-lucide="image" style="width:20px;height:20px"></i></div>'}
+              ${this.urlSegura(ex.imagem_url) ? `<img src="${this.escapar(this.urlSegura(ex.imagem_url))}" style="width:100%;height:100%;object-fit:cover" alt="${this.escapar(ex.nome)}" loading="lazy" referrerpolicy="no-referrer">` : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.5"><i data-lucide="image" style="width:20px;height:20px"></i></div>'}
             </div>
             <div>
-              <div style="font-weight:600; color:var(--text-primary)">${ex.nome}</div>
-              ${ex.instrucoes ? `<div style="font-size:var(--font-size-xs); color:var(--text-muted); margin-top:2px; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${ex.instrucoes}</div>` : ''}
+              <div style="font-weight:600; color:var(--text-primary)">${this.escapar(ex.nome)}</div>
+              ${ex.instrucoes ? `<div style="font-size:var(--font-size-xs); color:var(--text-muted); margin-top:2px; max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap" title="${this.escapar(ex.instrucoes)}">${this.escapar(ex.instrucoes)}</div>` : ''}
+              ${this.renderizarFonte(ex)}
             </div>
           </div>
         </td>
         <td style="padding:0.75rem 0.5rem">
-          <span class="badge badge-info">${ex.grupo_muscular}</span>
+          <span class="badge badge-info">${this.escapar(ex.grupo_muscular)}</span>
         </td>
         <td style="padding:0.75rem 0.5rem">
           <span class="badge ${ex.ativo ? 'badge-success' : 'badge-secondary'}">${ex.ativo ? 'Ativo' : 'Inativo'}</span>
         </td>
         <td style="padding:0.75rem 0.5rem">
           <div style="display:flex; gap:0.5rem">
-            <button class="btn btn-sm btn-ghost" onclick="ExerciciosCatalogoView.abrirModalEditar(${ex.id})" title="Editar" style="cursor:pointer">
+            <button class="btn btn-sm btn-ghost" data-action="editar" data-id="${ex.id}" title="Editar" style="cursor:pointer">
               <i data-lucide="pencil" style="width:16px;height:16px"></i>
             </button>
             ${ex.ativo ? `
-              <button class="btn btn-sm btn-ghost" onclick="ExerciciosCatalogoView.confirmarDesativar(${ex.id}, '${ex.nome.replace(/'/g, "\\'")}')" title="Desativar" style="cursor:pointer; color:var(--error)">
+              <button class="btn btn-sm btn-ghost" data-action="desativar" data-id="${ex.id}" title="Desativar" style="cursor:pointer; color:var(--error)">
                 <i data-lucide="trash-2" style="width:16px;height:16px"></i>
               </button>
             ` : ''}
@@ -151,6 +198,15 @@ const ExerciciosCatalogoView = {
         </td>
       </tr>
     `).join('');
+
+    tbody.onclick = event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button || !tbody.contains(button)) return;
+      const ex = exercicios.find(item => item.id === Number(button.dataset.id));
+      if (!ex) return;
+      if (button.dataset.action === 'editar') this.abrirModalEditar(ex.id);
+      if (button.dataset.action === 'desativar') this.confirmarDesativar(ex.id, ex.nome);
+    };
 
     if (window.lucide) lucide.createIcons({ nodes: [tbody] });
   },
@@ -164,32 +220,22 @@ const ExerciciosCatalogoView = {
       <form id="form-exercicio" style="display:flex; flex-direction:column; gap:1rem">
         <div class="form-group">
           <label for="ex-nome"><i data-lucide="type" style="width:14px;height:14px"></i> Nome do Exercício</label>
-          <input type="text" id="ex-nome" placeholder="Ex: Supino Reto com Barra" required>
+          <input type="text" id="ex-nome" placeholder="Ex: Supino Reto com Barra" maxlength="100" required>
         </div>
         <div class="form-group">
           <label for="ex-grupo"><i data-lucide="layers" style="width:14px;height:14px"></i> Grupo Muscular</label>
           <select id="ex-grupo" required>
             <option value="">Selecione o grupo...</option>
-            <option value="Peito">Peito</option>
-            <option value="Costas">Costas</option>
-            <option value="Pernas">Pernas</option>
-            <option value="Ombros">Ombros</option>
-            <option value="Bíceps">Bíceps</option>
-            <option value="Tríceps">Tríceps</option>
-            <option value="Abdômen">Abdômen</option>
-            <option value="Glúteos">Glúteos</option>
-            <option value="Antebraço">Antebraço</option>
-            <option value="Cardio">Cardio</option>
-            <option value="Funcional">Funcional</option>
+            ${this.opcoesGrupos()}
           </select>
         </div>
         <div class="form-group">
           <label for="ex-imagem"><i data-lucide="image" style="width:14px;height:14px"></i> URL da Imagem (Opcional)</label>
-          <input type="url" id="ex-imagem" placeholder="https://exemplo.com/imagem.jpg">
+          <input type="url" id="ex-imagem" placeholder="https://exemplo.com/imagem.jpg" maxlength="255">
         </div>
         <div class="form-group">
           <label for="ex-instrucoes"><i data-lucide="file-text" style="width:14px;height:14px"></i> Instruções de Execução</label>
-          <textarea id="ex-instrucoes" rows="3" placeholder="Descreva como executar o exercício corretamente..."></textarea>
+          <textarea id="ex-instrucoes" rows="3" maxlength="10000" placeholder="Descreva como executar o exercício corretamente..."></textarea>
         </div>
       </form>`;
 
@@ -211,28 +257,28 @@ const ExerciciosCatalogoView = {
 
       const html = `
         <form id="form-exercicio" style="display:flex; flex-direction:column; gap:1rem">
-          <input type="hidden" id="ex-id" value="${ex.id}">
+          <input type="hidden" id="ex-id" value="${this.escapar(ex.id)}">
           <div class="form-group">
             <label for="ex-nome"><i data-lucide="type" style="width:14px;height:14px"></i> Nome do Exercício</label>
-            <input type="text" id="ex-nome" value="${ex.nome}" required>
+            <input type="text" id="ex-nome" value="${this.escapar(ex.nome)}" maxlength="100" required>
           </div>
           <div class="form-group">
             <label for="ex-grupo"><i data-lucide="layers" style="width:14px;height:14px"></i> Grupo Muscular</label>
             <select id="ex-grupo" required>
               <option value="">Selecione o grupo...</option>
-              ${['Peito','Costas','Pernas','Ombros','Bíceps','Tríceps','Abdômen','Glúteos','Antebraço','Cardio','Funcional'].map(g =>
-                `<option value="${g}" ${ex.grupo_muscular === g ? 'selected' : ''}>${g}</option>`
-              ).join('')}
+              ${this.opcoesGrupos(ex.grupo_muscular)}
             </select>
           </div>
           <div class="form-group">
             <label for="ex-imagem"><i data-lucide="image" style="width:14px;height:14px"></i> URL da Imagem (Opcional)</label>
-            <input type="url" id="ex-imagem" placeholder="https://exemplo.com/imagem.jpg" value="${ex.imagem_url || ''}">
+            <input type="url" id="ex-imagem" placeholder="https://exemplo.com/imagem.jpg" value="${this.escapar(ex.imagem_url)}" maxlength="255">
           </div>
           <div class="form-group">
             <label for="ex-instrucoes"><i data-lucide="file-text" style="width:14px;height:14px"></i> Instruções de Execução</label>
-            <textarea id="ex-instrucoes" rows="3">${ex.instrucoes || ''}</textarea>
+            <textarea id="ex-instrucoes" rows="3" maxlength="10000">${this.escapar(ex.instrucoes)}</textarea>
           </div>
+          ${this.renderizarFonte(ex)}
+          ${ex.source === 'wger' ? '<small>Salvar registra curadoria local e preserva esta edição nas próximas sincronizações.</small>' : ''}
         </form>`;
 
       Modal.open('Editar Exercício', html, [
@@ -283,7 +329,7 @@ const ExerciciosCatalogoView = {
    */
   confirmarDesativar(id, nome) {
     Modal.confirm(
-      `Deseja desativar o exercício <strong>"${nome}"</strong>? Ele não aparecerá mais nas listas, mas o histórico será preservado.`,
+      `Deseja desativar o exercício <strong>"${this.escapar(nome)}"</strong>? Ele não aparecerá mais nas listas, mas o histórico será preservado.`,
       async () => {
         try {
           await API.delete(`/exercicios/${id}`);
@@ -310,7 +356,8 @@ const ExerciciosCatalogoView = {
 
       const resp = await API.post('/exercicios/sync?limit=100');
       
-      Toast.success(resp.message || 'Sincronização concluída!');
+      if (resp.data?.completa === false) Toast.warning(resp.message || 'Sincronização incompleta. Catálogo local preservado.');
+      else Toast.success(resp.message || 'Sincronização concluída!');
       
       // Recarrega a lista
       await this.carregarExercicios();
@@ -329,7 +376,7 @@ const ExerciciosCatalogoView = {
       const btnSync = document.getElementById('btn-sync-wger');
       if (btnSync) {
         btnSync.disabled = false;
-        btnSync.innerHTML = '<i data-lucide="refresh-cw"></i> <span>API Sync</span>';
+        btnSync.innerHTML = '<i data-lucide="refresh-cw"></i> <span>Sincronizar wger</span>';
         if (window.lucide) lucide.createIcons({ nodes: [btnSync] });
       }
     }

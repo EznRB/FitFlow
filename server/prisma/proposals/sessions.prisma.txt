@@ -1,0 +1,42 @@
+// Merge workoutSessions WorkoutSession[] into Student and sessions WorkoutSession[] into Workout.
+// Exercise IDs are snapshot scalars: deleting/replacing a prescribed exercise cannot erase these records.
+model WorkoutSession {
+  id                String    @id @db.Char(36)
+  studentId         Int       @map("student_id")
+  workoutId         Int       @map("workout_id")
+  status            String    @default("active") @db.VarChar(20)
+  planSnapshot      Json      @map("plan_snapshot")
+  startRequest      Json      @map("start_request")
+  completionRequest Json?     @map("completion_request")
+  clientStartedAt   DateTime  @map("client_started_at")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  student           Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  workout           Workout   @relation(fields: [workoutId], references: [id], onDelete: Restrict)
+  sets              WorkoutSet[]
+  @@index([studentId, startedAt])
+  @@index([workoutId])
+  @@map("workout_sessions")
+}
+model WorkoutSet {
+  id           String   @id @db.Char(36)
+  sessionId    String   @map("session_id") @db.Char(36)
+  exerciseId   Int      @map("exercise_id")
+  exerciseName String   @map("exercise_name") @db.VarChar(100)
+  muscleGroup  String?  @map("muscle_group") @db.VarChar(50)
+  weightKg     Decimal  @map("weight_kg") @db.Decimal(8, 2)
+  reps         Int
+  rir          Float?
+  kind         String   @db.VarChar(20)
+  notes        String?  @db.Text
+  performedAt  DateTime @map("performed_at")
+  payload      Json
+  createdAt    DateTime @default(now()) @map("created_at")
+  session      WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  @@index([sessionId, performedAt])
+  @@index([performedAt])
+  @@map("workout_sets")
+}
+// Migration CHECKs recommended: status in ('active','completed'); kind in ('working','warmup');
+// weight_kg BETWEEN 0 AND 2000; reps BETWEEN 1 AND 1000; rir IS NULL OR rir BETWEEN 0 AND 10.
+// No UPDATE/DELETE endpoint for WorkoutSet. Session completion only mutates status/completion metadata.

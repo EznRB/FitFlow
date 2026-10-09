@@ -10,14 +10,16 @@ const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const bcrypt = require('bcryptjs');
 const planosService = require('./planos.service');
+const { validateAccount } = require('../utils/accountValidation');
 
 class AlunosService {
+  constructor({ db = prisma, plans = planosService } = {}) { this.db = db; this.plans = plans; }
   /**
    * Lista todos os alunos (desconsidera os desativados fisicamente caso 
    * regras mudem, mas foca em carregar planos e emails associados).
    */
   async listar() {
-    return prisma.student.findMany({
+    return this.db.student.findMany({
       where: {
         user: { active: true }, // Filtra apenas usuários não-deletados (soft-delete).
       },
@@ -39,7 +41,7 @@ class AlunosService {
    * Busca um aluno específico carregando todos seus vínculos.
    */
   async buscarPorId(id) {
-    const aluno = await prisma.student.findUnique({
+    const aluno = await this.db.student.findUnique({
       where: { id: Number(id) },
       include: {
         user: { select: { name: true, email: true, active: true } },
@@ -55,40 +57,40 @@ class AlunosService {
    * Realiza a Matrícula (Criação de User e Student em transação única).
    */
   async criar(data) {
-    const { name, email, cpf, phone, birthDate, address, notes, planId } = data;
+    const { name, email, password } = validateAccount(data);
+    const { cpf, phone, birthDate, address, notes, planId } = data;
 
     // 1. Validação de Unicidade
-    const emailExists = await prisma.user.findUnique({ where: { email } });
+    const emailExists = await this.db.user.findUnique({ where: { email } });
     if (emailExists) throw new AppError('Já existe um usuário com este e-mail.', 400);
 
     if (cpf) {
-      const cpfExists = await prisma.student.findUnique({ where: { cpf } });
+      const cpfExists = await this.db.student.findUnique({ where: { cpf } });
       if (cpfExists) throw new AppError('Este CPF já está cadastrado no sistema.', 400);
     }
 
-    // 2. Senha Padrão
-    // Por enquanto, todos os alunos ganham 'fitflow123' como primeira senha.
+    // Cada matrícula exige uma senha própria validada antes de acessar o banco.
     const salt = await bcrypt.genSalt(10);
-    const defaultPassword = await bcrypt.hash('fitflow123', salt);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     // 3. Verifica o plano escolhido e calcula o vencimento
     let planStartDate = null;
     let planEndDate = null;
 
     if (planId) {
-      const plano = await planosService.buscarPorId(planId);
+      const plano = await this.plans.buscarPorId(planId);
       if (!plano.active) throw new AppError('Não é possível matricular em um plano inativo.', 400);
       
       planStartDate = new Date();
-      planEndDate = planosService.calcularVencimento(plano.durationDays, planStartDate);
+      planEndDate = this.plans.calcularVencimento(plano.durationDays, planStartDate);
     }
 
     // 4. Nested Write (Prisma): Cria User e já vincula o Student na mesma transação.
-    const novoAluno = await prisma.user.create({
+    const novoAluno = await this.db.user.create({
       data: {
         name,
         email,
-        passwordHash: defaultPassword,
+        passwordHash,
         role: 'student',
         student: {
           create: {
@@ -109,7 +111,8 @@ class AlunosService {
       },
     });
 
-    return novoAluno;
+    const { passwordHash: _, ...safeStudent } = novoAluno;
+    return safeStudent;
   }
 
   /**
@@ -121,7 +124,7 @@ class AlunosService {
     const { name, email, cpf, phone, birthDate, address, notes, status, planId } = data;
 
     // Garante que o aluno alvo existe
-    const alunoAlvo = await prisma.student.findUnique({
+    const alunoAlvo = await this.db.student.findUnique({
       where: { id: studentId },
       include: { user: true },
     });
@@ -129,26 +132,26 @@ class AlunosService {
 
     // Valida colisões de Email e CPF pertencentes a DE FATO outras pessoas
     if (email && email !== alunoAlvo.user.email) {
-      const emailEmUso = await prisma.user.findUnique({ where: { email } });
+      const emailEmUso = await this.db.user.findUnique({ where: { email } });
       if (emailEmUso) throw new AppError('E-mail já pertence a outra conta.', 400);
     }
 
     if (cpf && cpf !== alunoAlvo.cpf) {
-      const cpfEmUso = await prisma.student.findUnique({ where: { cpf } });
+      const cpfEmUso = await this.db.student.findUnique({ where: { cpf } });
       if (cpfEmUso) throw new AppError('CPF já cadastrado para outro aluno.', 400);
     }
 
     // Verificação de alteração de plano
     let updatePlanData = {};
     if (planId && Number(planId) !== alunoAlvo.planId) {
-      const plano = await planosService.buscarPorId(planId);
+      const plano = await this.plans.buscarPorId(planId);
       if (!plano.active) throw new AppError('Não é possível alterar para um plano inativo.', 400);
       
       const startDate = new Date();
       updatePlanData = {
         planId: Number(planId),
         planStartDate: startDate,
-        planEndDate: planosService.calcularVencimento(plano.durationDays, startDate)
+        planEndDate: this.plans.calcularVencimento(plano.durationDays, startDate)
       };
     } else if (planId === null) {
       // Se mandar null explícito, removemos o plano e as datas.
@@ -160,15 +163,15 @@ class AlunosService {
     }
 
     // Como as informações estão distribuídas, faremos um update encadeado ($transaction).
-    const resultado = await prisma.$transaction([
-      prisma.user.update({
+    const resultado = await this.db.$transaction([
+      this.db.user.update({
         where: { id: alunoAlvo.userId },
         data: {
           name: name ?? alunoAlvo.user.name,
           email: email ?? alunoAlvo.user.email,
         },
       }),
-      prisma.student.update({
+      this.db.student.update({
         where: { id: studentId },
         data: {
           cpf: cpf !== undefined ? cpf : alunoAlvo.cpf,
@@ -190,16 +193,16 @@ class AlunosService {
    * de apagar de vez usando DELETE e perdendo relatórios financeiros de meses atrás.
    */
   async desativar(id) {
-    const aluno = await prisma.student.findUnique({ where: { id: Number(id) } });
+    const aluno = await this.db.student.findUnique({ where: { id: Number(id) } });
     if (!aluno) throw new AppError('Aluno não encontrado.', 404);
 
     // Update atômico no User desativando seu acesso de auth e transmutando sua status
-    await prisma.user.update({
+    await this.db.user.update({
       where: { id: aluno.userId },
       data: { active: false },
     });
 
-    return prisma.student.update({
+    return this.db.student.update({
       where: { id: Number(id) },
       data: { status: 'inactive' },
     });
@@ -207,3 +210,4 @@ class AlunosService {
 }
 
 module.exports = new AlunosService();
+module.exports.createAlunosService = options => new AlunosService(options);

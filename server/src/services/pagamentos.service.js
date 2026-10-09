@@ -16,11 +16,18 @@
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const { isOverdue } = require('../utils/helpers');
+const { validatePaymentMethod } = require('../utils/paymentMethod');
+const { paymentId, moneyCents, paymentDate: validateDate, brazilDate, validateNotes, paymentStatus } = require('../utils/paymentValidation');
+const { lockStudent, renewalDates } = require('../utils/membershipRenewal');
 
 /** Dias de carência antes de bloquear o aluno por inadimplência. */
 const GRACE_DAYS = 5;
 
 class PagamentosService {
+  constructor({ db = prisma, now = () => new Date() } = {}) {
+    this.db = db;
+    this.now = now;
+  }
   /**
    * Lista todos os pagamentos com filtros opcionais.
    * Suporta filtro por status, aluno e período de datas.
@@ -28,17 +35,17 @@ class PagamentosService {
   async listar(filters = {}) {
     const where = {};
 
-    if (filters.status) where.status = filters.status;
-    if (filters.studentId) where.studentId = parseInt(filters.studentId);
+    if (filters.status !== undefined) where.status = paymentStatus(filters.status);
+    if (filters.studentId !== undefined) where.studentId = paymentId(filters.studentId, 'ID do aluno');
 
-    if (filters.startDate && filters.endDate) {
-      where.paymentDate = {
-        gte: new Date(filters.startDate),
-        lte: new Date(filters.endDate),
-      };
+    if (filters.startDate !== undefined || filters.endDate !== undefined) {
+      const start = filters.startDate === undefined ? undefined : validateDate(filters.startDate);
+      const end = filters.endDate === undefined ? undefined : validateDate(filters.endDate);
+      if (start && end && start > end) throw new AppError('Período de pagamentos inválido.', 400);
+      where.paymentDate = { ...(start ? { gte: start } : {}), ...(end ? { lte: end } : {}) };
     }
 
-    return prisma.payment.findMany({
+    return this.db.payment.findMany({
       where,
       include: {
         student: { include: { user: { select: { name: true, email: true } } } },
@@ -52,8 +59,8 @@ class PagamentosService {
    * Busca um pagamento específico por ID.
    */
   async buscarPorId(id) {
-    const pagamento = await prisma.payment.findUnique({
-      where: { id: parseInt(id) },
+    const pagamento = await this.db.payment.findUnique({
+      where: { id: paymentId(id, 'ID do pagamento') },
       include: {
         student: { include: { user: { select: { name: true, email: true } } } },
         plan: { select: { id: true, name: true, price: true, durationDays: true } },
@@ -69,13 +76,14 @@ class PagamentosService {
    * Ordenado do mais recente para o mais antigo.
    */
   async buscarPorAluno(studentId) {
-    const aluno = await prisma.student.findUnique({
-      where: { id: parseInt(studentId) },
+    const idValue = paymentId(studentId, 'ID do aluno');
+    const aluno = await this.db.student.findUnique({
+      where: { id: idValue },
     });
     if (!aluno) throw new AppError('Aluno não encontrado.', 404);
 
-    return prisma.payment.findMany({
-      where: { studentId: parseInt(studentId) },
+    return this.db.payment.findMany({
+      where: { studentId: idValue },
       include: {
         plan: { select: { name: true, price: true, durationDays: true } },
       },
@@ -94,15 +102,19 @@ class PagamentosService {
    * 5. Reativa o aluno se ele estava bloqueado por inadimplência.
    */
   async registrar(data, registeredBy) {
-    const { studentId, planId, amount, paymentMethod, paymentDate, notes } = data;
-
-    // 1. Validações obrigatórias
-    if (!studentId) throw new AppError('ID do aluno é obrigatório.', 400);
-    if (!amount || parseFloat(amount) <= 0) throw new AppError('O valor do pagamento deve ser positivo.', 400);
-
-    // 2. Busca o aluno com seu plano atual
-    const aluno = await prisma.student.findUnique({
-      where: { id: parseInt(studentId) },
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de pagamento inválidos.', 400);
+    const { planId, paymentMethod, paymentDate } = data;
+    const studentId = paymentId(data.studentId, 'ID do aluno');
+    const amount = moneyCents(data.amount) / 100;
+    const notes = validateNotes(data.notes);
+    const actorId = registeredBy == null ? null : paymentId(registeredBy, 'ID do responsável');
+    const requestedPlanId = planId == null ? null : paymentId(planId, 'ID do plano');
+    const validatedMethod = validatePaymentMethod(paymentMethod);
+    const dataPagamento = paymentDate === undefined ? brazilDate(this.now()) : validateDate(paymentDate);
+    return this.db.$transaction(async tx => {
+      await lockStudent(tx, studentId);
+      const aluno = await tx.student.findUnique({
+      where: { id: studentId },
       include: {
         user: { select: { name: true, active: true } },
         plan: true,
@@ -112,42 +124,28 @@ class PagamentosService {
     if (!aluno.user.active) throw new AppError('Este aluno está desativado do sistema.', 400);
 
     // 3. Determina o plano a associar: o informado ou o atual do aluno
-    const planoId = planId ? parseInt(planId) : aluno.planId;
+    const planoId = requestedPlanId || aluno.planId;
     let plano = null;
 
     if (planoId) {
-      plano = await prisma.plan.findUnique({ where: { id: planoId } });
+      plano = await tx.plan.findUnique({ where: { id: planoId } });
       if (!plano) throw new AppError('Plano não encontrado.', 404);
+      if (!plano.active) throw new AppError('Este plano está inativo.', 400);
     }
 
-    // 4. Calcula data de pagamento e vencimento
-    const dataPagamento = paymentDate ? new Date(paymentDate) : new Date();
-
-    // Data de vencimento: data do pagamento + duração do plano em dias
-    let dataVencimento;
-    if (plano) {
-      dataVencimento = new Date(dataPagamento);
-      dataVencimento.setDate(dataVencimento.getDate() + plano.durationDays);
-    } else {
-      // Sem plano vinculado, vencimento padrão de 30 dias
-      dataVencimento = new Date(dataPagamento);
-      dataVencimento.setDate(dataVencimento.getDate() + 30);
-    }
-
-    // 5. Transação atômica: cria pagamento + atualiza aluno
-    const resultado = await prisma.$transaction(async (tx) => {
+    const { startDate, endDate: dataVencimento } = renewalDates(aluno.planEndDate, dataPagamento, plano ? plano.durationDays : 30);
       // 5a. Cria o registro de pagamento
       const novoPagamento = await tx.payment.create({
         data: {
           studentId: parseInt(studentId),
           planId: planoId || null,
-          amount: parseFloat(amount),
-          paymentMethod: paymentMethod || null,
+          amount,
+          paymentMethod: validatedMethod,
           paymentDate: dataPagamento,
           dueDate: dataVencimento,
           status: 'paid',
-          notes: notes || null,
-          registeredBy: registeredBy || null,
+          notes,
+          registeredBy: actorId,
         },
         include: {
           student: { include: { user: { select: { name: true } } } },
@@ -157,7 +155,7 @@ class PagamentosService {
 
       // 5b. Atualiza as datas do plano no perfil do aluno
       const updateData = {
-        planStartDate: dataPagamento,
+        planStartDate: startDate,
         planEndDate: dataVencimento,
       };
 
@@ -179,7 +177,6 @@ class PagamentosService {
       return novoPagamento;
     });
 
-    return resultado;
   }
 
   /**
@@ -187,18 +184,24 @@ class PagamentosService {
    * ⚠️ Nunca apaga — apenas permite correção de dados.
    */
   async atualizar(id, data) {
-    const pagamento = await this.buscarPorId(id);
-
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de pagamento inválidos.', 400);
+    const idValue = paymentId(id, 'ID do pagamento');
+    const validatedMethod = data.paymentMethod === undefined ? undefined : validatePaymentMethod(data.paymentMethod);
     const updateData = {};
-    if (data.amount !== undefined) updateData.amount = parseFloat(data.amount);
-    if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
-    if (data.paymentDate !== undefined) updateData.paymentDate = new Date(data.paymentDate);
-    if (data.dueDate !== undefined) updateData.dueDate = new Date(data.dueDate);
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.amount !== undefined) updateData.amount = moneyCents(data.amount) / 100;
+    if (validatedMethod !== undefined) updateData.paymentMethod = validatedMethod;
+    if (data.paymentDate !== undefined) updateData.paymentDate = validateDate(data.paymentDate);
+    if (data.dueDate !== undefined) updateData.dueDate = validateDate(data.dueDate);
+    if (data.status !== undefined) {
+      updateData.status = paymentStatus(data.status);
+    }
+    if (data.notes !== undefined) updateData.notes = validateNotes(data.notes);
+    const pagamento = await this.buscarPorId(idValue);
+    if (this.db.paymentIntent && await this.db.paymentIntent.findFirst({ where: { paymentId: idValue } })) throw new AppError('Pagamento conciliado pelo provedor não admite alteração manual.', 409);
+    if (new Date(updateData.dueDate || pagamento.dueDate) < new Date(updateData.paymentDate || pagamento.paymentDate)) throw new AppError('Vencimento não pode anteceder o pagamento.', 400);
 
-    return prisma.payment.update({
-      where: { id: parseInt(id) },
+    return this.db.payment.update({
+      where: { id: idValue },
       data: updateData,
       include: {
         student: { include: { user: { select: { name: true } } } },
@@ -219,15 +222,16 @@ class PagamentosService {
    * 3. Se o atraso excede GRACE_DAYS (5 dias), bloqueia o aluno.
    */
   async verificarInadimplencia() {
-    const agora = new Date();
+    const agora = this.now();
+    const hoje = brazilDate(agora);
     let bloqueados = 0;
     let atualizados = 0;
 
     // 1. Busca alunos ativos com vencimento passado
-    const alunosVencidos = await prisma.student.findMany({
+    const alunosVencidos = await this.db.student.findMany({
       where: {
         status: 'active',
-        planEndDate: { lt: agora },
+        planEndDate: { lt: hoje },
       },
       include: {
         user: { select: { name: true } },
@@ -235,22 +239,22 @@ class PagamentosService {
     });
 
     for (const aluno of alunosVencidos) {
-      // 2. Verifica se o atraso ultrapassa o período de carência
-      if (isOverdue(aluno.planEndDate, GRACE_DAYS)) {
-        // Bloqueia o aluno por inadimplência
-        await prisma.student.update({
-          where: { id: aluno.id },
-          data: { status: 'blocked' },
-        });
-        bloqueados++;
-      }
+      // Confere a vigência atual após o mesmo lock usado pela renovação.
+      const blocked = await this.db.$transaction(async tx => {
+        await lockStudent(tx, aluno.id);
+        const current = await tx.student.findUnique({ where: { id: aluno.id } });
+        if (!current || current.status !== 'active' || !current.planEndDate || !isOverdue(current.planEndDate, GRACE_DAYS, agora)) return false;
+        await tx.student.update({ where: { id: aluno.id }, data: { status: 'blocked' } });
+        return true;
+      });
+      if (blocked) bloqueados++;
     }
 
     // 3. Marca pagamentos pendentes cujo dueDate já passou como "overdue"
-    const resultado = await prisma.payment.updateMany({
+    const resultado = await this.db.payment.updateMany({
       where: {
         status: 'pending',
-        dueDate: { lt: agora },
+        dueDate: { lt: hoje },
       },
       data: { status: 'overdue' },
     });
@@ -268,15 +272,15 @@ class PagamentosService {
    * Retorna dados completos para o painel do admin.
    */
   async listarInadimplentes() {
-    const agora = new Date();
+    const hoje = brazilDate(this.now());
 
-    return prisma.student.findMany({
+    return this.db.student.findMany({
       where: {
         OR: [
           { status: 'blocked' },
           {
             status: 'active',
-            planEndDate: { lt: agora },
+            planEndDate: { lt: hoje },
           },
         ],
       },
@@ -303,29 +307,29 @@ class PagamentosService {
    * Calcula receita do mês, total de inadimplentes e pagamentos pendentes.
    */
   async resumoFinanceiro() {
-    const agora = new Date();
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-    const fimMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+    const hoje = brazilDate(this.now());
+    const inicioMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
+    const inicioProximoMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 1));
 
     const [receitaMes, totalPagos, totalPendentes, totalOverdue, inadimplentes] =
       await Promise.all([
         // Receita do mês atual
-        prisma.payment.aggregate({
+        this.db.payment.aggregate({
           where: {
             status: 'paid',
-            paymentDate: { gte: inicioMes, lte: fimMes },
+            paymentDate: { gte: inicioMes, lt: inicioProximoMes },
           },
           _sum: { amount: true },
           _count: true,
         }),
         // Total de pagamentos "paid"
-        prisma.payment.count({ where: { status: 'paid' } }),
+        this.db.payment.count({ where: { status: 'paid' } }),
         // Total pendentes
-        prisma.payment.count({ where: { status: 'pending' } }),
+        this.db.payment.count({ where: { status: 'pending' } }),
         // Total vencidos
-        prisma.payment.count({ where: { status: 'overdue' } }),
+        this.db.payment.count({ where: { status: 'overdue' } }),
         // Total de alunos bloqueados
-        prisma.student.count({ where: { status: 'blocked' } }),
+        this.db.student.count({ where: { status: 'blocked' } }),
       ]);
 
     return {
@@ -340,3 +344,4 @@ class PagamentosService {
 }
 
 module.exports = new PagamentosService();
+module.exports.createPagamentosService = options => new PagamentosService(options);

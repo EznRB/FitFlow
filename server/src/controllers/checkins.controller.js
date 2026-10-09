@@ -20,7 +20,8 @@ const { sendSuccess } = require('../utils/helpers');
 const checkinsService = require('../services/checkins.service');
 const AppError = require('../utils/AppError');
 
-const checkinsController = {
+function createCheckinsController({ db = require('../config/prisma').prisma, service = checkinsService } = {}) {
+return {
   /**
    * POST /api/checkins
    * Registra check-in do dia para um aluno.
@@ -33,17 +34,21 @@ const checkinsController = {
    */
   async registrar(req, res, next) {
     try {
-      let studentId = req.body.studentId;
-
-      // Se o usuário logado é aluno e não informou studentId, usa o próprio perfil
-      if (!studentId && req.user && req.user.role === 'student') {
-        // Busca o studentId vinculado ao userId do token
-        const { prisma } = require('../config/prisma');
-        const student = await prisma.student.findUnique({
+      const requestedId = req.body?.studentId;
+      let studentId;
+      if (req.user?.role === 'student') {
+        const student = await db.student.findUnique({
           where: { userId: req.user.id },
         });
         if (!student) throw new AppError('Perfil de aluno não encontrado para este usuário.', 404);
+        if (requestedId !== undefined && !((typeof requestedId === 'number' && Number.isSafeInteger(requestedId)) ||
+          (typeof requestedId === 'string' && /^[1-9]\d*$/.test(requestedId))) ) throw new AppError('Não é permitido registrar presença de outro aluno.', 403);
+        if (requestedId !== undefined && Number(requestedId) !== student.id) throw new AppError('Não é permitido registrar presença de outro aluno.', 403);
         studentId = student.id;
+      } else if (req.user?.role === 'admin') {
+        studentId = requestedId;
+      } else {
+        throw new AppError('Você não tem permissão para registrar check-in.', 403);
       }
 
       if (!studentId) throw new AppError('ID do aluno é obrigatório.', 400);
@@ -51,7 +56,7 @@ const checkinsController = {
       // Passa o ID de quem está registrando (para auditoria)
       const registeredBy = req.user ? req.user.id : null;
 
-      const checkin = await checkinsService.registrar(studentId, registeredBy);
+      const checkin = await service.registrar(studentId, registeredBy);
       sendSuccess(res, 201, 'Check-in registrado com sucesso!', checkin);
     } catch (error) {
       next(error);
@@ -65,7 +70,7 @@ const checkinsController = {
    */
   async listar(req, res, next) {
     try {
-      const checkins = await checkinsService.listar(req.query);
+      const checkins = await service.listar(req.query);
       sendSuccess(res, 200, 'Lista de check-ins recuperada com sucesso', checkins);
     } catch (error) {
       next(error);
@@ -79,7 +84,7 @@ const checkinsController = {
    */
   async resumoHoje(req, res, next) {
     try {
-      const resumo = await checkinsService.resumoHoje();
+      const resumo = await service.resumoHoje();
       sendSuccess(res, 200, 'Resumo de check-ins de hoje', resumo);
     } catch (error) {
       next(error);
@@ -93,8 +98,8 @@ const checkinsController = {
    */
   async frequencia(req, res, next) {
     try {
-      const dias = req.query.dias ? parseInt(req.query.dias) : 30;
-      const ranking = await checkinsService.frequenciaPorAluno(dias);
+      const dias = req.query.dias === undefined ? 30 : req.query.dias;
+      const ranking = await service.frequenciaPorAluno(dias);
       sendSuccess(res, 200, `Ranking de frequência dos últimos ${dias} dias`, ranking);
     } catch (error) {
       next(error);
@@ -110,7 +115,7 @@ const checkinsController = {
     try {
       if (!req.params.alunoId) throw new AppError('ID do aluno não fornecido.', 400);
 
-      const checkins = await checkinsService.buscarPorAluno(req.params.alunoId, req.query);
+      const checkins = await service.buscarPorAluno(req.params.alunoId, req.query);
       sendSuccess(res, 200, 'Histórico de check-ins do aluno', checkins);
     } catch (error) {
       next(error);
@@ -132,7 +137,7 @@ const checkinsController = {
       const adminId = req.user ? req.user.id : null;
       if (!adminId) throw new AppError('Autenticação necessária.', 401);
 
-      const checkin = await checkinsService.cancelarCheckin(
+      const checkin = await service.cancelarCheckin(
         req.params.id,
         req.body.motivo,
         adminId
@@ -144,5 +149,7 @@ const checkinsController = {
     }
   },
 };
+}
 
-module.exports = checkinsController;
+module.exports = createCheckinsController();
+module.exports.createCheckinsController = createCheckinsController;

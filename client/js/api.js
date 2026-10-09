@@ -17,6 +17,10 @@ const API = {
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
+    // Uma resposta antiga não pode encerrar uma sessão que entrou depois.
+    const requestIdentity = typeof Auth === 'undefined' ? null : {
+      userId: Auth.user?.id ?? null, generation: Auth.generation,
+    };
 
     const config = {
       headers: {
@@ -34,18 +38,30 @@ const API = {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      // Gateways podem devolver HTML. O status HTTP permanece a fonte do erro.
+      const text = await response.text();
+      let data = null;
+      if (text) {
+        try { data = JSON.parse(text); } catch { /* Mensagem segura abaixo. */ }
+      }
 
       if (!response.ok) {
         // Se token expirou, tenta refresh ou redireciona
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
           // Dispara evento para o auth.js tratar
-          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+          window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: requestIdentity }));
         }
         
-        const error = new Error(data.message || 'Erro na requisição');
+        const error = new Error(data?.message || `O servidor não conseguiu atender a solicitação (HTTP ${response.status}). Tente novamente.`);
         error.status = response.status;
         error.data = data;
+        throw error;
+      }
+
+      // 204 não tem corpo; JSON malformado em sucesso é falha de protocolo.
+      if (text && data === null) {
+        const error = new Error('O servidor retornou uma resposta inválida. Tente novamente.');
+        error.status = 502;
         throw error;
       }
 

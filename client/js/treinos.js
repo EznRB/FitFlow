@@ -1,870 +1,307 @@
-/**
- * ============================================
- * FitFlow Caraguá — Gestão de Treinos (Admin + Aluno)
- * ============================================
- * Módulo que combina duas visões:
- * 
- * 1. TreinosView (Admin): Criar, editar e gerenciar fichas
- *    de treino dos alunos com exercícios personalizados.
- * 
- * 2. MeuTreinoView (Aluno): Visualizar treinos ativos,
- *    registrar cargas e acompanhar evolução.
- * 
- * Regras de permissão:
- * - Admin pode CRUD completo de treinos
- * - Aluno pode apenas visualizar e registrar cargas
- */
-
-// ============================================
-// VISÃO DO ADMIN — GESTÃO DE TREINOS
-// ============================================
-
+/** Fichas profissionais: administração ampla e autoria restrita para instrutores. */
 const TreinosView = {
-
-  /** Cache de alunos e exercícios do catálogo para use nos selects */
-  alunosCache: [],
-  catalogoCache: [],
-  currentStudentId: null,
-
-  /**
-   * Inicializa a página de treinos.
-   * Carrega dados e configura eventos de interface.
-   */
+  alunosCache: [], catalogoCache: [], currentStudentId: null,
+  escapar(value) { return FitFlowSecurity.escapeHtml(value); },
+  idValido(value) { return Number.isSafeInteger(value) && value > 0; },
+  icones(node) { if (window.lucide) window.lucide.createIcons({ nodes: [node] }); },
   async inicializar() {
-    this.currentStudentId = null;
-    await this.carregarAlunosParaPerfis();
-    this.configurarEventos();
+    this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = [];
+    await this.carregarAlunosParaPerfis(); this.configurarEventos();
   },
-
-  /**
-   * Configura listeners de eventos da página.
-   */
   configurarEventos() {
-    const btnNovo = document.getElementById('btn-novo-treino');
-    if (btnNovo) {
-      // Remover event listeners antigos clonando o nó para evitar multiplos listeners
-      const newBtn = btnNovo.cloneNode(true);
-      btnNovo.parentNode.replaceChild(newBtn, btnNovo);
-      newBtn.addEventListener('click', () => this.abrirModalCriar());
-    }
+    const btn = document.getElementById('btn-novo-treino');
+    if (btn) btn.onclick = () => this.abrirModalCriar();
   },
-
-  /**
-   * Carrega a lista de alunos e exibe como perfis (cards).
-   */
   async carregarAlunosParaPerfis() {
     try {
-      const resp = await API.get('/alunos');
-      this.alunosCache = resp.data || [];
-      this.renderizarGradeAlunos(this.alunosCache);
+      const response = await API.get('/treinos/alunos');
+      this.alunosCache = response.data || []; this.renderizarGradeAlunos(this.alunosCache);
     } catch (error) {
-      console.error('Erro ao carregar alunos:', error);
-      Toast.error('Erro ao carregar alunos.');
+      this.alunosCache = []; this.renderizarGradeAlunos([]); Toast.error(error.message || 'Erro ao carregar alunos elegíveis.');
     }
   },
-
-  /**
-   * Renderiza os cards de alunos na grade
-   */
   renderizarGradeAlunos(alunos) {
-    const grid = document.getElementById('treinos-alunos-grid');
-    if (!grid) return;
-
-    if (alunos.length === 0) {
-      grid.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding: 2rem; color: var(--text-muted);">Nenhum aluno encontrado.</div>';
-      return;
-    }
-
-    grid.innerHTML = alunos.map(a => {
-      const nome = a.user?.name || 'Aluno Sem Nome';
-      const email = a.user?.email || '';
-      const status = a.status === 'active' ? 'Ativo' : 'Inativo';
-      const badgeClass = a.status === 'active' ? 'badge-success' : 'badge-secondary';
-      return `
-        <div class="kpi-card" onclick="TreinosView.abrirPerfilAluno(${a.id}, '${nome.replace(/'/g, "\\'")}')" style="cursor: pointer; transition: transform 0.2s ease; display:flex; flex-direction:column; gap:1rem;">
-          <div style="display:flex; align-items:center; gap:1rem;">
-            <div class="kpi-icon blue"><i data-lucide="user"></i></div>
-            <div class="kpi-content" style="flex:1;">
-              <div class="kpi-label" style="font-size:1.1rem; font-weight:600; color:var(--text-primary);">${nome}</div>
-              <div style="font-size:0.85rem; color:var(--text-muted);">${email}</div>
-            </div>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
-            <span class="badge ${badgeClass}">${status}</span>
-            <span style="color:var(--primary-500); font-size:0.9rem; font-weight:500; display:flex; align-items:center; gap:0.25rem;">
-              Ver Treinos <i data-lucide="arrow-right" style="width:14px;height:14px"></i>
-            </span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    if (window.lucide) lucide.createIcons({ nodes: [grid] });
+    const grid = document.getElementById('treinos-alunos-grid'); if (!grid) return;
+    grid.innerHTML = alunos.length ? alunos.filter(a => this.idValido(a.id)).map(a => `
+      <button type="button" class="kpi-card" data-student="${a.id}" style="cursor:pointer;text-align:left">
+        <div class="kpi-icon"><i data-lucide="user"></i></div>
+        <div class="kpi-content"><div class="kpi-label">${this.escapar(a.name)}</div>
+          <span class="badge badge-success">Matrícula ativa</span><p>Consultar fichas e planejar</p></div>
+      </button>`).join('') : '<p>Nenhum aluno elegível encontrado.</p>';
+    grid.onclick = event => {
+      const button = event.target.closest('[data-student]'); if (!button || !grid.contains(button)) return;
+      const student = this.alunosCache.find(a => a.id === Number(button.dataset.student));
+      if (student) this.abrirPerfilAluno(student.id, student.name);
+    };
+    this.icones(grid);
   },
-
-  filtrarAlunos(termo) {
-    termo = termo.toLowerCase();
-    const filtrados = this.alunosCache.filter(a => {
-      const nome = (a.user?.name || '').toLowerCase();
-      const email = (a.user?.email || '').toLowerCase();
-      return nome.includes(termo) || email.includes(termo);
-    });
-    this.renderizarGradeAlunos(filtrados);
-  },
-
-  async abrirPerfilAluno(studentId, studentName) {
+  filtrarAlunos(term) { this.renderizarGradeAlunos(this.alunosCache.filter(a => String(a.name).toLowerCase().includes(String(term).toLowerCase()))); },
+  async abrirPerfilAluno(studentId, name) {
+    if (!this.idValido(studentId)) return;
     this.currentStudentId = studentId;
     document.getElementById('treinos-view-alunos').style.display = 'none';
     document.getElementById('treinos-view-fichas').style.display = 'block';
-    
-    const titulo = document.getElementById('treinos-aluno-nome');
-    if (titulo) titulo.textContent = `Treinos de ${studentName}`;
-    
+    document.getElementById('treinos-aluno-nome').textContent = `Fichas de ${name}`;
     await this.carregarTreinos(studentId);
   },
-
   voltarParaPerfis() {
     this.currentStudentId = null;
     document.getElementById('treinos-view-alunos').style.display = 'block';
     document.getElementById('treinos-view-fichas').style.display = 'none';
-    // Limpa a tabela para não vazar info visualmente
-    const tbody = document.getElementById('treinos-table-body');
-    if (tbody) tbody.innerHTML = '';
+    document.getElementById('treinos-table-body').innerHTML = '';
   },
-
-  /**
-   * Carrega a lista de treinos via API para o aluno selecionado.
-   */
   async carregarTreinos(studentId) {
-    try {
-      const resp = await API.get(`/treinos?studentId=${studentId}`);
-      this.renderizarTabela(resp.data || []);
-    } catch (error) {
-      console.error('Erro ao carregar treinos:', error);
-      Toast.error('Erro ao carregar treinos.');
-    }
+    if (!this.idValido(studentId)) return;
+    try { this.renderizarTabela((await API.get(`/treinos?studentId=${studentId}`)).data || []); }
+    catch (error) { this.renderizarTabela([]); Toast.error(error.message || 'Erro ao carregar fichas.'); }
   },
-
-  /**
-   * Carrega o catálogo de exercícios para montar selects.
-   */
   async carregarCatalogo() {
-    try {
-      const resp = await API.get('/exercicios');
-      this.catalogoCache = resp.data || [];
-    } catch (error) {
-      console.warn('Erro ao carregar catálogo:', error.message);
-    }
+    this.catalogoCache = [];
+    try { this.catalogoCache = (await API.get('/treinos/catalogo')).data || []; }
+    catch (error) { Toast.warning('Catálogo indisponível. Você pode informar exercícios manualmente.'); }
   },
-
   renderizarTabela(treinos) {
-    const tbody = document.getElementById('treinos-table-body');
-    if (!tbody) return;
-
-    if (treinos.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" style="text-align:center; padding:2rem; color:var(--text-muted)">
-            <i data-lucide="clipboard-list" style="width:40px;height:40px;opacity:0.3;display:block;margin:0 auto 0.5rem"></i>
-            Nenhum treino cadastrado ainda.
-          </td>
-        </tr>`;
-      if (window.lucide) lucide.createIcons({ nodes: [tbody] });
-      return;
-    }
-
-    tbody.innerHTML = treinos.map(t => {
-      const qtdExercicios = t.exercises?.length || 0;
-      const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
-
-      return `
-        <tr style="border-bottom: 1px solid var(--border-color); transition: background var(--transition-fast);">
-          <td style="padding:0.75rem 0.5rem">
-            <div style="font-weight:600; color:var(--text-primary)">${t.name}</div>
-            ${t.description ? `<div style="font-size:var(--font-size-xs); color:var(--text-muted); margin-top:2px">${t.description}</div>` : ''}
-          </td>
-          <td style="padding:0.75rem 0.5rem; text-align:center">
-            <span class="badge badge-info">${qtdExercicios}</span>
-          </td>
-          <td style="padding:0.75rem 0.5rem; color:var(--text-secondary); font-size:var(--font-size-sm)">${dataCriacao}</td>
-          <td style="padding:0.75rem 0.5rem">
-            <span class="badge ${t.active ? 'badge-success' : 'badge-secondary'}">${t.active ? 'Ativo' : 'Inativo'}</span>
-          </td>
-          <td style="padding:0.75rem 0.5rem">
-            <div style="display:flex; gap:0.5rem">
-              <button class="btn btn-sm btn-ghost" onclick="TreinosView.abrirModalDetalhe(${t.id})" title="Ver detalhes" style="cursor:pointer">
-                <i data-lucide="eye" style="width:16px;height:16px"></i>
-              </button>
-              ${t.active ? `
-                <button class="btn btn-sm btn-ghost" onclick="TreinosView.abrirModalEditar(${t.id})" title="Editar" style="cursor:pointer">
-                  <i data-lucide="pencil" style="width:16px;height:16px"></i>
-                </button>
-                <button class="btn btn-sm btn-ghost" onclick="TreinosView.confirmarDesativar(${t.id}, '${t.name.replace(/'/g, "\\'")}')" title="Desativar" style="cursor:pointer; color:var(--error)">
-                  <i data-lucide="archive" style="width:16px;height:16px"></i>
-                </button>
-              ` : ''}
-            </div>
-          </td>
-        </tr>`;
-    }).join('');
-
-    if (window.lucide) lucide.createIcons({ nodes: [tbody] });
+    const tbody = document.getElementById('treinos-table-body'); if (!tbody) return;
+    tbody.innerHTML = treinos.length ? treinos.filter(t => this.idValido(t.id)).map(t => `<tr>
+      <td><strong>${this.escapar(t.name)}</strong>${t.description ? `<p>${this.escapar(t.description)}</p>` : ''}</td>
+      <td>${t.exercises?.length || 0}</td><td>${this.escapar(new Date(t.createdAt).toLocaleDateString('pt-BR'))}</td>
+      <td><span class="badge ${t.active ? 'badge-success' : 'badge-secondary'}">${t.active ? 'Ativa' : 'Arquivada'}</span></td>
+      <td><button class="btn btn-sm btn-ghost" data-action="detalhe" data-id="${t.id}" title="Ver ficha"><i data-lucide="eye"></i></button>
+      ${t.active ? `<button class="btn btn-sm btn-ghost" data-action="editar" data-id="${t.id}" title="Editar ficha"><i data-lucide="pencil"></i></button>
+        <button class="btn btn-sm btn-ghost" data-action="arquivar" data-id="${t.id}" title="Arquivar ficha"><i data-lucide="archive"></i></button>` : ''}</td></tr>`).join('') :
+      '<tr><td colspan="5">Nenhuma ficha disponível neste acesso. Instrutores veem somente as fichas de sua autoria.</td></tr>';
+    tbody.onclick = event => {
+      const button = event.target.closest('button[data-action]'); if (!button || !tbody.contains(button)) return;
+      const workout = treinos.find(t => t.id === Number(button.dataset.id)); if (!workout) return;
+      if (button.dataset.action === 'detalhe') this.abrirModalDetalhe(workout.id);
+      if (button.dataset.action === 'editar') this.abrirModalEditar(workout.id);
+      if (button.dataset.action === 'arquivar') this.confirmarDesativar(workout.id, workout.name);
+    };
+    this.icones(tbody);
   },
-
-  /**
-   * Abre o modal de detalhes de um treino.
-   * Exibe todas as informações de forma organizada.
-   * @param {number} id - ID do treino
-   */
+  exerciciosDetalhes(exercises) {
+    return (exercises || []).map((ex, index) => `<article class="workout-exercise-editor">
+      <strong>${index + 1}. ${this.escapar(ex.name)}</strong><p>${this.escapar(ex.muscleGroup || 'Grupo não informado')}</p>
+      <p>${this.escapar(ex.sets)} séries · ${this.escapar(ex.reps)} repetições · Pausa: ${ex.restSeconds == null ? 'não informada' : `${this.escapar(ex.restSeconds)} s`}</p>
+      <p>Carga sugerida: ${this.escapar(ex.suggestedLoad || 'não informada')} · Última carga registrada: ${ex.workoutLogs?.[0] ? `${this.escapar(ex.workoutLogs[0].weight)} kg` : 'não informada'}</p>
+      ${ex.notes ? `<p>${this.escapar(ex.notes)}</p>` : ''}</article>`).join('');
+  },
   async abrirModalDetalhe(id) {
     try {
-      const resp = await API.get(`/treinos/${id}`);
-      const t = resp.data;
-      const nomeAluno = t.student?.user?.name || 'N/A';
-      const nomeInstrutor = t.instructor?.name || 'N/A';
-
-      const exerciciosHtml = (t.exercises || []).map((ex, i) => {
-        // Verifica se tem último log de carga
-        const ultimaCarga = ex.workoutLogs && ex.workoutLogs[0]
-          ? `${ex.workoutLogs[0].weight}kg (${new Date(ex.workoutLogs[0].createdAt).toLocaleDateString('pt-BR')})`
-          : '—';
-
-        return `
-          <div class="treino-exercicio-card" style="background:var(--bg-elevated); border-radius:var(--radius-md); padding:0.75rem 1rem; margin-bottom:0.5rem; border-left:3px solid var(--primary-500)">
-            <div style="display:flex; justify-content:space-between; align-items:center">
-              <div>
-                <span style="color:var(--text-muted); font-size:var(--font-size-xs); margin-right:0.5rem">#${i + 1}</span>
-                <strong style="color:var(--text-primary)">${ex.name}</strong>
-                ${ex.muscleGroup ? `<span class="badge badge-info" style="margin-left:0.5rem; font-size:0.65rem">${ex.muscleGroup}</span>` : ''}
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0.75rem; margin-top:0.5rem; font-size:var(--font-size-sm)">
-              <div><span style="color:var(--text-muted)">Séries:</span> <strong>${ex.sets}</strong></div>
-              <div><span style="color:var(--text-muted)">Reps:</span> <strong>${ex.reps}</strong></div>
-              <div><span style="color:var(--text-muted)">Carga Sugerida:</span> <strong>${ex.suggestedLoad || '—'}</strong></div>
-              <div><span style="color:var(--text-muted)">Última Carga:</span> <strong>${ultimaCarga}</strong></div>
-            </div>
-            ${ex.notes ? `<div style="margin-top:0.4rem; font-size:var(--font-size-xs); color:var(--text-muted); font-style:italic"><i data-lucide="message-circle" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:4px"></i>${ex.notes}</div>` : ''}
-          </div>`;
-      }).join('');
-
-      const html = `
-        <div style="margin-bottom:1rem">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem">
-            <div><span style="color:var(--text-muted);font-size:var(--font-size-sm)">Aluno:</span><br><strong>${nomeAluno}</strong></div>
-            <div><span style="color:var(--text-muted);font-size:var(--font-size-sm)">Instrutor:</span><br><strong>${nomeInstrutor}</strong></div>
-          </div>
-          ${t.description ? `<p style="color:var(--text-secondary); font-size:var(--font-size-sm); margin-bottom:0.5rem">${t.description}</p>` : ''}
-          ${t.notes ? `<p style="color:var(--text-muted); font-size:var(--font-size-xs); font-style:italic">📝 ${t.notes}</p>` : ''}
-        </div>
-        <h4 style="margin-bottom:0.75rem; color:var(--primary-400); font-family:var(--font-heading)">
-          <i data-lucide="list-ordered" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:6px"></i>
-          Exercícios (${t.exercises?.length || 0})
-        </h4>
-        <div style="max-height:400px; overflow-y:auto">
-          ${exerciciosHtml || '<p style="color:var(--text-muted)">Nenhum exercício.</p>'}
-        </div>`;
-
-      Modal.open(`Treino: ${t.name}`, html, [
-        { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
-      ]);
-    } catch (error) {
-      Toast.error('Erro ao carregar detalhes do treino.');
-    }
+      const workout = (await API.get(`/treinos/${id}`)).data;
+      Modal.open(`Ficha: ${workout.name}`, `<p>Aluno: ${this.escapar(workout.student?.user?.name)} · Autor: ${this.escapar(workout.instructor?.name)}</p>
+        <p>${this.escapar(workout.description)}</p><p>${this.escapar(workout.notes)}</p>${this.exerciciosDetalhes(workout.exercises)}`,
+        [{ text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() }]);
+    } catch (error) { Toast.error(error.message || 'Erro ao consultar ficha.'); }
   },
-
-  // ============================================
-  // CRIAÇÃO E EDIÇÃO DE TREINOS
-  // ============================================
-
-  /**
-   * Abre o modal de criação de treino.
-   * Carrega alunos e catálogo antes de exibir.
-   */
   async abrirModalCriar() {
-    if (this.alunosCache.length === 0) {
-      try {
-        const resp = await API.get('/alunos');
-        this.alunosCache = resp.data || [];
-      } catch (e) { /* fallback */ }
-    }
+    if (!this.alunosCache.length) await this.carregarAlunosParaPerfis();
+    if (!this.alunosCache.length) { Toast.warning('Nenhum aluno elegível para criar a ficha.'); return; }
     await this.carregarCatalogo();
-
-    const alunosOptions = this.alunosCache.map(a => {
-      const selected = (this.currentStudentId && a.id == this.currentStudentId) ? 'selected' : '';
-      return `<option value="${a.id}" ${selected}>${a.user?.name || 'Aluno'} — ${a.user?.email || ''}</option>`;
-    }).join('');
-
-    const html = this.renderizarConstrutorTreinoLayout(alunosOptions, false);
-
-    Modal.open('Construtor de Treino', html, [
+    const options = this.alunosCache.filter(a => this.idValido(a.id)).map(a => `<option value="${a.id}" ${a.id === this.currentStudentId ? 'selected' : ''}>${this.escapar(a.name)}</option>`).join('');
+    Modal.open('Planejar ficha de treino', this.renderizarConstrutorTreinoLayout(options), [
       { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-      { text: 'Salvar Treino', class: 'btn-primary', action: () => this.salvarTreino() },
-    ]);
-
+      { text: 'Salvar ficha', class: 'btn-primary', action: () => this.salvarTreino() }]);
     this.iniciarConstrutor();
   },
-
-  /**
-   * Abre o modal de edição com dados do treino pré-preenchidos.
-   * @param {number} id - ID do treino
-   */
   async abrirModalEditar(id) {
     try {
-      const resp = await API.get(`/treinos/${id}`);
-      const t = resp.data;
-
-      if (this.alunosCache.length === 0) {
-        try {
-          const aResp = await API.get('/alunos');
-          this.alunosCache = aResp.data || [];
-        } catch (e) { /* fallback */ }
-      }
+      const workout = (await API.get(`/treinos/${id}`)).data;
       await this.carregarCatalogo();
-
-      const html = this.renderizarConstrutorTreinoLayout('', true, t);
-
-      Modal.open(`Editar Treino: ${t.name}`, html, [
+      Modal.open(`Editar ficha: ${workout.name}`, this.renderizarConstrutorTreinoLayout('', true, workout), [
         { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-        { text: 'Salvar Alterações', class: 'btn-primary', action: () => this.salvarTreino(t.id) },
-      ]);
-
-      this.iniciarConstrutor();
-
-      // Preenche exercícios existentes
-      if (t.exercises && t.exercises.length > 0) {
-        t.exercises.forEach(ex => this.adicionarExercicio(ex));
-      }
-    } catch (error) {
-      Toast.error('Erro ao carregar treino para edição.');
-    }
+        { text: 'Salvar revisão', class: 'btn-primary', action: () => this.salvarTreino(workout.id) }]);
+      this.iniciarConstrutor(); (workout.exercises || []).forEach(ex => this.adicionarExercicio(ex));
+    } catch (error) { Toast.error(error.message || 'Erro ao editar ficha.'); }
   },
-
-  /**
-   * Renderiza o layout principal do construtor de treinos (Hevy-Style).
-   * Este layout é dividido em duas colunas: Catálogo de Exercícios e Rotina Atual.
-   * @param {string} alunosOptions - Opções HTML do select de alunos
-   * @param {boolean} isEdit - Define se é modo edição
-   * @param {object} t - Dados do treino caso seja edição
-   * @returns {string} HTML completo do layout
-   */
-  renderizarConstrutorTreinoLayout(alunosOptions, isEdit = false, t = null) {
-    return `
-      <style>
-        #modal { max-width: 1000px !important; width: 95% !important; }
-        .hevy-layout { display: flex; gap: 1.5rem; height: 65vh; min-height: 500px; }
-        .hevy-catalog { flex: 1; border-right: 1px solid var(--border-color); padding-right: 1.5rem; display: flex; flex-direction: column; overflow: hidden; }
-        .hevy-workout { flex: 1.2; display: flex; flex-direction: column; overflow: hidden; }
-        .hevy-catalog-list { flex: 1; overflow-y: auto; padding-right: 0.5rem; margin-top: 1rem; }
-        .hevy-workout-list { flex: 1; overflow-y: auto; padding-right: 0.5rem; }
-        
-        .cat-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 0.5rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
-        .cat-item:hover { border-color: var(--primary-500); transform: translateY(-2px); box-shadow: var(--shadow-sm); z-index: 2; }
-        .cat-add-btn { position: absolute; right: 0.75rem; background: var(--bg-elevated); border: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-400); cursor: pointer; opacity: 0.5; transition: 0.2s; }
-        .cat-item:hover .cat-add-btn { opacity: 1; background: var(--primary-500); color: white; }
-        
-        .exercicio-item { background:var(--bg-elevated); border-radius:var(--radius-md); border-left:4px solid var(--primary-500); position:relative; display: flex; flex-direction: column; margin-bottom: 1rem; box-shadow: var(--shadow-sm); }
-        .exercicio-item.sortable-ghost { opacity: 0.3; border-style: dashed; }
-        .exercicio-item.sortable-drag { cursor: grabbing !important; box-shadow: var(--shadow-lg); opacity: 1; }
-        .grip-handle { cursor: grab; color: var(--text-muted); padding: 0.5rem; display: flex; align-items: center; justify-content: center; opacity: 0.6; }
-        .grip-handle:hover { opacity: 1; }
-        .grip-handle:active { cursor: grabbing; color: var(--primary-500); }
-        
-        .ex-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.1); }
-        .ex-body { padding: 1rem; }
-        .ex-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
-        .form-mini-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.25rem; color: var(--text-muted); }
-      </style>
-      <div class="hevy-layout">
-        <!-- CATÁLOGO -->
-        <div class="hevy-catalog">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
-            <h4 style="margin:0; color:var(--text-primary); font-family:var(--font-heading)">
-              <i data-lucide="dumbbell" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:6px"></i>
-              Catálogo
-            </h4>
-          </div>
-          <input type="text" id="cat-search" placeholder="Buscar exercício..." oninput="TreinosView.filtrarCatalogo(this.value)" style="padding:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-md); width:100%; box-sizing:border-box; background:var(--bg-surface); color:var(--text-primary)">
-          
-          <div class="hevy-catalog-list" id="catalogo-list"></div>
-        </div>
-        
-        <!-- FICHA DE TREINO -->
-        <div class="hevy-workout">
-          <form id="form-treino" style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1rem; flex-shrink:0;">
-            ${isEdit ? `<input type="hidden" id="treino-id" value="${t.id}">` : ''}
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
-              <div style="display:flex; flex-direction:column; gap:0.25rem">
-                <label class="form-mini-label">Aluno</label>
-                ${isEdit 
-                  ? `<input type="text" value="${t.student?.user?.name || 'N/A'}" disabled style="opacity:0.6; padding:0.5rem; background:var(--bg-elevated); border:none; border-radius:4px; color:var(--text-primary)">` 
-                  : `<select id="treino-aluno" required style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary)"><option value="">Selecione...</option>${alunosOptions}</select>`}
-              </div>
-              <div style="display:flex; flex-direction:column; gap:0.25rem">
-                <label class="form-mini-label">Nome da Rotina</label>
-                <input type="text" id="treino-nome" value="${isEdit ? t.name : ''}" placeholder="Ex: Treino A" required style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary)">
-              </div>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:0.25rem">
-              <label class="form-mini-label">Descrição (Opcional)</label>
-              <input type="text" id="treino-descricao" value="${isEdit ? (t.description||'') : ''}" placeholder="Ex: Foco em hipertrofia de superiores" style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary)">
-            </div>
-          </form>
-
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-shrink:0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color)">
-            <h4 style="margin:0; color:var(--primary-400); font-family:var(--font-heading)">
-              <i data-lucide="list-ordered" style="width:18px;height:18px;display:inline;vertical-align:middle;margin-right:6px"></i>
-              Rotina <span id="qtd-exercicios" style="font-size:12px;color:var(--text-muted);font-weight:normal">(0)</span>
-            </h4>
-            <div style="font-size:11px; color:var(--text-muted); background:var(--bg-elevated); padding:4px 10px; border-radius:12px; display:flex; align-items:center; gap:4px;">
-              <i data-lucide="grip-horizontal" style="width:12px;height:12px"></i> Arraste para reordenar
-            </div>
-          </div>
-          
-          <div class="hevy-workout-list" id="exercicios-container">
-            <!-- Exercícios droppados ficarão aqui -->
-            <div class="empty-routine" style="text-align:center; padding: 2rem; color: var(--text-muted); opacity: 0.6">
-              Clicar/arrastar exercícios do catálogo
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+  renderizarConstrutorTreinoLayout(options, isEdit = false, workout = {}) {
+    const value = key => this.escapar(isEdit ? workout[key] : '');
+    return `<section id="planejamento-ciencia"></section><div class="workout-builder">
+      <section class="workout-catalog"><h4>Selecionar exercícios</h4>
+        <input type="search" id="cat-search" aria-label="Buscar exercício" placeholder="Nome ou grupo declarado">
+        <div class="workout-catalog-list" id="catalogo-list"></div>
+        <button type="button" class="btn btn-secondary" id="add-manual-exercise">Informar exercício manualmente</button>
+      </section>
+      <section><form id="form-treino" class="workout-edit-form">
+        <div class="form-group"><label for="treino-aluno">Aluno</label>${isEdit ?
+          `<input type="text" value="${this.escapar(workout.student?.user?.name)}" disabled>` :
+          `<select id="treino-aluno" required><option value="">Selecionar matrícula ativa</option>${options}</select>`}</div>
+        <div class="form-group"><label for="treino-nome">Nome da ficha</label><input type="text" id="treino-nome" maxlength="100" value="${value('name')}" required></div>
+        <div class="form-group"><label for="treino-descricao">Objetivo e contexto</label><textarea id="treino-descricao" maxlength="10000" rows="2">${value('description')}</textarea></div>
+        <div class="form-group"><label for="treino-notas">Observações de acompanhamento</label><textarea id="treino-notas" maxlength="10000" rows="2">${value('notes')}</textarea></div>
+      </form><h4>Exercícios <span id="qtd-exercicios">(0)</span></h4>
+      <p class="workout-history-note">Defina séries, repetições e pausas para esta ficha. Salvar uma edição cria outra revisão e arquiva a ficha anterior, preservando seus exercícios e registros.</p>
+      <div id="exercicios-container"><p class="empty-routine">Selecione exercícios do catálogo ou informe um exercício.</p></div></section></div>`;
   },
-
-  /**
-   * Inicializa a lógica do construtor após o modal ser aberto.
-   * Configura o Sortable.js para drag-and-drop e renderiza o catálogo inicial.
-   */
   iniciarConstrutor() {
-    setTimeout(() => {
-      this.renderizarCatalogoLista();
-
-      const container = document.getElementById('exercicios-container');
-      if (container && window.Sortable) {
-        new Sortable(container, {
-          handle: '.grip-handle',
-          animation: 200,
-          ghostClass: 'sortable-ghost',
-          dragClass: 'sortable-drag',
-          onEnd: () => this.atualizarIndices()
-        });
-      }
-    }, 100);
-  },
-
-  /**
-   * Renderiza a lista de exercícios no painel esquerdo (Catálogo).
-   * @param {string} filtro - Termo de busca para filtrar exercícios
-   */
-  renderizarCatalogoLista(filtro = '') {
-    const listEl = document.getElementById('catalogo-list');
-    if (!listEl) return;
-
-    filtro = filtro.toLowerCase();
-    const filtrados = this.catalogoCache.filter(c => 
-      c.nome.toLowerCase().includes(filtro) || 
-      c.grupo_muscular.toLowerCase().includes(filtro)
-    );
-
-    if (filtrados.length === 0) {
-      listEl.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:1rem">Nenhum encontrado.</p>';
-      return;
-    }
-
-    listEl.innerHTML = filtrados.map(c => `
-      <div class="cat-item" onclick="TreinosView.adicionarExercicioFromCatalogo(${c.id})">
-        <div style="width:40px;height:40px; border-radius:6px; background:var(--bg-elevated); flex-shrink:0; overflow:hidden">
-           ${c.imagem_url ? `<img src="${c.imagem_url}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.5"><i data-lucide="image" style="width:16px;height:16px"></i></div>`}
-        </div>
-        <div style="flex:1; min-width:0">
-          <div style="font-weight:600; color:var(--text-primary); font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${c.nome}</div>
-          <div style="font-size:11px; color:var(--text-muted)">${c.grupo_muscular}</div>
-        </div>
-        <button class="cat-add-btn"><i data-lucide="plus" style="width:14px;height:14px"></i></button>
-      </div>
-    `).join('');
-
-    if (window.lucide) lucide.createIcons({ nodes: [listEl] });
-  },
-
-  /**
-   * Handler para o campo de busca do catálogo.
-   * @param {string} valor - Valor digitado no input
-   */
-  filtrarCatalogo(valor) {
-    this.renderizarCatalogoLista(valor);
-  },
-
-  /**
-   * Adiciona um exercício do catálogo diretamente na lista da rotina.
-   * @param {number} idCatalogo - ID do exercício no banco
-   */
-  adicionarExercicioFromCatalogo(idCatalogo) {
-    const catData = this.catalogoCache.find(c => c.id === idCatalogo);
-    if (catData) {
-      this.adicionarExercicio({
-        name: catData.nome,
-        muscleGroup: catData.grupo_muscular,
-        sets: 3,
-        reps: '12'
-      });
-    }
-  },
-
-  adicionarExercicio(dados = null) {
+    const host = document.getElementById('planejamento-ciencia');
+    if (window.PlanejamentoCiencia) window.PlanejamentoCiencia.mount(host);
+    else if (host) host.textContent = 'Apoio de planejamento indisponível nesta versão. A ficha pode ser preenchida pelo profissional.';
+    document.getElementById('cat-search').oninput = event => this.filtrarCatalogo(event.target.value);
+    document.getElementById('add-manual-exercise').onclick = () => this.adicionarExercicio();
     const container = document.getElementById('exercicios-container');
-    if (!container) return;
-
-    // Remove empty state message
-    const emptyMsg = container.querySelector('.empty-routine');
-    if (emptyMsg) emptyMsg.remove();
-
-    const div = document.createElement('div');
-    div.className = 'exercicio-item';
-
-    div.innerHTML = `
-      <div class="ex-header">
-        <div style="display:flex; align-items:center; gap:0.5rem">
-          <span class="exercicio-numero" style="font-weight:bold; color:var(--primary-400); font-size:var(--font-size-sm)">#0</span>
-          <div style="font-weight:600; color:var(--text-primary)">
-            <input type="text" class="ex-nome" value="${dados ? dados.name : ''}" style="background:transparent; border:none; color:inherit; font-weight:inherit; font-family:inherit; font-size:inherit; width:200px; padding:0" required>
-          </div>
-          <input type="text" class="ex-grupo" value="${dados ? (dados.muscleGroup || '') : ''}" style="background:var(--bg-surface); border:none; color:var(--text-muted); font-size:11px; padding:2px 6px; border-radius:10px; width:80px; margin-left:8px" placeholder="Grupo...">
-        </div>
-        <div style="display:flex; align-items:center; gap:0.5rem">
-          <div class="grip-handle" title="Arraste para reordenar">
-            <i data-lucide="grip-horizontal" style="width:16px;height:16px"></i>
-          </div>
-          <button type="button" class="btn-icon" onclick="this.closest('.exercicio-item').remove(); TreinosView.atualizarIndices()" 
-            style="color:var(--error); width:28px; height:28px; background:transparent" title="Remover exercício">
-            <i data-lucide="trash-2" style="width:14px;height:14px"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="ex-body">
-        <div class="ex-grid">
-          <div style="display:flex; flex-direction:column; gap:0.2rem">
-            <label class="form-mini-label">Séries</label>
-            <input type="number" class="ex-series" value="${dados ? dados.sets : 3}" min="1" max="20" style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); width:100%; box-sizing:border-box;">
-          </div>
-          <div style="display:flex; flex-direction:column; gap:0.2rem">
-            <label class="form-mini-label">Repetições</label>
-            <input type="text" class="ex-reps" value="${dados ? dados.reps : '12'}" placeholder="Ex: 12 ou 8-10" style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); width:100%; box-sizing:border-box;">
-          </div>
-          <div style="display:flex; flex-direction:column; gap:0.2rem">
-            <label class="form-mini-label">Carga (Opcional)</label>
-            <input type="text" class="ex-carga" value="${dados ? (dados.suggestedLoad || '') : ''}" placeholder="Ex: 40kg" style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); width:100%; box-sizing:border-box;">
-          </div>
-        </div>
-        <div style="margin-top:0.75rem; display:flex; flex-direction:column; gap:0.2rem">
-          <label class="form-mini-label">Observações (Opcional)</label>
-          <input type="text" class="ex-obs" value="${dados ? (dados.notes || '') : ''}" placeholder="Dicas de execução, como falha ou ritmo." style="padding:0.5rem; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:4px; color:var(--text-primary); width:100%; box-sizing:border-box; font-size:12px;">
-        </div>
-      </div>
-    `;
-
-    container.appendChild(div);
-    if (window.lucide) lucide.createIcons({ nodes: [div] });
-    
-    // Anima sutilmente
-    div.animate([
-      { opacity: 0, transform: 'translateY(10px)' },
-      { opacity: 1, transform: 'translateY(0)' }
-    ], { duration: 200, easing: 'ease-out' });
-
-    this.atualizarIndices();
+    container.oninput = () => this.atualizarResumo();
+    container.onclick = event => {
+      const button = event.target.closest('button[data-edit-action]'); if (!button || !container.contains(button)) return;
+      const row = button.closest('.exercicio-item'); if (!row) return;
+      if (button.dataset.editAction === 'remove') row.remove();
+      if (button.dataset.editAction === 'up' && row.previousElementSibling) container.insertBefore(row, row.previousElementSibling);
+      if (button.dataset.editAction === 'down' && row.nextElementSibling) container.insertBefore(row.nextElementSibling, row);
+      this.atualizarIndices();
+    };
+    if (window.Sortable) new window.Sortable(container, { handle: '.grip-handle', animation: 150, onEnd: () => this.atualizarIndices() });
+    this.renderizarCatalogoLista();
   },
-
+  fonteCatalogo(item) {
+    if (item.source !== 'wger') return '<small>Cadastro local: confirmar equipamento e execução com o profissional.</small>';
+    const meta = item.sourceMetadata || {}, credit = meta.text || {}, license = credit.license || {};
+    let href = null;
+    try { const url = new URL(license.url); if (url.protocol === 'https:' && !url.username && !url.password) href = url.href; } catch {}
+    const licenseHtml = href ? `<a href="${this.escapar(href)}" rel="noopener noreferrer" target="_blank">${this.escapar(license.code)}</a>` : this.escapar(license.code);
+    const names = items => Array.isArray(items) && items.length ? this.escapar(items.map(x => x.name).join(', ')) : 'não informados';
+    return `<details><summary>wger · ${item.curated ? 'curadoria local' : 'dados da fonte'} · ${item.locale === 'pt' ? 'português' : 'inglês'}</summary>
+      <p>Texto de origem: ${this.escapar(credit.originalName)} · ${this.escapar(credit.author)} · ${licenseHtml}.</p>
+      <p>Músculos principais declarados: ${names(meta.primaryMuscles)}. Secundários: ${names(meta.secondaryMuscles)}. Equipamentos: ${names(meta.equipment)}.</p>
+      <p>Dados descritivos contribuídos; avaliar a seleção para o aluno.</p></details>`;
+  },
+  renderizarCatalogoLista(filter = '', requestedPage = 0) {
+    const list = document.getElementById('catalogo-list'); if (!list) return;
+    const term = String(filter).toLowerCase();
+    const items = this.catalogoCache.filter(item => this.idValido(item.id) &&
+      `${item.nome} ${item.grupo_muscular}`.toLowerCase().includes(term));
+    const pageSize = 30;
+    const page = Math.max(0, Math.min(Number.isSafeInteger(requestedPage) ? requestedPage : 0, Math.ceil(items.length / pageSize) - 1));
+    const start = page * pageSize;
+    const visible = items.slice(start, start + pageSize);
+    list.innerHTML = items.length ? `<p class="workout-catalog-count" role="status">${start + 1}–${start + visible.length} de ${items.length} exercícios. Use a busca para refinar.</p>` + visible.map(item => `<article class="workout-catalog-item">
+      <button type="button" class="btn btn-ghost" data-catalog="${item.id}"><span>${this.escapar(item.nome)}</span> <i data-lucide="plus"></i></button>
+      <p>${this.escapar(item.grupo_muscular)}</p>${this.fonteCatalogo(item)}</article>`).join('') + (items.length > pageSize ? `<nav class="workout-catalog-pages" aria-label="Páginas do catálogo">
+        <button type="button" class="btn btn-secondary" data-catalog-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>Anteriores</button>
+        <button type="button" class="btn btn-secondary" data-catalog-page="${page + 1}" ${start + pageSize >= items.length ? 'disabled' : ''}>Próximos</button></nav>` : '') : '<p>Nenhum exercício encontrado. Você pode informar um exercício manualmente.</p>';
+    list.onclick = event => {
+      const pageButton = event.target.closest('[data-catalog-page]');
+      if (pageButton && list.contains(pageButton) && !pageButton.disabled) {
+        this.renderizarCatalogoLista(filter, Number(pageButton.dataset.catalogPage));
+        list.scrollTop = 0;
+        const nextFocus = list.querySelector('[data-catalog-page]:not([disabled])') || list.querySelector('[data-catalog]');
+        nextFocus?.focus({ preventScroll: true });
+        return;
+      }
+      const button = event.target.closest('[data-catalog]');
+      if (button && list.contains(button)) this.adicionarExercicioFromCatalogo(Number(button.dataset.catalog));
+    };
+    this.icones(list);
+  },
+  filtrarCatalogo(term) { this.renderizarCatalogoLista(term); },
+  adicionarExercicioFromCatalogo(id) {
+    const item = this.catalogoCache.find(c => c.id === id);
+    if (item) this.adicionarExercicio({ name: item.nome, muscleGroup: item.grupo_muscular });
+  },
+  adicionarExercicio(data = {}) {
+    const container = document.getElementById('exercicios-container'); if (!container) return;
+    if (container.querySelectorAll('.exercicio-item').length >= 100) { Toast.warning('Limite de 100 exercícios por ficha.'); return; }
+    container.querySelector('.empty-routine')?.remove();
+    const row = document.createElement('div'); row.className = 'exercicio-item workout-exercise-editor';
+    const field = (label, name, key, type = 'text', attributes = '', full = false) => `<label class="${full ? 'full-width' : ''}">${label}<input class="${name}" type="${type}" value="${this.escapar(data[key])}" ${attributes}></label>`;
+    row.innerHTML = `<div class="workout-exercise-head"><span class="exercicio-numero"></span>
+      <span class="grip-handle" title="Arrastar para reordenar"><i data-lucide="grip-vertical"></i></span>
+      <div><button type="button" class="btn btn-sm btn-ghost" data-edit-action="up" title="Mover para cima">↑</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-edit-action="down" title="Mover para baixo">↓</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-edit-action="remove" title="Remover exercício"><i data-lucide="trash-2"></i></button></div></div>
+      <div class="workout-exercise-fields">
+        ${field('Exercício', 'ex-nome', 'name', 'text', 'maxlength="100" required', true)}
+        ${field('Grupo direto declarado', 'ex-grupo', 'muscleGroup', 'text', 'maxlength="50"', true)}
+        ${field('Séries', 'ex-series', 'sets', 'number', 'min="1" max="100" step="1" placeholder="Definir" required')}
+        ${field('Repetições ou faixa', 'ex-reps', 'reps', 'text', 'maxlength="50" placeholder="Definir" required')}
+        ${field('Pausa em segundos', 'ex-pausa', 'restSeconds', 'number', 'min="0" max="3600" step="1" placeholder="Definir" required')}
+        ${field('Carga / orientação (opcional)', 'ex-carga', 'suggestedLoad', 'text', 'maxlength="50"')}
+        ${field('Observações de execução e adaptação', 'ex-obs', 'notes', 'text', 'maxlength="10000"', true)}
+      </div>`;
+    container.appendChild(row); this.icones(row); this.atualizarIndices();
+  },
   atualizarIndices() {
-    const container = document.getElementById('exercicios-container');
-    const labelQtd = document.getElementById('qtd-exercicios');
-    if (!container) return;
-
-    // Ignora a empty state message ao contar e atualizar os inputs reais
-    const items = container.querySelectorAll('.exercicio-item');
-    
-    if (labelQtd) labelQtd.textContent = `(${items.length})`;
-    
-    if (items.length === 0) {
-      if (!container.querySelector('.empty-routine')) {
-        container.innerHTML = `<div class="empty-routine" style="text-align:center; padding: 2rem; color: var(--text-muted); opacity: 0.6">Clicar/arrastar exercícios do catálogo</div>`;
-      }
-      return;
-    }
-
-    items.forEach((item, i) => {
-      const numero = item.querySelector('.exercicio-numero');
-      if (numero) numero.textContent = `#${i + 1}`;
+    const container = document.getElementById('exercicios-container'); if (!container) return;
+    const rows = container.querySelectorAll('.exercicio-item');
+    document.getElementById('qtd-exercicios').textContent = `(${rows.length})`;
+    rows.forEach((row, index) => { row.querySelector('.exercicio-numero').textContent = `#${index + 1}`; });
+    if (!rows.length) container.innerHTML = '<p class="empty-routine">Selecione ou informe um exercício.</p>';
+    this.atualizarResumo();
+  },
+  coletarExercicios() {
+    return [...document.getElementById('exercicios-container').querySelectorAll('.exercicio-item')].map(row => {
+      const value = className => row.querySelector(`.${className}`).value.trim();
+      return { name: value('ex-nome'), muscleGroup: value('ex-grupo') || null, sets: value('ex-series'),
+        reps: value('ex-reps'), restSeconds: value('ex-pausa'), suggestedLoad: value('ex-carga') || null, notes: value('ex-obs') || null };
     });
   },
-
-  /**
-   * Coleta os dados do formulário e salva o treino via API.
-   * @param {number|null} id - ID do treino (null = criação)
-   */
+  atualizarResumo() {
+    if (window.PlanejamentoCiencia) window.PlanejamentoCiencia.updateRoutine(document.getElementById('planejamento-ciencia'), this.coletarExercicios());
+  },
   async salvarTreino(id = null) {
-    const nome = document.getElementById('treino-nome').value.trim();
-    const descricao = document.getElementById('treino-descricao').value.trim();
-    const alunoSelect = document.getElementById('treino-aluno');
-    const studentId = alunoSelect ? alunoSelect.value : null;
-
-    // Coleta exercícios do formulário dinâmico
-    const container = document.getElementById('exercicios-container');
-    const items = container.querySelectorAll('.exercicio-item');
-    const exercises = [];
-
-    items.forEach((item) => {
-      const name = item.querySelector('.ex-nome').value.trim();
-      if (!name) return; // Ignora exercícios sem nome
-
-      exercises.push({
-        name,
-        muscleGroup: item.querySelector('.ex-grupo').value.trim() || null,
-        sets: parseInt(item.querySelector('.ex-series').value) || 3,
-        reps: item.querySelector('.ex-reps').value.trim() || '12',
-        suggestedLoad: item.querySelector('.ex-carga').value.trim() || null,
-        notes: item.querySelector('.ex-obs').value.trim() || null,
-      });
-    });
-
-    // Validações básicas
-    if (!nome) {
-      Toast.warning('Informe o nome do treino.');
-      return;
+    const exercises = this.coletarExercicios();
+    const name = document.getElementById('treino-nome').value.trim();
+    const studentId = id ? this.currentStudentId : Number(document.getElementById('treino-aluno').value);
+    if (!name || !exercises.length) { Toast.warning('Informe o nome da ficha e pelo menos um exercício.'); return; }
+    if (!id && !this.idValido(studentId)) { Toast.warning('Selecione o aluno.'); return; }
+    for (const exercise of exercises) {
+      if (!exercise.name || !/^\d+$/.test(exercise.sets) || Number(exercise.sets) < 1 || Number(exercise.sets) > 100 ||
+        !/^\d+(?:\s*[-–]\s*\d+)?$/.test(exercise.reps) || !/^\d+$/.test(exercise.restSeconds) || Number(exercise.restSeconds) > 3600) {
+        Toast.warning('Defina nome, séries, repetições e pausa de todos os exercícios.'); return;
+      }
     }
-
-    if (exercises.length === 0) {
-      Toast.warning('Adicione pelo menos um exercício ao treino.');
-      return;
-    }
-
-    const payload = { name: nome, description: descricao, exercises };
-
+    const payload = { name, exercises, description: document.getElementById('treino-descricao').value.trim(), notes: document.getElementById('treino-notas').value.trim() };
+    if (!id) payload.studentId = studentId;
     try {
-      if (id) {
-        // Edição
-        await API.put(`/treinos/${id}`, payload);
-        Toast.success('Treino atualizado com sucesso!');
-      } else {
-        // Criação — precisa do studentId
-        if (!studentId) {
-          Toast.warning('Selecione o aluno para o treino.');
-          return;
-        }
-        payload.studentId = parseInt(studentId);
-        await API.post('/treinos', payload);
-        Toast.success('Treino criado com sucesso!');
-      }
-
-      Modal.close();
-      if (this.currentStudentId) {
-        await this.carregarTreinos(this.currentStudentId);
-      }
-    } catch (error) {
-      Toast.error(error.message || 'Erro ao salvar treino.');
-    }
+      const response = id ? await API.put(`/treinos/${id}`, payload) : await API.post('/treinos', payload);
+      Toast.success(response.message || 'Ficha salva.'); Modal.close();
+      if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId);
+    } catch (error) { Toast.error(error.message || 'Erro ao salvar ficha.'); }
   },
-
-  /**
-   * Exibe confirmação antes de desativar um treino.
-   * @param {number} id - ID do treino
-   * @param {string} nome - Nome do treino
-   */
-  confirmarDesativar(id, nome) {
-    Modal.confirm(
-      `Deseja desativar o treino <strong>"${nome}"</strong>?<br>O histórico completo será preservado.`,
-      async () => {
-        try {
-          await API.delete(`/treinos/${id}`);
-          Toast.success('Treino desativado com sucesso!');
-          if (this.currentStudentId) {
-            await this.carregarTreinos(this.currentStudentId);
-          }
-        } catch (error) {
-          Toast.error(error.message || 'Erro ao desativar treino.');
-        }
-      },
-      'Desativar'
-    );
+  confirmarDesativar(id, name) {
+    Modal.confirm(`Arquivar a ficha <strong>${this.escapar(name)}</strong>? Os exercícios, cargas e sessões registrados serão preservados.`, async () => {
+      try { await API.delete(`/treinos/${id}`); Toast.success('Ficha arquivada.'); if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId); }
+      catch (error) { Toast.error(error.message || 'Erro ao arquivar ficha.'); }
+    }, 'Arquivar');
   },
 };
 
-
-// ============================================
-// VISÃO DO ALUNO — MEU TREINO
-// ============================================
-
+// Compatibility view for legacy append-only charge records.
 const MeuTreinoView = {
-
-  /**
-   * Inicializa a página "Meu Treino" para o aluno.
-   * Carrega os treinos ativos do aluno logado.
-   */
-  async inicializar() {
-    await this.carregarMeusTreinos();
-  },
-
-  /**
-   * Carrega os treinos ativos do aluno via API.
-   */
+  async inicializar() { await this.carregarMeusTreinos(); },
   async carregarMeusTreinos() {
-    const container = document.getElementById('meu-treino-container');
-    if (!container) return;
-
-    try {
-      const resp = await API.get('/treinos/meus');
-      const treinos = resp.data || [];
-
-      if (treinos.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state" style="text-align:center; padding:3rem">
-            <i data-lucide="clipboard-x" style="width:64px; height:64px; opacity:0.3; margin-bottom:1rem"></i>
-            <h3 style="color:var(--text-primary)">Nenhum treino ativo</h3>
-            <p style="color:var(--text-muted)">Seu instrutor ainda não criou uma ficha de treino para você. Procure a recepção para mais informações.</p>
-          </div>`;
-        if (window.lucide) lucide.createIcons({ nodes: [container] });
-        return;
-      }
-
-      this.renderizarTreinos(treinos, container);
-    } catch (error) {
-      console.error('Erro ao carregar meus treinos:', error);
-      container.innerHTML = '<p style="color:var(--error)">Erro ao carregar seus treinos. Tente novamente.</p>';
-    }
+    const container = document.getElementById('meu-treino-container'); if (!container) return;
+    try { this.renderizarTreinos((await API.get('/treinos/meus')).data || [], container); }
+    catch (error) { container.textContent = error.message || 'Não foi possível carregar suas fichas.'; }
   },
-
-  /**
-   * Renderiza os treinos do aluno como cards com exercícios expansíveis.
-   * @param {Array} treinos - Lista de treinos ativos
-   * @param {HTMLElement} container - Container DOM
-   */
   renderizarTreinos(treinos, container) {
-    container.innerHTML = treinos.map(t => {
-      const instrutorNome = t.instructor?.name || 'Instrutor';
-      const dataCriacao = new Date(t.createdAt).toLocaleDateString('pt-BR');
-
-      const exerciciosHtml = (t.exercises || []).map((ex, i) => {
-        // Mostra a última carga registrada, se houver
-        const ultimaCarga = ex.workoutLogs && ex.workoutLogs[0]
-          ? `<span style="color:var(--accent-400); font-weight:600">${ex.workoutLogs[0].weight}kg</span>`
-          : '<span style="color:var(--text-muted)">—</span>';
-
-        return `
-          <div class="meu-exercicio-item" style="background:var(--bg-surface); border-radius:var(--radius-md); padding:0.75rem; margin-bottom:0.75rem; border:1px solid var(--border-color); transition: transform var(--transition-fast)">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem">
-              <div style="display:flex; align-items:center; gap:0.5rem">
-                <span style="color:var(--primary-400); font-size:var(--font-size-sm); font-weight:bold; background:var(--bg-elevated); width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:50%">${i + 1}</span>
-                <strong style="color:var(--text-primary); font-size:var(--font-size-base)">${ex.name}</strong>
-              </div>
-              <button class="btn btn-sm btn-primary" onclick="MeuTreinoView.abrirRegistroCarga(${ex.id}, '${ex.name.replace(/'/g, "\\'")}')" style="cursor:pointer; white-space:nowrap; padding: 4px 10px; font-size:12px">
-                <i data-lucide="plus" style="width:12px;height:12px"></i> Carga
-              </button>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:0.5rem; text-align:center; font-size:var(--font-size-sm); color:var(--text-primary);">
-               <div style="background:var(--bg-elevated); padding:0.5rem; border-radius:6px">
-                 <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px">Séries × Reps</div>
-                 <div style="font-weight:600">${ex.sets} × ${ex.reps}</div>
-               </div>
-               <div style="background:var(--bg-elevated); padding:0.5rem; border-radius:6px">
-                 <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px">Sugerido</div>
-                 <div style="font-weight:600">${ex.suggestedLoad || '-'}</div>
-               </div>
-               <div style="background:var(--bg-elevated); padding:0.5rem; border-radius:6px">
-                 <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px">Última</div>
-                 <div style="font-weight:600">${ultimaCarga}</div>
-               </div>
-            </div>
-            ${ex.notes ? `<div style="font-size:var(--font-size-xs); color:var(--text-muted); margin-top:0.5rem; padding:0.5rem; background:rgba(255,255,255,0.03); border-radius:4px; font-style:italic"><i data-lucide="info" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:4px"></i>${ex.notes}</div>` : ''}
-          </div>`;
-      }).join('');
-
-      return `
-        <div class="treino-card-aluno" style="background:var(--bg-elevated); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:1.5rem; box-shadow:var(--shadow-md); transition:box-shadow var(--transition-base)">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
-            <div>
-              <h3 style="color:var(--primary-400); font-family:var(--font-heading); font-size:var(--font-size-xl); margin:0">${t.name}</h3>
-              ${t.description ? `<p style="color:var(--text-secondary); font-size:var(--font-size-sm); margin:0.25rem 0 0">${t.description}</p>` : ''}
-            </div>
-            <div style="text-align:right; font-size:var(--font-size-xs); color:var(--text-muted)">
-              <div>Por: ${instrutorNome}</div>
-              <div>${dataCriacao}</div>
-            </div>
-          </div>
-          <div class="treino-exercicios-lista">
-            ${exerciciosHtml}
-          </div>
-        </div>`;
-    }).join('');
-
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    const escape = value => TreinosView.escapar(value);
+    container.innerHTML = treinos.length ? treinos.map(workout => `<article class="card" style="margin-bottom:1rem;padding:1rem">
+      <h3>${escape(workout.name)}</h3><p>${escape(workout.description)}</p><p>Autor: ${escape(workout.instructor?.name)}</p>
+      ${TreinosView.exerciciosDetalhes(workout.exercises)}
+      ${(workout.exercises || []).filter(ex => TreinosView.idValido(ex.id)).map(ex => `<button class="btn btn-sm btn-secondary" data-exercise="${ex.id}">Registrar carga: ${escape(ex.name)}</button>`).join('')}
+      </article>`).join('') : '<p>Nenhuma ficha ativa. Consulte seu instrutor.</p>';
+    container.onclick = event => {
+      const button = event.target.closest('[data-exercise]'); if (!button || !container.contains(button)) return;
+      const exercise = treinos.flatMap(workout => workout.exercises || []).find(ex => ex.id === Number(button.dataset.exercise));
+      if (exercise) this.abrirRegistroCarga(exercise.id, exercise.name);
+    };
+    TreinosView.icones(container);
   },
-
-  /**
-   * Abre modal para o aluno registrar a carga executada.
-   * @param {number} exerciseId - ID do exercício
-   * @param {string} nome - Nome do exercício
-   */
-  abrirRegistroCarga(exerciseId, nome) {
-    const html = `
-      <form id="form-carga" style="display:flex; flex-direction:column; gap:1rem">
-        <p style="color:var(--text-secondary)">Registre a carga que você executou:</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem">
-          <div class="form-group">
-            <label for="carga-peso"><i data-lucide="weight" style="width:14px;height:14px"></i> Carga (kg)</label>
-            <input type="number" id="carga-peso" step="0.5" min="0" placeholder="Ex: 42.5" required>
-          </div>
-          <div class="form-group">
-            <label for="carga-reps"><i data-lucide="repeat" style="width:14px;height:14px"></i> Repetições Feitas</label>
-            <input type="number" id="carga-reps" min="1" placeholder="Ex: 10">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="carga-obs"><i data-lucide="message-circle" style="width:14px;height:14px"></i> Observação (opcional)</label>
-          <input type="text" id="carga-obs" placeholder="Ex: Últimas 2 reps com ajuda">
-        </div>
-      </form>`;
-
-    Modal.open(`Registrar Carga: ${nome}`, html, [
+  abrirRegistroCarga(exerciseId, name) {
+    Modal.open(`Registrar carga: ${name}`, `<form id="form-carga"><p>Registro legado de carga; não comprova todas as séries de uma sessão.</p>
+      <div class="form-group"><label for="carga-peso">Carga externa (kg)</label><input type="number" id="carga-peso" min="0" max="9999.99" step="0.01" required><small>Zero representa ausência de carga externa; peso corporal não é estimado.</small></div>
+      <div class="form-group"><label for="carga-reps">Repetições registradas (opcional)</label><input type="number" id="carga-reps" min="1" max="1000" step="1"></div>
+      <div class="form-group"><label for="carga-obs">Observações</label><input type="text" id="carga-obs" maxlength="10000"></div></form>`, [
       { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-      {
-        text: 'Salvar Carga',
-        class: 'btn-primary',
-        action: () => this.salvarCarga(exerciseId),
-      },
-    ]);
+      { text: 'Salvar carga', class: 'btn-primary', action: () => this.salvarCarga(exerciseId) }]);
   },
-
-  /**
-   * Envia o registro de carga do aluno para a API.
-   * @param {number} exerciseId - ID do exercício
-   */
   async salvarCarga(exerciseId) {
-    const weight = document.getElementById('carga-peso').value;
-    const repsCompleted = document.getElementById('carga-reps').value;
-    const notes = document.getElementById('carga-obs').value.trim();
-
-    if (!weight || parseFloat(weight) <= 0) {
-      Toast.warning('Informe uma carga válida.');
-      return;
-    }
-
+    const raw = document.getElementById('carga-peso').value;
+    const reps = document.getElementById('carga-reps').value;
+    if (!/^\d+(?:\.\d{1,2})?$/.test(raw) || (reps && !/^\d+$/.test(reps))) { Toast.warning('Informe carga e repetições válidas.'); return; }
     try {
-      await API.post('/treinos/carga', {
-        exerciseId,
-        weight: parseFloat(weight),
-        repsCompleted: repsCompleted ? parseInt(repsCompleted) : null,
-        notes: notes || null,
-      });
-
-      Toast.success('Carga registrada com sucesso! 💪');
-      Modal.close();
-
-      // Recarrega para atualizar a última carga exibida
-      await this.carregarMeusTreinos();
-    } catch (error) {
-      Toast.error(error.message || 'Erro ao registrar carga.');
-    }
+      await API.post('/treinos/carga', { exerciseId, weight: Number(raw), repsCompleted: reps ? Number(reps) : null, notes: document.getElementById('carga-obs').value.trim() || null });
+      Toast.success('Carga registrada.'); Modal.close(); await this.carregarMeusTreinos();
+    } catch (error) { Toast.error(error.message || 'Erro ao registrar carga.'); }
   },
 };

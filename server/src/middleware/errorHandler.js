@@ -14,13 +14,28 @@ const env = require('../config/env');
  * Deve ser registrado DEPOIS de todas as rotas.
  */
 function errorHandler(err, req, res, next) {
+  const prismaErrors = {
+    P1000: [503, 'Banco de dados indisponível. Procure a administração.'],
+    P1001: [503, 'Não foi possível conectar ao banco de dados. Tente novamente.'],
+    P1002: [503, 'O banco de dados demorou para responder. Tente novamente.'],
+    P1017: [503, 'A conexão com o banco foi interrompida. Tente novamente.'],
+    P2024: [503, 'O banco de dados está ocupado. Tente novamente.'],
+    P2034: [503, 'Conflito temporário ao gravar. Tente novamente.'],
+    P2002: [409, 'Este registro já existe. Confira os dados antes de tentar novamente.'],
+    P2003: [409, 'Este registro está relacionado a outro dado e não pode ser removido.'],
+    P2025: [404, 'Registro não encontrado.'],
+  };
+  if (prismaErrors[err.code]) {
+    [err.statusCode, err.message] = prismaErrors[err.code];
+    err.isOperational = true;
+  }
   // Valores padrão
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
   // Log do erro (sempre no servidor)
   if (err.statusCode === 500) {
-    console.error('🔴 ERRO INTERNO:', err);
+    console.error('Erro interno:', { code: err.code || 'UNKNOWN', type: err.name || 'Error' });
   } else if (env.isDev) {
     console.error(`⚠️  [${err.statusCode}]`, err.message);
   }

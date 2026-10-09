@@ -7,6 +7,7 @@
  */
 
 const { prisma } = require('../config/prisma');
+const { getDatabaseProvider } = require('../config/databaseProvider');
 
 class AlunosRepository {
   /**
@@ -19,10 +20,11 @@ class AlunosRepository {
     if (filters.status) where.status = filters.status;
     if (filters.planId) where.planId = parseInt(filters.planId);
     if (filters.search) {
+      const search = { contains: filters.search, ...(getDatabaseProvider() === 'postgresql' ? { mode: 'insensitive' } : {}) };
       where.user = {
         OR: [
-          { name: { contains: filters.search } },
-          { email: { contains: filters.search } },
+          { name: search },
+          { email: search },
         ],
       };
     }

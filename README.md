@@ -1,103 +1,67 @@
-# 🏋️ FitFlow Caraguá
-### **Gestão Inteligente & Moderna para Academias**
+# FitFlow Caraguá
 
-![NodeJS](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+Projeto acadêmico de gestão de academia, com áreas de administrador, instrutor e aluno. Interface em português, identidade laranja e azul escuro. A [landing publicada](https://fitflow-lp.vercel.app) apresenta o sistema e aponta ao aplicativo; seu código fica no repositório [fitflow-LP](https://github.com/EznRB/fitflow-LP).
 
-O **FitFlow Caraguá** é uma solução completa voltada para a digitalização de academias. Desenvolvido com foco em alta performance e uma experiência de usuário (UX) premium, o sistema substitui planilhas e cadernos por uma interface intuitiva inspirada nas melhores práticas de aplicativos fitness modernos como o *Hevy*.
+## Desenvolvimento
 
----
+Node.js **24.x**; MySQL/MariaDB acessível para a demonstração local. **Docker não é necessário.** O ambiente preparado neste computador usa MariaDB nativo em `127.0.0.1:3308`, isolado em `.local-db/`.
 
-## ✨ Funcionalidades Principais
-
-### 🔹 Painel Administrativo
-- **Dashboard em Tempo Real**: Visualize KPIs críticos como total de alunos ativos e inadimplência.
-- **Gestão de Alunos**: Cadastro completo com status de matrícula, controle de planos e vencimentos.
-- **Construtor de Treinos (Hevy-Style)**: Interface de duas colunas com **Drag & Drop** para criar fichas de treino personalizadas de forma rápida.
-- **Catálogo de Exercícios**: Base de dados com mais de 25 exercícios pré-configurados, incluindo imagens e instruções técnicas.
-
-### 🔹 Área do Aluno
-- **Visão Individual de Treino**: Cards interativos para acompanhamento das séries e repetições.
-- **Registro de Carga**: Histórico progressivo de pesos levantados para monitoramento de evolução.
-- **Check-in Dinâmico**: Registro automático de frequência ao acessar o sistema.
-
----
-
-## 🛠️ Stack Tecnológica
-
-O projeto utiliza uma stack robusta e focada em segurança:
-
-| Camada | Tecnologia | Descrição |
-| :--- | :--- | :--- |
-| **Backend** | Node.js + Express | API RESTful rápida e escalável. |
-| **Banco de Dados** | MySQL | Armazenamento relacional de alta integridade. |
-| **ORM** | Prisma | Facilidade e segurança na manipulação de queries. |
-| **Frontend** | Vanilla JS + Modern CSS | Interface SPA (Single Page Application) sem frameworks pesados. |
-| **Segurança** | JWT + Helmet | Autenticação via cookies httpOnly e proteção contra ataques comuns. |
-
----
-
-## 🧱 Arquitetura de Software
-
-O sistema segue o padrão de **Arquitetura em Camadas**, garantindo fácil manutenção e extensibilidade:
-
-1. **Controllers**: Gerenciam as requisições HTTP e as respostas da API.
-2. **Services**: Contêm as regras de negócio e validações lógicas.
-3. **Repositories**: Camada isolada para comunicação direta com o banco de dados.
-4. **Middlewares**: Processam segurança (JWT), Rate Limiting e tratamento global de erros.
-
----
-
-## 🚀 Como Executar o Projeto
-
-### Pré-requisitos
-- [Node.js](https://nodejs.org/) (versão 18 ou superior)
-- [XAMPP](https://www.apachefriends.org/) ou MySQL Server local
-
-### 1. Clonagem e Dependências
-```bash
-git clone https://github.com/EznRB/FitFlow.git
-cd FitFlow/server
-npm install
+```powershell
+cd server
+npm ci
+npm run db:local:start
+npm run db:local:migrate
+npm run db:local:seed
+npm run dev:local
 ```
 
-### 2. Configurações de Ambiente
-Crie um arquivo `.env` na pasta `server/` (use o `.env.example` como base):
-```env
-PORT=3000
-DATABASE_URL="mysql://root:@localhost:3306/fitflow_caragua"
-JWT_SECRET="sua_chave_secreta_aqui"
+Aplicativo: `http://127.0.0.1:3107/`. As contas demonstrativas têm senhas individuais em `server/.demo-credentials.local.json`, ignorado pelo Git. O seed só opera no banco local identificado, é repetível e preserva registros. Não há senha universal publicada.
+
+Para configurar outro computador ou banco, consulte [Desenvolvimento](docs/DESENVOLVIMENTO.md). Não execute seed demonstrativo em produção.
+
+O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 17 Free em São Paulo, com schema/migrations separados e conexão pooled. Login dos três perfis, cookie seguro, autorização, CSRF e logout passaram no gate HTTPS de Production. O navegador confirmou sessão autenticada após recarga e persistência de uma sessão de treino finalizada. [Banco, implantação e verificações](docs/BANCO_REMOTO_VERCEL.md).
+
+## Recursos implementados
+
+- Gestão de alunos, planos, fichas, presença, pagamentos manuais e relatórios.
+- Autenticação em cookie httpOnly; autorização considera o usuário ativo e seu papel atual no banco. Escritas protegidas por origem, API sem cache e quotas de login/IA compartilhadas no banco em produção.
+- Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
+- Registro de sessões e séries com carga externa, repetições, RIR opcional, aquecimento/trabalho, snapshot da ficha e IDs idempotentes.
+- Fila de séries por conta em IndexedDB, com estado de sincronização e conflitos visíveis.
+- Recuperação de sessão rejeitada com confirmação e preservação local dos registros. Logout sem conexão não restaura automaticamente a conta ao reconectar.
+- Nutrição com Mifflin–St Jeor ou Harris–Benedict revisada, hipóteses explícitas e parâmetros salvos/restaurados por consentimento.
+- Fundamentos científicos com referências; IA educativa opcional no servidor, sem envio de medidas corporais.
+- PWA com manifesto e fallback público offline. Novas abas offline exigem reconexão para validar autenticação.
+
+## Verificação
+
+```powershell
+cd server
+npm test
+npm audit
+node scripts/with-local-env.cjs node scripts/smoke-local.cjs
+node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-### 3. Banco de Dados & Seeds
-Configure o banco através do terminal ou PHPMyAdmin e popule com dados iniciais:
-```bash
-# Executa o seed de exercícios e dados iniciais
-node seed_direct.js
-```
+Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. A suíte comum usa doubles e não requer credenciais de serviços externos.
 
-### 4. Iniciar o Sistema
-```bash
-npm run dev
-```
-Acesse o sistema em: `http://localhost:3000`
+## Publicação e limites atuais
 
----
+O login antigo da Vercel falhava porque o host Aiven configurado não resolvia no DNS; a tentativa retornou 500. **O login no domínio final foi recuperado com o novo banco Neon.** A demonstração remota tem cinco contas com senhas novas em `server/.demo-credentials.remote.local.json`, ignorado pelo Git, três alunos, duas fichas e 798 exercícios. As credenciais antigas do GitHub não foram restauradas, e os dados antigos do Aiven não foram recuperados. O deploy foi realizado pela CLI a partir das alterações locais; ainda não houve push dos repositórios.
 
-## 👤 Login de Usuários para Teste
+Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. A antiga simulação de pagamento pelo aluno foi desativada: o retorno do navegador não comprova pagamento. IA real depende de chave e quota; pagamentos dependem de credenciais e webhook do provedor. O aplicativo publicado passou na viewport emulada 375 × 812 sem overflow; telefone físico e instalação não foram testados. Demais fluxos e persistência das alterações no GitHub continuam pendentes. Consulte a [meta completa](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
-| Perfil | Email | Senha |
-| :--- | :--- | :--- |
-| **Administrador** | admin@fitflow.com | admin123 |
-| **Aluno** | aluno@fitflow.com | aluno123 |
+## Documentação
 
----
+- [Estado da entrega e evidências](docs/STATUS_ENTREGA.md)
+- [Desenvolvimento e banco nativo](docs/DESENVOLVIMENTO.md)
+- [Arquitetura e contratos](docs/ARQUITETURA.md)
+- [Datas civis e calendário operacional](docs/DATAS_E_FUSO.md)
+- [Ciência, fontes e limites](docs/CIENCIA.md)
+- [Ferramentas e integrações pesquisadas](docs/FERRAMENTAS_E_INTEGRACOES.md)
+- [Plano completo de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md)
+- [Direção visual](design-system/fitflow/MASTER.md)
 
-## 📋 Licença e Autoria
+Documentos datados de análise e planejamento registram o estado daquele momento. Não representam automaticamente o estado atual nem a conclusão do projeto.
 
-Este projeto foi desenvolvido como parte de um sistema de gestão educacional.
-Desenvolvido por **Enzo**.
-
-© 2026 FitFlow Caraguá — Todos os direitos reservados.
+Autoria: Enzo Marcelo Ribeiro Fermiano — Análise e Desenvolvimento de Sistemas, 2026.

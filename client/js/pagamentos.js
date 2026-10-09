@@ -75,6 +75,12 @@ const PagamentosView = {
   async carregarLista() {
     const tbody = document.getElementById('pagamentos-table-body');
     if (!tbody) return;
+    tbody.onclick = event => {
+      const button = event.target?.closest?.('button[data-payment-details]');
+      if (!button || !tbody.contains(button) || !/^[1-9]\d*$/.test(button.dataset.paymentDetails || '')) return;
+      const id = Number(button.dataset.paymentDetails);
+      if (Number.isSafeInteger(id)) this.verDetalhes(id);
+    };
 
     try {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;">
@@ -99,8 +105,8 @@ const PagamentosView = {
       }
 
       tbody.innerHTML = this.dados.map(p => {
-        const nomeAluno = p.student?.user?.name || '—';
-        const nomePlano = p.plan?.name || 'Sem plano';
+        const nomeAluno = FitFlowSecurity.escapeHtml(p.student?.user?.name || '—');
+        const nomePlano = FitFlowSecurity.escapeHtml(p.plan?.name || 'Sem plano');
         const valor = `R$ ${parseFloat(p.amount).toFixed(2).replace('.', ',')}`;
         const dataPgto = this.formatarData(p.paymentDate);
         const dataVenc = this.formatarData(p.dueDate);
@@ -120,7 +126,7 @@ const PagamentosView = {
             <td>${statusBadge}</td>
             <td>
               <div class="table-actions">
-                <button class="btn-icon" title="Ver detalhes" onclick="PagamentosView.verDetalhes(${p.id})">
+                <button type="button" class="btn-icon" title="Ver detalhes" data-payment-details="${Number(p.id)}">
                   <i data-lucide="eye"></i>
                 </button>
               </div>
@@ -168,14 +174,14 @@ const PagamentosView = {
   abrirModalRegistro() {
     // Gera opções de alunos
     const opcoesAlunos = this.alunos.map(a => {
-      const nome = a.user ? a.user.name : `Aluno #${a.id}`;
-      const planoAtual = a.plan ? ` (${a.plan.name})` : '';
-      return `<option value="${a.id}">${nome}${planoAtual}</option>`;
+      const nome = FitFlowSecurity.escapeHtml(a.user ? a.user.name : `Aluno #${a.id}`);
+      const planoAtual = a.plan ? ` (${FitFlowSecurity.escapeHtml(a.plan.name)})` : '';
+      return `<option value="${Number(a.id)}">${nome}${planoAtual}</option>`;
     }).join('');
 
     // Gera opções de planos
     const opcoesPlanos = this.planos.map(p => {
-      return `<option value="${p.id}">${p.name} — R$ ${parseFloat(p.price).toFixed(2).replace('.', ',')}</option>`;
+      return `<option value="${Number(p.id)}">${FitFlowSecurity.escapeHtml(p.name)} — R$ ${parseFloat(p.price).toFixed(2).replace('.', ',')}</option>`;
     }).join('');
 
     // Data de hoje para o campo de data
@@ -184,29 +190,29 @@ const PagamentosView = {
     const bodyHTML = `
       <form id="form-pagamento" class="form-grid">
         <div class="form-group" style="grid-column: span 2;">
-          <label>Aluno *</label>
+          <label for="input-pgto-aluno">Aluno *</label>
           <select id="input-pgto-aluno" required>
             <option value="">Selecione o aluno</option>
             ${opcoesAlunos}
           </select>
         </div>
         <div class="form-group">
-          <label>Plano</label>
+          <label for="input-pgto-plano">Plano</label>
           <select id="input-pgto-plano">
             <option value="">Usar plano atual do aluno</option>
             ${opcoesPlanos}
           </select>
         </div>
         <div class="form-group">
-          <label>Valor (R$) *</label>
+          <label for="input-pgto-valor">Valor (R$) *</label>
           <input type="number" step="0.01" min="0.01" id="input-pgto-valor" placeholder="Ex: 89.90" required>
         </div>
         <div class="form-group">
-          <label>Data do Pagamento</label>
+          <label for="input-pgto-data">Data do Pagamento</label>
           <input type="date" id="input-pgto-data" value="${hoje}">
         </div>
         <div class="form-group">
-          <label>Método de Pagamento</label>
+          <label for="input-pgto-metodo">Método de Pagamento</label>
           <select id="input-pgto-metodo">
             <option value="">Selecione</option>
             <option value="dinheiro">Dinheiro</option>
@@ -218,7 +224,7 @@ const PagamentosView = {
           </select>
         </div>
         <div class="form-group" style="grid-column: span 2;">
-          <label>Observações</label>
+          <label for="input-pgto-notas">Observações</label>
           <textarea id="input-pgto-notas" rows="2" placeholder="Anotações sobre este pagamento..."></textarea>
         </div>
       </form>
@@ -320,8 +326,8 @@ const PagamentosView = {
       const resp = await API.get(`/pagamentos/${id}`);
       const p = resp.data;
 
-      const nomeAluno = p.student?.user?.name || '—';
-      const nomePlano = p.plan?.name || 'Sem plano';
+      const nomeAluno = FitFlowSecurity.escapeHtml(p.student?.user?.name || '—');
+      const nomePlano = FitFlowSecurity.escapeHtml(p.plan?.name || 'Sem plano');
       const valor = `R$ ${parseFloat(p.amount).toFixed(2).replace('.', ',')}`;
       const dataPgto = this.formatarData(p.paymentDate);
       const dataVenc = this.formatarData(p.dueDate);
@@ -361,7 +367,7 @@ const PagamentosView = {
           ${p.notes ? `
           <div style="grid-column: span 2;">
             <label style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">Observações</label>
-            <p style="margin-top:0.25rem; color:var(--text-secondary)">${p.notes}</p>
+            <p style="margin-top:0.25rem; color:var(--text-secondary)">${FitFlowSecurity.escapeHtml(p.notes)}</p>
           </div>` : ''}
         </div>
       `;
@@ -403,9 +409,9 @@ const PagamentosView = {
           </p>
           <div style="display:flex; flex-direction:column; gap:0.75rem; max-height:400px; overflow-y:auto;">
             ${lista.map(aluno => {
-              const nome = aluno.user?.name || '—';
-              const email = aluno.user?.email || '';
-              const planoNome = aluno.plan?.name || 'Sem plano';
+              const nome = FitFlowSecurity.escapeHtml(aluno.user?.name || '—');
+              const email = FitFlowSecurity.escapeHtml(aluno.user?.email || '');
+              const planoNome = FitFlowSecurity.escapeHtml(aluno.plan?.name || 'Sem plano');
               const vencimento = aluno.planEndDate ? this.formatarData(aluno.planEndDate) : '—';
               const diasAtraso = aluno.planEndDate ? this.calcularDiasAtraso(aluno.planEndDate) : 0;
               const ultimoPgto = aluno.payments?.[0];
@@ -432,7 +438,7 @@ const PagamentosView = {
                     Último pagamento: ${ultimoPgtoData}
                   </div>
                   <div style="margin-top:0.75rem;">
-                    <button class="btn btn-sm btn-success" onclick="PagamentosView.registrarPagamentoRapido(${aluno.id})">
+                    <button type="button" class="btn btn-sm btn-success" data-payment-student="${Number(aluno.id)}">
                       <i data-lucide="credit-card" style="width:14px; height:14px;"></i>
                       Registrar Pagamento
                     </button>
@@ -447,6 +453,13 @@ const PagamentosView = {
       Modal.open('Alunos Inadimplentes', bodyHTML, [
         { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
       ]);
+      const actionsHost = document.getElementById('modal-body');
+      if (actionsHost) actionsHost.onclick = event => {
+        const button = event.target?.closest?.('button[data-payment-student]');
+        if (!button || !actionsHost.contains(button) || !/^[1-9]\d*$/.test(button.dataset.paymentStudent || '')) return;
+        const id = Number(button.dataset.paymentStudent);
+        if (Number.isSafeInteger(id)) this.registrarPagamentoRapido(id);
+      };
 
       // Recria ícones Lucide no modal
       setTimeout(() => {
@@ -509,7 +522,7 @@ const PagamentosView = {
       pending: '<span class="badge badge-warning">Pendente</span>',
       overdue: '<span class="badge badge-error">Vencido</span>',
     };
-    return map[status] || `<span class="badge badge-neutral">${status}</span>`;
+    return Object.hasOwn(map, status) ? map[status] : `<span class="badge badge-neutral">${FitFlowSecurity.escapeHtml(status)}</span>`;
   },
 
   /**
@@ -524,6 +537,6 @@ const PagamentosView = {
       boleto: '📄 Boleto',
       transferencia: '🏦 Transferência',
     };
-    return map[metodo] || metodo || '—';
+    return Object.hasOwn(map, metodo) ? map[metodo] : FitFlowSecurity.escapeHtml(metodo || '—');
   },
 };

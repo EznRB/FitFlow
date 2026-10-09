@@ -44,6 +44,14 @@ const AlunosView = {
   renderTabela(dados) {
     const tableBody = document.getElementById('alunos-table-body');
     if (!tableBody) return;
+    tableBody.onclick = event => {
+      const button = event.target?.closest?.('button[data-aluno-action]');
+      if (!button || !tableBody.contains(button) || !/^[1-9]\d*$/.test(button.dataset.alunoId || '')) return;
+      const id = Number(button.dataset.alunoId);
+      if (!Number.isSafeInteger(id)) return;
+      if (button.dataset.alunoAction === 'edit') this.abrirModalEdicao(id);
+      else if (button.dataset.alunoAction === 'deactivate') this.inativarAluno(id);
+    };
 
     if (dados.length === 0) {
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5">Nenhum aluno cadastrado/encontrado.</td></tr>`;
@@ -51,23 +59,23 @@ const AlunosView = {
     }
 
     tableBody.innerHTML = dados.map(aluno => `
-      <tr data-id="${aluno.id}" class="${aluno.status === 'inactive' ? 'aluno-inativo' : ''}">
+      <tr data-id="${Number(aluno.id)}" class="${aluno.status === 'inactive' ? 'aluno-inativo' : ''}">
         <td>
-          <strong>${aluno.user.name}</strong><br>
-          <small style="color:var(--text-muted)">${aluno.user.email}</small>
+          <strong>${FitFlowSecurity.escapeHtml(aluno.user.name)}</strong><br>
+          <small style="color:var(--text-muted)">${FitFlowSecurity.escapeHtml(aluno.user.email)}</small>
         </td>
-        <td>${aluno.cpf || '-'}</td>
-        <td>${aluno.plan ? aluno.plan.name : '<span class="badge badge-warning">Sem Plano</span>'}</td>
+        <td>${FitFlowSecurity.escapeHtml(aluno.cpf || '-')}</td>
+        <td>${aluno.plan ? FitFlowSecurity.escapeHtml(aluno.plan.name) : '<span class="badge badge-warning">Sem Plano</span>'}</td>
         <td>
            <span class="badge ${aluno.status === 'active' ? 'badge-success' : 'badge-danger'}">
-             ${aluno.status === 'active' ? 'Ativo' : 'Inativo'}
+             ${aluno.status === 'active' ? 'Ativo' : aluno.status === 'blocked' ? 'Bloqueado' : 'Inativo'}
            </span>
         </td>
         <td>
-          <button class="btn btn-icon btn-outline-primary" title="Editar" onclick="AlunosView.abrirModalEdicao(${aluno.id})">
+          <button type="button" class="btn btn-icon btn-outline-primary" title="Editar" data-aluno-action="edit" data-aluno-id="${Number(aluno.id)}">
             <i data-lucide="edit-3"></i>
           </button>
-          <button class="btn btn-icon btn-outline-danger" title="Inativar" onclick="AlunosView.inativarAluno(${aluno.id})">
+          <button type="button" class="btn btn-icon btn-outline-danger" title="Inativar" data-aluno-action="deactivate" data-aluno-id="${Number(aluno.id)}">
             <i data-lucide="user-x"></i>
           </button>
         </td>
@@ -122,23 +130,27 @@ const AlunosView = {
     const bodyHTML = `
       <form id="form-aluno" class="form-grid">
         <div class="form-group">
-          <label>Nome Completo*</label>
+          <label for="input-aluno-nome">Nome Completo*</label>
           <input type="text" id="input-aluno-nome" required>
         </div>
         <div class="form-group">
-          <label>E-mail*</label>
+          <label for="input-aluno-email">E-mail*</label>
           <input type="email" id="input-aluno-email" required>
         </div>
         <div class="form-group">
-          <label>CPF</label>
+          <label for="input-aluno-senha">Senha do Aluno*</label>
+          <input type="password" id="input-aluno-senha" autocomplete="new-password" minlength="8" maxlength="72" required>
+        </div>
+        <div class="form-group">
+          <label for="input-aluno-cpf">CPF</label>
           <input type="text" id="input-aluno-cpf" placeholder="Apenas números">
         </div>
         <div class="form-group">
-          <label>Telefone</label>
+          <label for="input-aluno-telefone">Telefone</label>
           <input type="text" id="input-aluno-telefone">
         </div>
         <div class="form-group" style="grid-column: span 2;">
-          <label>Plano de Matrícula*</label>
+          <label for="input-aluno-plano">Plano de Matrícula*</label>
           <select id="input-aluno-plano" required>
             <option value="">Carregando planos...</option>
           </select>
@@ -163,7 +175,7 @@ const AlunosView = {
       const planos = resp.data;
       
       select.innerHTML = '<option value="">Selecione um plano</option>' + 
-        planos.map(p => `<option value="${p.id}">${p.name} (R$ ${p.price})</option>`).join('');
+        planos.map(p => `<option value="${Number(p.id)}">${FitFlowSecurity.escapeHtml(p.name)} (R$ ${Number(p.price)})</option>`).join('');
     } catch (e) {
       select.innerHTML = '<option value="">Erro ao carregar planos</option>';
     }
@@ -185,24 +197,24 @@ const AlunosView = {
     const bodyHTML = `
       <form id="form-aluno" class="form-grid">
         <div class="form-group">
-          <label>Nome Completo*</label>
-          <input type="text" id="input-aluno-nome" value="${aluno.user.name}" required>
+          <label for="input-aluno-nome">Nome Completo*</label>
+          <input type="text" id="input-aluno-nome" value="${FitFlowSecurity.escapeHtml(aluno.user.name)}" required>
         </div>
         <div class="form-group">
-          <label>E-mail* (Gerenciado por Senha)</label>
-          <input type="email" id="input-aluno-email" value="${aluno.user.email}" disabled>
+          <label for="input-aluno-email">E-mail da conta</label>
+          <input type="email" id="input-aluno-email" value="${FitFlowSecurity.escapeHtml(aluno.user.email)}" disabled>
         </div>
         <div class="form-group">
-          <label>CPF</label>
-          <input type="text" id="input-aluno-cpf" value="${aluno.cpf || ''}">
+          <label for="input-aluno-cpf">CPF</label>
+          <input type="text" id="input-aluno-cpf" value="${FitFlowSecurity.escapeHtml(aluno.cpf || '')}">
         </div>
         <div class="form-group">
-          <label>Telefone</label>
-          <input type="text" id="input-aluno-telefone" value="${aluno.phone || ''}">
+          <label for="input-aluno-telefone">Telefone</label>
+          <input type="text" id="input-aluno-telefone" value="${FitFlowSecurity.escapeHtml(aluno.phone || '')}">
         </div>
         <div class="form-group">
-          <label>Nascimento</label>
-          <input type="date" id="input-aluno-aniversario" value="${dataNascimento}">
+          <label for="input-aluno-aniversario">Nascimento</label>
+          <input type="date" id="input-aluno-aniversario" value="${FitFlowSecurity.escapeHtml(dataNascimento)}">
         </div>
       </form>
     `;
@@ -233,6 +245,14 @@ const AlunosView = {
       birthDate: document.getElementById('input-aluno-aniversario') ? document.getElementById('input-aluno-aniversario').value : undefined,
       planId: document.getElementById('input-aluno-plano') ? document.getElementById('input-aluno-plano').value : undefined,
     };
+    if (!this.alunoAtualId) {
+      const password = document.getElementById('input-aluno-senha')?.value;
+      if (!password || password.length < 8 || new TextEncoder().encode(password).length > 72) {
+        Toast.error('Informe uma senha própria com pelo menos 8 caracteres e até 72 bytes.');
+        return;
+      }
+      payload.password = password;
+    }
 
     try {
       const buttons = document.querySelectorAll('#modal-footer .btn-primary');

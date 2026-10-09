@@ -55,12 +55,13 @@ function formatCurrencyBR(value) {
  * @param {number} graceDays - Dias de carência (padrão: 5)
  * @returns {boolean} true se estiver vencida além da carência
  */
-function isOverdue(dueDate, graceDays = 5) {
+function isOverdue(dueDate, graceDays = 5, now = new Date()) {
   if (!dueDate) return false;
+  const { brazilDate } = require('./civil-date');
   const due = new Date(dueDate);
-  const now = new Date();
-  const diffMs = now - due;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  // dueDate is MySQL DATE at UTC midnight; expiry follows the Brazilian
+  // calendar through the end of the allowed day, not the host's UTC midnight.
+  const diffDays = Math.round((brazilDate(now) - due) / 86400000);
   return diffDays > graceDays;
 }
 

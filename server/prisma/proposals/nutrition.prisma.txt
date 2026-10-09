@@ -1,0 +1,13 @@
+// Merge into User: nutritionScenario NutritionScenario?
+// Optional current scenario, saved only on explicit opt-in. It is not financial audit history.
+model NutritionScenario {
+  userId         Int      @id @map("user_id")
+  inputs         Json
+  formulaVersion String   @map("formula_version") @db.VarChar(40)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("nutrition_scenarios")
+}
+// inputs contains only formula,sex,age,weightKg,heightCm,activityFactor,
+// adjustmentPercent,proteinPerKg,fatPercent. No name/email/diagnosis/AI output.
+// eligible is always freshly confirmed and is never persisted.
