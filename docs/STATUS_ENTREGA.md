@@ -1,6 +1,6 @@
 # Estado da entrega — 08/10/2026
 
-A meta completa está ativa. Aplicativo e landing foram publicados pela CLI a partir das alterações locais. Login e persistência de treino no domínio final passaram com Neon; a landing está publicamente acessível. A persistência no GitHub está em preparação por branches/PRs draft; nada foi mesclado à branch principal. Este documento diferencia implementação, verificação e dependências externas.
+A meta completa está ativa. Aplicativo e landing foram publicados pela CLI. Login e persistência de treino no domínio final passaram com Neon; a landing está publicamente acessível. Código enviado às branches, com PRs draft criados e anexados; nada foi mesclado à branch principal. Este documento diferencia implementação, verificação e dependências externas.
 
 ## Evidências obtidas
 
@@ -44,13 +44,21 @@ PostgreSQL: baseline aplicada ao cluster dedicado `127.0.0.1:5448/fitflow_pg_tes
 
 O papel runtime `fitflow_app` teve os atributos administrativos conferidos como ausentes. Logs e séries recebem `SELECT`/`INSERT`, sem `UPDATE`/`DELETE`. O teste real `check-neon-runtime.cjs` aprovou leitura/inserção/atualização em transação revertida e confirmou SQLSTATE `42501` para DDL, atualização de séries e exclusão de logs, pagamentos e usuários. Credenciais owner, verificação e runtime ficam em arquivos privados ignorados, separados; somente runtime foi enviado à Vercel.
 
+O papel API administrativo não utilizado `fitflow_runtime` foi removido pelo MCP Neon após autorização explícita do usuário. A listagem da branch principal confirmou apenas `fitflow_app` e `fitflow_owner`. `check-private-files.cjs` passou para 256 arquivos candidatos e segredos locais conhecidos; não examinou todo o histórico Git nem segredos desconhecidos.
+
 [Preview validado](https://fit-flow-aii93048s-eznrbs-projects.vercel.app): o script `check-hosted-fitflow.cjs` passou via HTTPS nos três perfis, com autorização, catálogo, painel, CSRF e logout. A implantação tem proteção de acesso. O gate confere respostas e atributos dos cookies; não substitui os testes finais no navegador/telefone. Credenciais demonstrativas remotas novas estão em `server/.demo-credentials.remote.local.json`; não há histórico de QA copiado do banco local.
 
 [Production validada](https://fit-flow-indol.vercel.app): deployment `dpl_6EYbxgErP4HK7QBtWevwkgMn2j5V`, READY, função `gru1`, Node 24.x e pacote de 9,68 MB. O mesmo gate HTTPS passou. No navegador, login do aluno usou cookie HttpOnly real; recarga manteve autenticação. A sessão demonstrativa com nota explícita de teste acadêmico recebeu uma série de trabalho 20 kg × 8, RIR 2; foi finalizada e reapareceu após recarga/reabertura/expansão do histórico, com uma série e 160 kg·reps. A captura 16 registra essa verificação.
 
+O alias canônico agora aponta ao deployment READY `dpl_5keW3LmJW9PX16PzaNnUs4rngMD1`, revisão `dad6d9c`, com o ajuste de texto plural. Na revisão atual, o navegador também restaurou a autenticação após recarga e mostrou a sessão já finalizada, a série 20 kg × 8, RIR 2 e o volume 160 kg·reps; captura `evidence/19-vercel-revisao-atual-historico.png`. As capturas 16–18 preservam as verificações anteriores.
+
 **Login recuperado no domínio final com banco e credenciais novos.** Credenciais antigas do GitHub não foram restauradas; registros do Aiven não foram recuperados. A prova obtida abrange os fluxos registrados, sem declarar toda a entrega concluída.
 
-[Landing publicada](https://fitflow-lp.vercel.app): deployment `dpl_GgjuMMHUXcdYXLL3ZfjWHAUTVzc9`, READY. Gate público sem bypass confirmou HTML, JavaScript, CSS e imagem hero com HTTP 200, além do CTA para `https://fit-flow-indol.vercel.app`. O navegador confirmou a imagem nova e a composição publicada. As implantações usam alterações locais; GitHub está em preparação para revisão por PR draft, sem merge à branch principal.
+[Landing publicada](https://fitflow-lp.vercel.app): deployment `dpl_GgjuMMHUXcdYXLL3ZfjWHAUTVzc9`, READY. Gate público sem bypass confirmou HTML, JavaScript, CSS e imagem hero com HTTP 200, além do CTA para `https://fit-flow-indol.vercel.app`. O navegador confirmou a imagem nova e a composição publicada.
+
+GitHub: aplicativo commit `dad6d9c` em `codex/science-ux-foundation`, [PR draft #1](https://github.com/EznRB/FitFlow/pull/1); landing commit `c6b43ba` em `codex/landing-improvements`, [PR draft #1](https://github.com/EznRB/fitflow-LP/pull/1). Ambos foram enviados e anexados à tarefa. Revisão e merge permanecem pendentes; nenhum merge à branch principal foi realizado.
+
+[CI GitHub — FitFlow verification #12](https://github.com/EznRB/FitFlow/actions/runs/37873364828), ID `37873364828`, concluída com sucesso para `dad6d9c`. Após remover o papel não utilizado, o teste runtime passou novamente; no domínio final, health retornou HTTP 200 com banco pronto e `js/sessoes` retornou 200 com o texto atualizado. Essas verificações específicas não representam repetição de toda a suíte ou do fluxo de navegador.
 
 ## Pendências obrigatórias
 
@@ -58,7 +66,7 @@ O papel runtime `fitflow_app` teve os atributos administrativos conferidos como 
 2. **Mercado Pago de teste:** configurar vendedor/comprador sandbox, token, segredo de webhook e URL HTTPS. Confirmar/rejeitar eventos reais de teste antes de declarar integração operacional. Nenhuma credencial deve ser enviada no chat ou ao frontend.
 3. **IA:** configurar chave e quota/limite de gasto no provedor e realizar teste real de explicação. Validação de IDs de fontes não comprova a veracidade de cada frase gerada.
 4. **Telefone físico:** testar instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Tela responsiva e testes de fila no navegador não substituem esse teste.
-5. **Validação final e repositórios:** concluir os demais fluxos de publicação, conferir headers e reconexão e revisar visualmente as áreas de gestão. Modais e revisão visual por papel passaram localmente; aluno/persistência e landing foram conferidos no navegador publicado. Persistência das alterações em branches/PRs draft está em preparação; não houve merge à branch principal.
+5. **Validação final e revisão:** concluir os demais fluxos de publicação, conferir headers e reconexão e revisar visualmente as áreas de gestão. Modais e revisão visual por papel passaram localmente; aluno/persistência e landing foram conferidos no navegador publicado. Código já enviado aos PRs draft; revisão e merge à branch principal estão pendentes.
 
 ## Roteiro de apresentação local
 
