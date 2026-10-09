@@ -169,6 +169,7 @@ const App = {
    * Manipulamos o estilo `display` para alternar entre elas instantaneamente.
    */
   showLogin() {
+    if (typeof Modal !== 'undefined' && typeof Modal.close === 'function') Modal.close();
     if (typeof SessoesView !== 'undefined') SessoesView.destroy();
     if (typeof ProgressaoView !== 'undefined') ProgressaoView.destroy();
     document.getElementById('login-screen').style.display = 'flex';
@@ -379,15 +380,15 @@ const App = {
         </div>
       `,
       alunos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Gestão de Alunos</h2>
             <p style="color:var(--text-muted)">Cadastre, inative ou atualize o perfil dos clientes da academia.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center;">
-            <div class="form-group input-with-icon" style="margin:0; min-width: 250px;">
+          <div class="admin-page-actions">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-nome-aluno" placeholder="Buscar aluno..." />
+              <input type="search" id="filtro-nome-aluno" aria-label="Buscar aluno por nome" placeholder="Buscar aluno..." />
             </div>
             <button id="btn-novo-aluno" class="btn btn-primary">
               <i data-lucide="user-plus"></i>
@@ -396,7 +397,7 @@ const App = {
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Lista de alunos; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border)">
@@ -414,7 +415,7 @@ const App = {
         </div>
       `,
       planos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Planos de Academia</h2>
             <p style="color:var(--text-muted)">Crie ou atualize os planos de assinatura disponíveis para os alunos.</p>
@@ -425,7 +426,7 @@ const App = {
           </button>
         </div>
 
-        <div class="grid-3" id="planos-grid" style="gap: 1.5rem;">
+        <div class="grid-3 admin-card-grid" id="planos-grid" style="gap: 1.5rem;">
           <!-- Renderizado dinamicamente por PlanosView -->
         </div>
       `,
@@ -435,13 +436,13 @@ const App = {
        * Tabela com filtro por grupo muscular e CRUD completo.
        */
       exercicios: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Catálogo de Exercícios</h2>
             <p style="color:var(--text-muted)">Gerencie os exercícios disponíveis para montar fichas de treino.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center">
-            <select id="filtro-grupo-muscular" class="form-select" style="min-width:160px">
+          <div class="admin-page-actions">
+            <select id="filtro-grupo-muscular" class="form-select" aria-label="Filtrar por grupo muscular">
               <option value="">Todos os grupos</option>
             </select>
             <button id="btn-sync-wger" class="btn btn-outline-primary" style="cursor:pointer" title="Sincronizar exercícios via API">
@@ -455,7 +456,7 @@ const App = {
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Catálogo de exercícios; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color)">
@@ -479,19 +480,19 @@ const App = {
       treinos: `
         <!-- Visão 1: Grade de Alunos -->
         <div id="treinos-view-alunos">
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+          <div class="page-header admin-page-header">
             <div>
               <h2>Fichas de Treino</h2>
               <p style="color:var(--text-muted)">Selecione um aluno para gerenciar suas fichas de treino.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center">
-              <div class="form-group input-with-icon" style="margin:0; min-width: 250px;">
+            <div class="admin-page-actions">
+              <div class="form-group input-with-icon admin-search-field">
                 <i data-lucide="search" class="input-icon"></i>
                 <input type="search" id="filtro-busca-aluno" aria-label="Buscar aluno por nome" placeholder="Buscar aluno por nome..." />
               </div>
             </div>
           </div>
-          <div class="grid-3" id="treinos-alunos-grid" style="gap: 1.5rem;">
+          <div class="grid-3 admin-card-grid" id="treinos-alunos-grid" style="gap: 1.5rem;">
             <div style="text-align:center; padding: 2rem; grid-column: 1 / -1;">
               <div class="spinner"></div>
               <p style="color:var(--text-muted); margin-top:1rem;">Carregando alunos...</p>
@@ -501,7 +502,7 @@ const App = {
 
         <!-- Visão 2: Fichas do Aluno (Detalhes) -->
         <div id="treinos-view-fichas" style="display:none;">
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+          <div class="page-header admin-page-header">
             <div>
               <button type="button" class="btn btn-ghost" id="btn-voltar-perfis" style="margin-bottom:0.5rem; padding: 0.25rem 0.5rem; display:flex; align-items:center; gap:0.5rem; color:var(--text-muted); cursor:pointer;">
                 <i data-lucide="arrow-left" style="width:16px;height:16px"></i> Voltar
@@ -509,7 +510,7 @@ const App = {
               <h2 id="treinos-aluno-nome">Treinos do Aluno</h2>
               <p style="color:var(--text-muted)">Gerencie as fichas de treino deste aluno.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center">
+            <div class="admin-page-actions">
               <button id="btn-novo-treino" class="btn btn-primary" style="cursor:pointer">
                 <i data-lucide="clipboard-plus"></i>
                 <span>Novo Treino</span>
@@ -517,7 +518,7 @@ const App = {
             </div>
           </div>
 
-          <div class="card" style="overflow-x:auto;">
+          <div class="card admin-table-scroll" role="region" aria-label="Fichas de treino; deslize para ver todas as colunas" tabindex="0">
             <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -559,21 +560,21 @@ const App = {
        * painel de inadimplentes e resumo financeiro.
        */
       pagamentos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Fluxo de Pagamentos</h2>
-            <p style="color:var(--text-muted)">Registre pagamentos, acompanhe vencimentos e controle a inadimplência dos alunos.</p>
+            <p style="color:var(--text-muted)">Registre recebimentos, acompanhe vencimentos e controle a inadimplência dos alunos.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-            <select id="filtro-status-pagamento" class="form-select" style="min-width:140px">
+          <div class="admin-page-actions">
+            <select id="filtro-status-pagamento" class="form-select" aria-label="Filtrar por status do pagamento">
               <option value="">Todos os status</option>
               <option value="paid">Pagos</option>
               <option value="pending">Pendentes</option>
               <option value="overdue">Vencidos</option>
             </select>
-            <div class="form-group input-with-icon" style="margin:0; min-width:200px;">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-aluno-pagamento" placeholder="Buscar aluno..." />
+              <input type="text" id="filtro-aluno-pagamento" aria-label="Filtrar pagamentos por aluno" placeholder="Buscar aluno..." />
             </div>
             <button id="btn-ver-inadimplentes" class="btn btn-danger" style="cursor:pointer">
               <i data-lucide="alert-triangle"></i>
@@ -581,12 +582,12 @@ const App = {
             </button>
             <button id="btn-novo-pagamento" class="btn btn-success" style="cursor:pointer">
               <i data-lucide="plus-circle"></i>
-              <span>Novo Pagamento</span>
+              <span>Registrar recebimento</span>
             </button>
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Histórico de pagamentos; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color)">
@@ -614,7 +615,7 @@ const App = {
       'aluno-checkin': `<div id="aluno-checkin-container"></div>`,
 
       // TASK 12 — Área de Relatórios
-      'relatorios': `<div id="relatorios-container"></div>`,
+      'relatorios': `<div id="relatorios-container" class="admin-report-page"></div>`,
 
       // Página genérica de "Em Construção" para funcionalidades futuras.
       default: `
@@ -641,12 +642,12 @@ const App = {
         const part = type => parts.find(value => value.type === type).value;
         const hoje = `${part('year')}-${part('month')}-${part('day')}`;
         content.innerHTML = `
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div class="page-header admin-page-header">
             <div>
               <h2>Registro de Presença</h2>
               <p style="color:var(--text-muted)">Registre check-ins, acompanhe frequência e gerencie a presença dos alunos.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <div class="admin-page-actions">
               <button id="btn-ver-ranking" class="btn btn-primary" style="cursor:pointer">
                 <i data-lucide="trophy"></i>
                 <span>Ranking</span>
@@ -659,15 +660,15 @@ const App = {
           </div>
 
           <!-- KPIs do Dia -->
-          <div class="grid-4" style="margin-bottom:1.5rem;">
-            <div class="kpi-card" style="grid-column: span 2;">
+          <div class="admin-checkin-metrics">
+            <div class="kpi-card">
               <div class="kpi-icon green"><i data-lucide="calendar-check"></i></div>
               <div class="kpi-content">
                 <div class="kpi-value" id="kpi-checkins-total">—</div>
                 <div class="kpi-label">Check-ins Hoje</div>
               </div>
             </div>
-            <div class="kpi-card" style="grid-column: span 2;">
+            <div class="kpi-card">
               <div class="kpi-icon blue"><i data-lucide="clock"></i></div>
               <div class="kpi-content">
                 <div class="kpi-value" id="kpi-ultimo-checkin" style="font-size:0.95rem;">—</div>
@@ -677,18 +678,23 @@ const App = {
           </div>
 
           <!-- Filtros -->
-          <div style="display:flex; gap:0.75rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
-            <div class="form-group input-with-icon" style="margin:0; min-width:200px;">
+          <div class="admin-filter-bar">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-aluno-checkin" placeholder="Buscar aluno..." />
+              <input type="text" id="filtro-aluno-checkin" aria-label="Filtrar presença por aluno" placeholder="Buscar aluno..." />
             </div>
-            <input type="date" id="filtro-data-inicio" class="form-select" value="${hoje}" style="min-width:140px" title="Data início">
-            <span style="color:var(--text-muted)">até</span>
-            <input type="date" id="filtro-data-fim" class="form-select" value="${hoje}" style="min-width:140px" title="Data fim">
+            <div class="admin-date-range">
+              <label class="admin-date-field" for="filtro-data-inicio">Data inicial
+                <input type="date" id="filtro-data-inicio" class="form-select" value="${hoje}">
+              </label>
+              <label class="admin-date-field" for="filtro-data-fim">Data final
+                <input type="date" id="filtro-data-fim" class="form-select" value="${hoje}">
+              </label>
+            </div>
           </div>
 
           <!-- Tabela de Check-ins -->
-          <div class="card" style="overflow-x:auto;">
+          <div class="card admin-table-scroll" role="region" aria-label="Registros de presença; deslize para ver todas as colunas" tabindex="0">
             <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color)">

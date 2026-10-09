@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { browserAuthLocks } = require('./helpers/browser-auth-locks.cjs');
 
 const appSource = fs.readFileSync(path.join(__dirname, '../../client/js/app.js'), 'utf8');
 const indexHtml = fs.readFileSync(path.join(__dirname, '../../client/index.html'), 'utf8');
@@ -127,7 +128,7 @@ test('Auth real libera controles com logout pendente sem resposta, mantendo inte
   const storage = new Map([['fitflow_logout_pending', 'pending-intent']]);
   let checks = 0, writes = 0;
   Object.assign(h.context, {
-    AbortController, setTimeout, clearTimeout,
+    AbortController, setTimeout, clearTimeout, navigator: { locks: browserAuthLocks() },
     API: { get: async () => { checks++; }, post: path => {
       assert.equal(path, '/auth/logout'); writes++; return logout.promise;
     } },
@@ -136,6 +137,7 @@ test('Auth real libera controles com logout pendente sem resposta, mantendo inte
   h.context.Toast.warning = () => {};
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js/auth.js'), 'utf8') + '\nglobalThis.realAuth = Auth;', h.context);
   await h.app.init();
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(checks, 0);
   assert.equal(writes, 1);
   assert.equal(h.appViews, 0);

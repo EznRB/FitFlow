@@ -20,6 +20,7 @@ const API = {
     // Uma resposta antiga não pode encerrar uma sessão que entrou depois.
     const requestIdentity = typeof Auth === 'undefined' ? null : {
       userId: Auth.user?.id ?? null, generation: Auth.generation,
+      sessionEpoch: typeof Auth.getSessionEpoch === 'function' ? Auth.getSessionEpoch() : null,
     };
 
     const config = {
@@ -43,6 +44,15 @@ const API = {
       // Gateways podem devolver HTML. O status HTTP permanece a fonte do erro.
       const text = await response.text();
       if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');
+      // Leituras de uma sessão anterior não podem reabrir um modal privado.
+      // Escritas conservam a resposta real: podem já ter sido confirmadas no banco.
+      if ((config.method || 'GET') === 'GET' && requestIdentity &&
+          (requestIdentity.userId !== (Auth.user?.id ?? null) || requestIdentity.generation !== Auth.generation ||
+           requestIdentity.sessionEpoch !== (typeof Auth.getSessionEpoch === 'function' ? Auth.getSessionEpoch() : null))) {
+        const obsolete = new Error('A sessão mudou. Esta consulta foi descartada; atualize a tela para continuar.');
+        obsolete.status = 409; obsolete.obsolete = true;
+        throw obsolete;
+      }
       let data = null;
       if (text) {
         try { data = JSON.parse(text); } catch { /* Mensagem segura abaixo. */ }

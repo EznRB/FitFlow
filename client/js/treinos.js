@@ -1,22 +1,42 @@
 /** Fichas profissionais: administração ampla e autoria restrita para instrutores. */
 const TreinosView = {
   alunosCache: [], catalogoCache: [], currentStudentId: null,
+  generation: 0, requests: {},
+  invalidar() { this.generation++; this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = []; },
+  solicitar(kind, nodeId) {
+    const user = typeof Auth !== 'undefined' ? Auth.user : null;
+    return { kind, token: this.requests[kind] = (this.requests[kind] || 0) + 1, generation: this.generation,
+      userId: user?.id, role: user?.role, authGeneration: typeof Auth !== 'undefined' ? Auth.generation : null,
+      studentId: this.currentStudentId, nodeId, node: document.getElementById(nodeId) };
+  },
+  atual(request) {
+    return request && request.token === this.requests[request.kind] && request.generation === this.generation
+      && request.studentId === this.currentStudentId && request.node && request.node.isConnected !== false
+      && document.getElementById(request.nodeId) === request.node && typeof Auth !== 'undefined'
+      && Auth.user?.id === request.userId && ['admin', 'instructor'].includes(Auth.user?.role)
+      && Auth.user.role === request.role && Auth.generation === request.authGeneration
+      && (typeof App === 'undefined' || App.currentPage === 'treinos');
+  },
   escapar(value) { return FitFlowSecurity.escapeHtml(value); },
   idValido(value) { return Number.isSafeInteger(value) && value > 0; },
   icones(node) { if (window.lucide) window.lucide.createIcons({ nodes: [node] }); },
   async inicializar() {
-    this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = [];
-    await this.carregarAlunosParaPerfis(); this.configurarEventos();
+    this.invalidar();
+    const request = this.solicitar('inicializar', 'treinos-alunos-grid');
+    await this.carregarAlunosParaPerfis(); if (this.atual(request)) this.configurarEventos();
   },
   configurarEventos() {
     const btn = document.getElementById('btn-novo-treino');
     if (btn) btn.onclick = () => this.abrirModalCriar();
   },
   async carregarAlunosParaPerfis() {
+    const request = this.solicitar('alunos', 'treinos-alunos-grid');
     try {
       const response = await API.get('/treinos/alunos');
+      if (!this.atual(request)) return;
       this.alunosCache = response.data || []; this.renderizarGradeAlunos(this.alunosCache);
     } catch (error) {
+      if (!this.atual(request)) return;
       this.alunosCache = []; this.renderizarGradeAlunos([]); Toast.error(error.message || 'Erro ao carregar alunos elegíveis.');
     }
   },
@@ -38,6 +58,7 @@ const TreinosView = {
   filtrarAlunos(term) { this.renderizarGradeAlunos(this.alunosCache.filter(a => String(a.name).toLowerCase().includes(String(term).toLowerCase()))); },
   async abrirPerfilAluno(studentId, name) {
     if (!this.idValido(studentId)) return;
+    this.generation++;
     this.currentStudentId = studentId;
     document.getElementById('treinos-view-alunos').style.display = 'none';
     document.getElementById('treinos-view-fichas').style.display = 'block';
@@ -45,20 +66,27 @@ const TreinosView = {
     await this.carregarTreinos(studentId);
   },
   voltarParaPerfis() {
+    this.generation++;
     this.currentStudentId = null;
     document.getElementById('treinos-view-alunos').style.display = 'block';
     document.getElementById('treinos-view-fichas').style.display = 'none';
     document.getElementById('treinos-table-body').innerHTML = '';
   },
   async carregarTreinos(studentId) {
-    if (!this.idValido(studentId)) return;
-    try { this.renderizarTabela((await API.get(`/treinos?studentId=${studentId}`)).data || []); }
-    catch (error) { this.renderizarTabela([]); Toast.error(error.message || 'Erro ao carregar fichas.'); }
+    if (!this.idValido(studentId) || studentId !== this.currentStudentId) return;
+    const request = this.solicitar('fichas', 'treinos-table-body');
+    if (!this.atual(request)) return;
+    request.node.innerHTML = '';
+    try {
+      const response = await API.get(`/treinos?studentId=${studentId}`);
+      if (this.atual(request)) this.renderizarTabela(response.data || []);
+    } catch (error) { if (this.atual(request)) { this.renderizarTabela([]); Toast.error(error.message || 'Erro ao carregar fichas.'); } }
   },
-  async carregarCatalogo() {
+  async carregarCatalogo(request = this.solicitar('catalogo', 'treinos-table-body')) {
+    if (!this.atual(request)) return;
     this.catalogoCache = [];
-    try { this.catalogoCache = (await API.get('/treinos/catalogo')).data || []; }
-    catch (error) { Toast.warning('Catálogo indisponível. Você pode informar exercícios manualmente.'); }
+    try { const response = await API.get('/treinos/catalogo'); if (this.atual(request)) this.catalogoCache = response.data || []; }
+    catch (error) { if (this.atual(request)) Toast.warning('Catálogo indisponível. Você pode informar exercícios manualmente.'); }
   },
   renderizarTabela(treinos) {
     const tbody = document.getElementById('treinos-table-body'); if (!tbody) return;
@@ -87,17 +115,24 @@ const TreinosView = {
       ${ex.notes ? `<p>${this.escapar(ex.notes)}</p>` : ''}</article>`).join('');
   },
   async abrirModalDetalhe(id) {
+    const request = this.solicitar('modal', 'treinos-table-body');
+    if (!this.atual(request)) return;
     try {
       const workout = (await API.get(`/treinos/${id}`)).data;
+      if (!this.atual(request)) return;
       Modal.open(`Ficha: ${workout.name}`, `<p>Aluno: ${this.escapar(workout.student?.user?.name)} · Autor: ${this.escapar(workout.instructor?.name)}</p>
         <p>${this.escapar(workout.description)}</p><p>${this.escapar(workout.notes)}</p>${this.exerciciosDetalhes(workout.exercises)}`,
         [{ text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() }]);
-    } catch (error) { Toast.error(error.message || 'Erro ao consultar ficha.'); }
+    } catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao consultar ficha.'); }
   },
   async abrirModalCriar() {
+    const request = this.solicitar('modal', 'treinos-table-body');
+    if (!this.atual(request)) return;
     if (!this.alunosCache.length) await this.carregarAlunosParaPerfis();
+    if (!this.atual(request)) return;
     if (!this.alunosCache.length) { Toast.warning('Nenhum aluno elegível para criar a ficha.'); return; }
-    await this.carregarCatalogo();
+    await this.carregarCatalogo(request);
+    if (!this.atual(request)) return;
     const options = this.alunosCache.filter(a => this.idValido(a.id)).map(a => `<option value="${a.id}" ${a.id === this.currentStudentId ? 'selected' : ''}>${this.escapar(a.name)}</option>`).join('');
     Modal.open('Planejar ficha de treino', this.renderizarConstrutorTreinoLayout(options), [
       { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
@@ -105,14 +140,18 @@ const TreinosView = {
     this.iniciarConstrutor();
   },
   async abrirModalEditar(id) {
+    const request = this.solicitar('modal', 'treinos-table-body');
+    if (!this.atual(request)) return;
     try {
       const workout = (await API.get(`/treinos/${id}`)).data;
-      await this.carregarCatalogo();
+      if (!this.atual(request)) return;
+      await this.carregarCatalogo(request);
+      if (!this.atual(request)) return;
       Modal.open(`Editar ficha: ${workout.name}`, this.renderizarConstrutorTreinoLayout('', true, workout), [
         { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
         { text: 'Salvar revisão', class: 'btn-primary', action: () => this.salvarTreino(workout.id) }]);
       this.iniciarConstrutor(); (workout.exercises || []).forEach(ex => this.adicionarExercicio(ex));
-    } catch (error) { Toast.error(error.message || 'Erro ao editar ficha.'); }
+    } catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao editar ficha.'); }
   },
   renderizarConstrutorTreinoLayout(options, isEdit = false, workout = {}) {
     const value = key => this.escapar(isEdit ? workout[key] : '');
@@ -238,6 +277,8 @@ const TreinosView = {
     if (window.PlanejamentoCiencia) window.PlanejamentoCiencia.updateRoutine(document.getElementById('planejamento-ciencia'), this.coletarExercicios());
   },
   async salvarTreino(id = null) {
+    const request = this.solicitar('salvar', 'form-treino');
+    if (!this.atual(request)) return;
     const exercises = this.coletarExercicios();
     const name = document.getElementById('treino-nome').value.trim();
     const studentId = id ? this.currentStudentId : Number(document.getElementById('treino-aluno').value);
@@ -253,17 +294,27 @@ const TreinosView = {
     if (!id) payload.studentId = studentId;
     try {
       const response = id ? await API.put(`/treinos/${id}`, payload) : await API.post('/treinos', payload);
+      if (!this.atual(request)) return;
       Toast.success(response.message || 'Ficha salva.'); Modal.close();
       if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId);
-    } catch (error) { Toast.error(error.message || 'Erro ao salvar ficha.'); }
+    } catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao salvar ficha.'); }
   },
   confirmarDesativar(id, name) {
+    const request = this.solicitar('arquivar', 'treinos-table-body');
+    if (!this.atual(request)) return;
+    this.requests.modal = (this.requests.modal || 0) + 1;
     Modal.confirm(`Arquivar a ficha <strong>${this.escapar(name)}</strong>? Os exercícios, cargas e sessões registrados serão preservados.`, async () => {
-      try { await API.delete(`/treinos/${id}`); Toast.success('Ficha arquivada.'); if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId); }
-      catch (error) { Toast.error(error.message || 'Erro ao arquivar ficha.'); }
+      if (!this.atual(request)) return;
+      try { await API.delete(`/treinos/${id}`); if (!this.atual(request)) return; Toast.success('Ficha arquivada.'); if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId); }
+      catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao arquivar ficha.'); }
     }, 'Arquivar');
   },
 };
+
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('auth:logout', () => TreinosView.invalidar());
+  window.addEventListener('navigate', () => TreinosView.invalidar());
+}
 
 // Compatibility view for legacy append-only charge records.
 const MeuTreinoView = {

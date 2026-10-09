@@ -93,12 +93,21 @@ async function runHostedManagement() {
     for (const [role, index] of [['student', 2], ['second', 3]]) {
       stage = 'student enrollment';
       const created = (await request('/api/alunos', { method: 'POST', cookie: adminCookie,
-        body: { name: names[role], email: emails[index], password, planId: plan.id }, expected: 201 })).data;
+        body: { name: names[role], email: emails[index], password, planId: plan.id, birthDate: '1990-05-10' }, expected: 201 })).data;
       assert.equal(created.role, 'student'); assert.ok(!created.passwordHash);
       accounts[role] = created;
       known.users.push(created.id); known.students.push(created.student.id);
       const read = (await request(`/api/alunos/${created.student.id}`, { cookie: adminCookie })).data;
       assert.equal(read.user.email, emails[index]); assert.equal(read.planId, plan.id);
+      assert.equal(read.planStartDate, require('../src/utils/paymentValidation').brazilDate().toISOString());
+      stage = 'student edit: blank optional fields';
+      const edited = (await request(`/api/alunos/${created.student.id}`, { method: 'PUT', cookie: adminCookie,
+        body: { name: names[role], cpf: '', birthDate: '' } })).data;
+      assert.equal(edited.cpf, null); assert.equal(edited.birthDate, null);
+      const editedRead = (await request(`/api/alunos/${created.student.id}`, { cookie: adminCookie })).data;
+      assert.equal(editedRead.cpf, null); assert.equal(editedRead.birthDate, null);
+      await request(`/api/alunos/${created.student.id}`, { method: 'PUT', cookie: adminCookie,
+        body: { birthDate: '2026-02-30' }, expected: 400 });
     }
     const studentId = accounts.student.student.id;
     const secondId = accounts.second.student.id;

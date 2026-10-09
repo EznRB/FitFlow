@@ -95,6 +95,7 @@ const Modal = {
     if (!this.overlay) return;
     this.overlay.style.display = 'none';
     document.body.style.overflow = '';
+    this.titleEl.textContent = '';
     this.bodyEl.innerHTML = '';
     this.footerEl.innerHTML = '';
     this.background.forEach(({ node, inert }) => { node.inert = inert; });

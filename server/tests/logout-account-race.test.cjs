@@ -3,10 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
+const { browserAuthLocks } = require('./helpers/browser-auth-locks.cjs');
+const tick = () => new Promise(resolve => setImmediate(resolve));
 
 function harness() {
   const listeners = {}, requests = [], events = [], disposed = [], cleared = [];
-  const context = vm.createContext({ console, localStorage: { removeItem() {}, setItem() {} },
+  const context = vm.createContext({ console, navigator: { locks: browserAuthLocks() }, localStorage: { removeItem() {}, setItem() {} },
     API: { post: (endpoint, body) => new Promise(resolve => requests.push({ endpoint, body, resolve })) },
     FitFlowTrainingStore: { createIndexedDbStorage: () => ({ clear: async id => cleared.push(id) }) },
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
@@ -26,10 +28,11 @@ function harness() {
 test('duplo clique sai uma vez; login B espera logout A e não perde sua fila', async () => {
   const h = harness(); h.account(7);
   const first = h.Auth.logout(), second = h.Auth.logout();
+  await tick();
   assert.equal(first, second); assert.equal(h.requests.length, 1);
   const login = h.Auth.login('b@example.test', 'dummy-test-only');
   assert.equal(h.requests.length, 1, 'novo cookie só pode ser emitido após a saída anterior');
-  h.requests[0].resolve({}); await first; await Promise.resolve();
+  h.requests[0].resolve({}); await first; await tick();
   assert.equal(h.requests.length, 2);
   h.requests[1].resolve({ data: { user: { id: 8, role: 'student' } } }); await login; h.account(8);
   assert.equal(h.events.filter(e => e.type === 'auth:logout').length, 1);
@@ -44,10 +47,10 @@ test('evento atrasado limpa somente a conta informada, nunca store da conta B', 
 
 test('expiração preserva a fila; descarte explícito posterior mantém ownerId', async () => {
   const h = harness(); h.account(7);
-  const expired = h.Auth.logout({ reason: 'expired' }); h.requests[0].resolve({}); await expired;
+  const expired = h.Auth.logout({ reason: 'expired' }); await tick(); h.requests[0].resolve({}); await expired;
   assert.deepEqual(h.disposed, [{ userId: 7, clear: false }]); assert.deepEqual(h.cleared, []);
   assert.equal(h.Auth.expiredUserId, 7);
-  const explicit = h.Auth.logout(); h.requests[1].resolve({}); await explicit; await Promise.resolve();
+  const explicit = h.Auth.logout(); await tick(); h.requests[1].resolve({}); await explicit; await Promise.resolve();
   assert.deepEqual(h.cleared, [7]); assert.equal(h.Auth.expiredUserId, null);
   assert.equal(h.events.at(-1).detail.userId, 7);
 });
@@ -71,7 +74,7 @@ test('401 tardio de A ou da sessão anterior do mesmo aluno não encerra login n
     const request = context.refs.API.get('/sessoes/mine');
     context.refs.Auth.user = { id: newId }; context.refs.Auth.generation = 3;
     resolveRequest({ status: 401, ok: false, text: async () => '{"message":"expired"}' });
-    await assert.rejects(request, error => error.status === 401);
+    await assert.rejects(request, error => error.status === 409 && error.obsolete === true);
     assert.equal(context.refs.Auth.user.id, newId);
     assert.equal(context.refs.Auth.logoutPending, null);
     assert.equal(context.refs.Auth.generation, 3);

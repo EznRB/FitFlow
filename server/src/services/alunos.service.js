@@ -11,9 +11,21 @@ const AppError = require('../utils/AppError');
 const bcrypt = require('bcryptjs');
 const planosService = require('./planos.service');
 const { validateAccount } = require('../utils/accountValidation');
+const { brazilDate, paymentDate } = require('../utils/paymentValidation');
+
+function optionalCpf(value) {
+  if (value === undefined || value === null) return value;
+  if (typeof value !== 'string' || value.trim().length > 14) throw new AppError('CPF deve ser um texto com até 14 caracteres.', 400);
+  return value.trim() || null;
+}
+function optionalBirthDate(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  return paymentDate(value);
+}
 
 class AlunosService {
-  constructor({ db = prisma, plans = planosService } = {}) { this.db = db; this.plans = plans; }
+  constructor({ db = prisma, plans = planosService, now = () => new Date() } = {}) { this.db = db; this.plans = plans; this.now = now; }
   /**
    * Lista todos os alunos (desconsidera os desativados fisicamente caso 
    * regras mudem, mas foca em carregar planos e emails associados).
@@ -58,7 +70,8 @@ class AlunosService {
    */
   async criar(data) {
     const { name, email, password } = validateAccount(data);
-    const { cpf, phone, birthDate, address, notes, planId } = data;
+    const { phone, address, notes, planId } = data;
+    const cpf = optionalCpf(data.cpf), birthDate = optionalBirthDate(data.birthDate);
 
     // 1. Validação de Unicidade
     const emailExists = await this.db.user.findUnique({ where: { email } });
@@ -81,7 +94,7 @@ class AlunosService {
       const plano = await this.plans.buscarPorId(planId);
       if (!plano.active) throw new AppError('Não é possível matricular em um plano inativo.', 400);
       
-      planStartDate = new Date();
+      planStartDate = brazilDate(this.now());
       planEndDate = this.plans.calcularVencimento(plano.durationDays, planStartDate);
     }
 
@@ -96,7 +109,7 @@ class AlunosService {
           create: {
             cpf: cpf || null,
             phone: phone || null,
-            birthDate: birthDate ? new Date(birthDate) : null,
+            birthDate: birthDate ?? null,
             address: address || null,
             notes: notes || null,
             planId: planId ? Number(planId) : null,
@@ -121,7 +134,9 @@ class AlunosService {
    */
   async atualizar(id, data) {
     const studentId = Number(id);
-    const { name, email, cpf, phone, birthDate, address, notes, status, planId } = data;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados do aluno inválidos.', 400);
+    const { name, email, phone, address, notes, status, planId } = data;
+    const cpf = optionalCpf(data.cpf), birthDate = optionalBirthDate(data.birthDate);
 
     // Garante que o aluno alvo existe
     const alunoAlvo = await this.db.student.findUnique({
@@ -147,7 +162,7 @@ class AlunosService {
       const plano = await this.plans.buscarPorId(planId);
       if (!plano.active) throw new AppError('Não é possível alterar para um plano inativo.', 400);
       
-      const startDate = new Date();
+      const startDate = brazilDate(this.now());
       updatePlanData = {
         planId: Number(planId),
         planStartDate: startDate,
@@ -179,7 +194,7 @@ class AlunosService {
           address: address !== undefined ? address : alunoAlvo.address,
           notes: notes !== undefined ? notes : alunoAlvo.notes,
           status: status ?? alunoAlvo.status,
-          birthDate: birthDate ? new Date(birthDate) : alunoAlvo.birthDate,
+          birthDate: birthDate !== undefined ? birthDate : alunoAlvo.birthDate,
           ...updatePlanData // Propaga as datas de plano, se houver alteração
         },
       }),

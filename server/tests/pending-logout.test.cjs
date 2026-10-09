@@ -3,10 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { browserAuthLocks } = require('./helpers/browser-auth-locks.cjs');
+const tick = () => new Promise(resolve => setImmediate(resolve));
 const source = fs.readFileSync(path.join(__dirname, '../../client/js/auth.js'), 'utf8');
 function harness(storage, api) {
   const events = [], listeners = {}, error = { textContent: '', style: {} };
-  const context = vm.createContext({ console: { warn() {} }, API: api, AbortController, setTimeout, clearTimeout,
+  const context = vm.createContext({ console: { warn() {} }, API: api, AbortController, setTimeout, clearTimeout, navigator: { locks: browserAuthLocks() },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) },
     document: { getElementById: () => error },
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init.detail; } },
@@ -39,7 +41,7 @@ test('retorno online e novo login compartilham limpeza pendente antes de emitir 
   } };
   const h = harness(storage, api); h.listeners.online();
   const login = h.auth.login('new@example.test', 'dummy');
-  await Promise.resolve(); assert.deepEqual(requests, ['/auth/logout']);
+  await tick(); assert.deepEqual(requests, ['/auth/logout']);
   resolveLogout({ status: 'success' }); await login;
   assert.deepEqual(requests, ['/auth/logout', '/auth/login']);
   assert.equal(storage.has('fitflow_logout_pending'), false); assert.equal(h.auth.user.id, 8);
@@ -50,6 +52,7 @@ test('limpeza confirmada no reload mantém tela de login e não restaura a sess�
   const storage = new Map([['fitflow_logout_pending', 'old-intent']]); let requests = 0;
   const h = harness(storage, { post: async () => { requests++; return {}; }, get: async () => { throw new Error('should not restore'); } });
   assert.equal(await h.auth.checkAuth(), false);
+  await h.auth.logoutRetryPending;
   assert.equal(requests, 1); assert.equal(storage.has('fitflow_logout_pending'), false);
 });
 
@@ -65,6 +68,7 @@ test('logout pendente sem resposta libera startup sem restaurar cookie; novo log
     },
   });
   assert.equal(await h.auth.checkAuth(), false);
+  await tick();
   assert.deepEqual(paths, ['/auth/logout']);
   assert.equal(h.auth.user, null);
   assert.equal(storage.has('fitflow_logout_pending'), true);

@@ -195,6 +195,7 @@ test('dados armazenados de pagamento são escapados na lista, modal e mensalidad
 test('cookie restaura sessão sem cache e logout preserva demais dados locais', async () => {
   const storage = new Map([['fitflow_calculator', 'kept']]); let checks = 0; const events = []; const listeners = {};
   const context = browser(['auth.js'], { window: { addEventListener: (event, fn) => { listeners[event] = fn; }, dispatchEvent: event => events.push(event) },
+    navigator: { locks: require('./helpers/browser-auth-locks.cjs').browserAuthLocks() },
     CustomEvent: class { constructor(type, { detail } = {}) { this.type = type; this.detail = detail; } },
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key), clear: () => storage.clear() },
     API: { get: async () => { checks++; return { data: { user: { id: 7, role: 'student' } } }; }, post: async () => ({}) }

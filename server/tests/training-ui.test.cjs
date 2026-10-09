@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 function browser(globals = {}) {
-  const context = vm.createContext({ window: {}, URL, ...globals });
+  const context = vm.createContext({ window: {}, URL, Auth: { user: { id: 7, role: 'admin' }, generation: 1 }, ...globals });
   for (const file of ['security.js', 'treinos.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', file), 'utf8'), context);
   vm.runInContext('this.view = TreinosView; this.studentView = MeuTreinoView;', context);
   return context;
@@ -50,7 +50,7 @@ test('catálogo não preenche dose automaticamente e editor preserva zero de pau
 test('cadastro exige pausa explícita e não troca campo vazio por um valor padrão', async () => {
   let writes = 0, warning;
   const inputs = { 'treino-nome': { value: 'A' }, 'treino-aluno': { value: '11' },
-    'treino-descricao': { value: '' }, 'treino-notas': { value: '' } };
+    'treino-descricao': { value: '' }, 'treino-notas': { value: '' }, 'form-treino': {} };
   const context = browser({ document: { getElementById: id => inputs[id] }, API: { post: async () => { writes++; } },
     Toast: { warning: message => { warning = message; } } });
   context.view.coletarExercicios = () => [{ name: 'Remada', sets: '3', reps: '8-12', restSeconds: '' }];
