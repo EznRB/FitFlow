@@ -23,7 +23,7 @@ let user; let student; let plan;
     student = await db.student.create({ data: { userId: user.id, planId: plan.id, planEndDate: new Date('2026-11-01') } });
     const manual = createPagamentosService({ db });
     const payload = { studentId: student.id, planId: plan.id, amount: '150.00', paymentDate: '2026-10-08', paymentMethod: 'pix' };
-    await Promise.all([manual.registrar(payload, null), manual.registrar(payload, null)]);
+    await Promise.all([manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id), manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id)]);
     let current = await db.student.findUnique({ where: { id: student.id } });
     assert.equal(current.planEndDate.toISOString().slice(0, 10), '2026-12-31');
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 2);

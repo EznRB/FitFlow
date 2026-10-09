@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { randomUUID } = require('node:crypto');
 const { createAuthenticate, authorize } = require('../src/middleware/auth');
 const { createAuthService } = require('../src/services/auth.service');
 const { createAuthRouter } = require('../src/routes/auth.routes');
@@ -160,15 +161,15 @@ test('matrícula exige senha própria e não devolve hash', async () => {
 test('pagamentos validam método em criação e atualização antes do banco', async () => {
   let writes = 0;
   const db = { student: { findUnique: async () => ({ id: 11, user: { active: true }, status: 'active', planId: null }), update: async () => {} },
-    payment: { findUnique: async () => ({ id: 3 }), create: async ({ data }) => { writes++; return data; }, update: async ({ data }) => { writes++; return data; } } };
+    payment: { findUnique: async ({ where }) => where.manualRequestId ? null : ({ id: 3 }), create: async ({ data }) => { writes++; return data; }, update: async ({ data }) => { writes++; return data; } } };
   db.$transaction = fn => fn(db); db.$queryRaw = async () => [];
   const service = createPagamentosService({ db });
   for (const paymentMethod of ['<img src=x onerror=alert(1)>', {}, ['pix'], 'pix ']) {
-    await assert.rejects(service.registrar({ studentId: 11, amount: 50, paymentMethod }, 7), e => e.statusCode === 400);
+    await assert.rejects(service.registrar({ studentId: 11, amount: 50, paymentMethod, idempotencyKey: randomUUID() }, 7), e => e.statusCode === 400);
     await assert.rejects(service.atualizar(3, { paymentMethod }), e => e.statusCode === 400);
   }
   assert.equal(writes, 0);
-  assert.equal((await service.registrar({ studentId: 11, amount: 50, paymentMethod: 'Pix' }, 7)).paymentMethod, 'pix');
+  assert.equal((await service.registrar({ studentId: 11, amount: 50, paymentMethod: 'Pix', idempotencyKey: randomUUID() }, 7)).paymentMethod, 'pix');
   assert.equal((await service.atualizar(3, { paymentMethod: 'cartao_credito' })).paymentMethod, 'cartao_credito');
 });
 

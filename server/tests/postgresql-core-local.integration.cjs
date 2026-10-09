@@ -119,9 +119,19 @@ async function run() {
     stage = 'concurrent financial renewal';
     const manual = createPagamentosService({ db });
     const payload = { studentId: student.id, planId: plan.id, amount: '150.00', paymentDate: '2099-10-08', paymentMethod: 'pix' };
-    await allSucceeded('manual renewal', [manual.registrar(payload, instructor.id), manual.registrar(payload, instructor.id)]);
+    const requests = [0, 1].map(() => ({ ...payload, idempotencyKey: randomUUID() }));
+    const receipts = await allSucceeded('manual renewal', requests.map(request => manual.registrar(request, instructor.id)));
     assert.equal((await db.student.findUnique({ where: { id: student.id } })).planEndDate.toISOString().slice(0, 10), '2099-12-31');
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 2);
+    const replays = await allSucceeded('manual replay', [manual.registrar(requests[0], instructor.id), manual.registrar(requests[0], instructor.id)]);
+    assert.ok(replays.every(receipt => receipt.id === receipts[0].id));
+    await rejectsStatus(() => manual.registrar({ ...requests[0], amount: '149.99' }, instructor.id), 409);
+    await rejectsStatus(() => manual.registrar(requests[0], user.id), 409);
+    await rejectsStatus(() => manual.buscarPorSolicitacao(requests[0].idempotencyKey, user.id), 404);
+    assert.equal((await manual.buscarPorSolicitacao(requests[0].idempotencyKey, instructor.id)).id, receipts[0].id);
+    assert.equal(await db.payment.count({ where: { studentId: student.id } }), 2);
+    assert.equal((await db.student.findUnique({ where: { id: student.id } })).planEndDate.toISOString().slice(0, 10), '2099-12-31');
+    console.log('PASS PostgreSQL manual receipts: two intentions renew, concurrent replay preserves IDs/balance, actor/payload conflict 409 and private lookup.');
 
     stage = 'idempotent payment intent and concurrent reconciliation';
     const checkout = createCheckoutRepository(db);
@@ -148,7 +158,8 @@ async function run() {
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 3);
     console.log('PASS PostgreSQL financial transactions: two renewals preserve balance, intent deduplication, four reconciliations create one ledger, ownership and refund review.');
 
-    stage = 'ten database CHECK constraints';
+    stage = 'eleven database CHECK constraints';
+    await checkRejects('payments_manual_request_pair_check', () => db.payment.update({ where: { id: receipts[0].id }, data: { manualRequestHash: null } }));
     await checkRejects('workout_sessions_status_check', () => db.workoutSession.update({ where: { id: start.id }, data: { status: 'invalid' } }));
     for (const [name, data] of [
       ['workout_sets_kind_check', { kind: 'invalid' }], ['workout_sets_weight_check', { weightKg: -1 }],
@@ -162,7 +173,7 @@ async function run() {
     ]) await checkRejects(name, () => db.paymentIntent.update({ where: { id: intent.id }, data }));
     assert.equal((await db.workoutSet.findUnique({ where: { id: entry.id } })).reps, 8);
     assert.equal((await checkout.findById(intent.id)).state, 'review');
-    console.log('PASS PostgreSQL integrity: all ten CHECK constraints reject invalid writes outside API validation.');
+    console.log('PASS PostgreSQL integrity: all eleven CHECK constraints reject invalid writes outside API validation.');
   } finally {
     // Exact fixture ownership only, even if a previous stage failed midway.
     try {

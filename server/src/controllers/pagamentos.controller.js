@@ -9,6 +9,10 @@
 const { sendSuccess } = require('../utils/helpers');
 const pagamentosService = require('../services/pagamentos.service');
 const AppError = require('../utils/AppError');
+const publicPayment = payment => {
+  const { manualRequestId, manualRequestHash, ...safe } = payment;
+  return safe;
+};
 
 const pagamentosController = {
   /**
@@ -19,7 +23,7 @@ const pagamentosController = {
   async listar(req, res, next) {
     try {
       const pagamentos = await pagamentosService.listar(req.query);
-      sendSuccess(res, 200, 'Lista de pagamentos recuperada com sucesso', pagamentos);
+      sendSuccess(res, 200, 'Lista de pagamentos recuperada com sucesso', pagamentos.map(publicPayment));
     } catch (error) {
       next(error);
     }
@@ -34,7 +38,7 @@ const pagamentosController = {
       if (!req.params.id) throw new AppError('ID do pagamento não fornecido.', 400);
 
       const pagamento = await pagamentosService.buscarPorId(req.params.id);
-      sendSuccess(res, 200, 'Detalhes do pagamento recuperados', pagamento);
+      sendSuccess(res, 200, 'Detalhes do pagamento recuperados', publicPayment(pagamento));
     } catch (error) {
       next(error);
     }
@@ -49,7 +53,7 @@ const pagamentosController = {
       if (!req.params.alunoId) throw new AppError('ID do aluno não fornecido.', 400);
 
       const pagamentos = await pagamentosService.buscarPorAluno(req.params.alunoId);
-      sendSuccess(res, 200, 'Histórico de pagamentos do aluno', pagamentos);
+      sendSuccess(res, 200, 'Histórico de pagamentos do aluno', pagamentos.map(publicPayment));
     } catch (error) {
       next(error);
     }
@@ -71,10 +75,17 @@ const pagamentosController = {
       const registeredBy = req.user ? req.user.id : null;
 
       const pagamento = await pagamentosService.registrar(req.body, registeredBy);
-      sendSuccess(res, 201, 'Pagamento registrado com sucesso! Vencimento do aluno atualizado.', pagamento);
+      sendSuccess(res, 201, 'Recebimento registrado.', publicPayment(pagamento));
     } catch (error) {
       next(error);
     }
+  },
+
+  async buscarPorSolicitacao(req, res, next) {
+    try {
+      const payment = await pagamentosService.buscarPorSolicitacao(req.params.requestId, req.user.id);
+      sendSuccess(res, 200, 'Recebimento já registrado.', publicPayment(payment));
+    } catch (error) { next(error); }
   },
 
   /**
@@ -87,7 +98,7 @@ const pagamentosController = {
       if (!req.params.id) throw new AppError('ID do pagamento não fornecido.', 400);
 
       const pagamento = await pagamentosService.atualizar(req.params.id, req.body);
-      sendSuccess(res, 200, 'Pagamento atualizado com sucesso.', pagamento);
+      sendSuccess(res, 200, 'Pagamento atualizado com sucesso.', publicPayment(pagamento));
     } catch (error) {
       next(error);
     }

@@ -30,6 +30,7 @@ router.get('/resumo', pagamentosController.resumoFinanceiro);
 router.post('/verificar-inadimplencia', pagamentosController.verificarInadimplencia);
 
 // Rotas com sub-recurso
+router.get('/solicitacoes/:requestId', pagamentosController.buscarPorSolicitacao);
 router.get('/aluno/:alunoId', pagamentosController.buscarPorAluno);
 
 // CRUD principal

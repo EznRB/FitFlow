@@ -19,6 +19,7 @@ const { isOverdue } = require('../utils/helpers');
 const { validatePaymentMethod } = require('../utils/paymentMethod');
 const { paymentId, moneyCents, paymentDate: validateDate, brazilDate, validateNotes, paymentStatus } = require('../utils/paymentValidation');
 const { lockStudent, renewalDates } = require('../utils/membershipRenewal');
+const { manualRequestId, manualRequestHash, sameManualRequest } = require('../utils/manualPaymentRequest');
 
 /** Dias de carência antes de bloquear o aluno por inadimplência. */
 const GRACE_DAYS = 5;
@@ -103,16 +104,29 @@ class PagamentosService {
    */
   async registrar(data, registeredBy) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de pagamento inválidos.', 400);
+    const requestId = manualRequestId(data.idempotencyKey);
+    const actorId = paymentId(registeredBy, 'ID do responsável');
+    // Outra aba pode trocar o cookie sem atualizar a memória desta tela.
+    // O cliente só informa a expectativa; a autoridade continua no ator autenticado.
+    if (data.expectedActorId !== undefined && paymentId(data.expectedActorId, 'ID esperado do responsável') !== actorId)
+      throw new AppError('A sessão mudou. Recarregue a página e confira a conta antes de registrar o recebimento.', 403);
     const { planId, paymentMethod, paymentDate } = data;
     const studentId = paymentId(data.studentId, 'ID do aluno');
-    const amount = moneyCents(data.amount) / 100;
+    const amountCents = moneyCents(data.amount);
+    const amount = amountCents / 100;
     const notes = validateNotes(data.notes);
-    const actorId = registeredBy == null ? null : paymentId(registeredBy, 'ID do responsável');
     const requestedPlanId = planId == null ? null : paymentId(planId, 'ID do plano');
     const validatedMethod = validatePaymentMethod(paymentMethod);
     const dataPagamento = paymentDate === undefined ? brazilDate(this.now()) : validateDate(paymentDate);
-    return this.db.$transaction(async tx => {
+    // O hash descreve a intenção solicitada; padrões dinâmicos só são resolvidos
+    // na primeira criação. Mudança de plano ou de dia não muda um retry antigo.
+    const requestHash = manualRequestHash({ studentId, planId: requestedPlanId, amountCents,
+      paymentMethod: validatedMethod, paymentDate: paymentDate === undefined ? null : paymentDate, notes }, actorId);
+    try { return await this.db.$transaction(async tx => {
       await lockStudent(tx, studentId);
+      const previous = await tx.payment.findUnique({ where: { manualRequestId: requestId },
+        include: { student: { include: { user: { select: { name: true } } } }, plan: { select: { name: true } } } });
+      if (previous) return sameManualRequest(previous, requestId, requestHash, actorId);
       const aluno = await tx.student.findUnique({
       where: { id: studentId },
       include: {
@@ -146,6 +160,8 @@ class PagamentosService {
           status: 'paid',
           notes,
           registeredBy: actorId,
+          manualRequestId: requestId,
+          manualRequestHash: requestHash,
         },
         include: {
           student: { include: { user: { select: { name: true } } } },
@@ -175,8 +191,27 @@ class PagamentosService {
       });
 
       return novoPagamento;
-    });
+    }); } catch (error) {
+      // UUID global também impede duplicação entre pedidos que bloquearam alunos
+      // diferentes. Uma disputa no índice único só é reconciliada após rollback.
+      if (error.code === 'P2002') {
+        const previous = await this.db.payment.findUnique({ where: { manualRequestId: requestId },
+          include: { student: { include: { user: { select: { name: true } } } }, plan: { select: { name: true } } } });
+        if (previous) return sameManualRequest(previous, requestId, requestHash, actorId);
+      }
+      throw error;
+    }
 
+  }
+
+  async buscarPorSolicitacao(value, registeredBy) {
+    const requestId = manualRequestId(value);
+    const actorId = paymentId(registeredBy, 'ID do responsável');
+    const payment = await this.db.payment.findUnique({ where: { manualRequestId: requestId },
+      include: { student: { include: { user: { select: { name: true } } } }, plan: { select: { name: true } } } });
+    // Não revela existência ou dados de pedidos de outro administrador.
+    if (!payment || payment.registeredBy !== actorId) throw new AppError('Recebimento não localizado para esta solicitação.', 404);
+    return payment;
   }
 
   /**

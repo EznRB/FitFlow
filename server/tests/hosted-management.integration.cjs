@@ -155,8 +155,9 @@ async function runHostedManagement() {
     stage = 'two concurrent manual renewals';
     // Datas sintéticas futuras evitam somar pagamentos reais ao relatório de hoje.
     const paidDate = '2099-06-15';
-    const pendingPayments = await Promise.allSettled(notes.map(note => request('/api/pagamentos', { method: 'POST', cookie: adminCookie,
-      body: { studentId, planId: plan.id, amount: '74.39', paymentMethod: 'pix', paymentDate: paidDate, notes: note }, expected: 201 })));
+    const paymentBodies = notes.map(note => ({ studentId, planId: plan.id, amount: '74.39', paymentMethod: 'pix', paymentDate: paidDate,
+      notes: note, idempotencyKey: randomUUID(), expectedActorId: accounts.admin.id }));
+    const pendingPayments = await Promise.allSettled(paymentBodies.map(body => request('/api/pagamentos', { method: 'POST', cookie: adminCookie, body, expected: 201 })));
     // Espera ambos os pedidos antes de limpar fixtures, inclusive se um falhar.
     const failure = pendingPayments.find(result => result.status === 'rejected');
     if (failure) throw failure.reason;
@@ -174,6 +175,23 @@ async function runHostedManagement() {
     const renewed = (await request(`/api/alunos/${studentId}`, { cookie: adminCookie })).data;
     assert.equal(renewed.planEndDate, finalEnd.toISOString());
     assert.equal(renewed.planStartDate, firstEnd.toISOString());
+    stage = 'manual receipt replay and conflict';
+    const replayResults = await Promise.allSettled([0, 1].map(() => request('/api/pagamentos', {
+      method: 'POST', cookie: adminCookie, body: paymentBodies[0], expected: 201 })));
+    const replayFailure = replayResults.find(result => result.status === 'rejected');
+    if (replayFailure) throw replayFailure.reason;
+    assert.ok(replayResults.every(result => result.value.data.id === payments[0].data.id));
+    for (const { data } of payments) {
+      assert.equal(data.manualRequestId, undefined); assert.equal(data.manualRequestHash, undefined);
+    }
+    const lookup = (await request(`/api/pagamentos/solicitacoes/${paymentBodies[0].idempotencyKey}`, { cookie: adminCookie })).data;
+    assert.equal(lookup.id, payments[0].data.id); assert.equal(lookup.manualRequestHash, undefined);
+    await request('/api/pagamentos', { method: 'POST', cookie: adminCookie,
+      body: { ...paymentBodies[0], amount: '75.39' }, expected: 409 });
+    await request('/api/pagamentos', { method: 'POST', cookie: adminCookie,
+      body: { ...paymentBodies[0], expectedActorId: accounts.instructor.id }, expected: 403 });
+    assert.equal(await owner.payment.count({ where: { studentId } }), 2);
+    assert.equal((await request(`/api/alunos/${studentId}`, { cookie: adminCookie })).data.planEndDate, finalEnd.toISOString());
     stage = 'financial date filters';
     const filtered = (await request(`/api/pagamentos?studentId=${studentId}&startDate=${paidDate}&endDate=${paidDate}`, { cookie: adminCookie })).data;
     assert.deepEqual(filtered.map(row => row.id).sort((a, b) => a - b), known.payments.slice().sort((a, b) => a - b));
@@ -222,7 +240,7 @@ async function runHostedManagement() {
   if (primaryError) {
     console.error('Hosted management FAIL:', stage, primaryError.code || primaryError.name, `logins=${loginCount}`);
     process.exitCode = 1;
-  } else console.log('Hosted management HTTPS PASS: planos/alunos, perfis, nutrição JSONB consentida, checkin/auditoria, duas renovações concorrentes e filtros civis financeiros; três logins, 4 users/2 students/1 plan/2 payments/2 checkins sintéticos removidos.');
+  } else console.log('Hosted management HTTPS PASS: planos/alunos, perfis, nutrição JSONB consentida, checkin/auditoria, duas renovações concorrentes, replay manual idempotente, conflitos e filtros civis financeiros; três logins, 4 users/2 students/1 plan/2 payments/2 checkins sintéticos removidos.');
 }
 
 if (require.main === module) runHostedManagement().catch(error => {

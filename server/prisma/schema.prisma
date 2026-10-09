@@ -194,6 +194,8 @@ model WorkoutLog {
 // ============================================
 // Registro financeiro. Preservado para relatórios.
 model Payment {
+  manualRequestId   String? @unique @map("manual_request_id") @db.Char(36)
+  manualRequestHash String? @map("manual_request_hash") @db.Char(64)
   id            Int           @id @default(autoincrement())
   studentId     Int           @map("student_id")
   planId        Int?          @map("plan_id")
