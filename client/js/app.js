@@ -15,12 +15,14 @@
 const App = {
   // Mantém rastreio da página que está sendo exibida no momento.
   currentPage: null,
+  sessionChecking: true,
 
   /**
    * Função de Inicialização (Entry Point):
    * É chamada assim que o documento HTML termina de carregar.
    */
   async init() {
+    this.setSessionChecking(true);
     // Inicializa os ícones do Lucide. O Lucide substitui as tags <i> por SVGs modernos.
     if (window.lucide) lucide.createIcons();
 
@@ -59,17 +61,38 @@ const App = {
     // Exibe a data atual formatada de forma amigável no topo do sistema.
     this.updateTopbarDate();
 
-    /**
-     * LÓGICA DE PERSISTÊNCIA DE LOGIN (TASK 3):
-     * Verifica no localStorage ou via API se o usuário já possui um token válido.
-     * Se sim, pula o login e vai direto para o sistema protegido.
-     */
-    const isLoggedIn = await Auth.checkAuth();
+    // O formulário permanece bloqueado até o servidor verificar o cookie.
+    // Nenhum dado protegido é mostrado usando apenas o cache local.
+    let isLoggedIn = false;
+    try {
+      isLoggedIn = await Auth.checkAuth();
+      if (!isLoggedIn && Auth.sessionCheckError) {
+        const errorEl = document.getElementById('login-error');
+        errorEl.textContent = Auth.sessionCheckError;
+        errorEl.style.display = 'flex';
+      }
+    } catch {
+      const errorEl = document.getElementById('login-error');
+      errorEl.textContent = 'Não foi possível verificar sua sessão. Entre novamente para continuar.';
+      errorEl.style.display = 'flex';
+    } finally {
+      this.setSessionChecking(false);
+    }
     if (isLoggedIn) {
       this.showApp();
     } else {
       this.showLogin();
     }
+  },
+
+  setSessionChecking(pending) {
+    this.sessionChecking = pending;
+    const form = document.getElementById('login-form');
+    form.setAttribute('aria-busy', String(pending));
+    for (const id of ['login-email', 'login-password', 'btn-toggle-password', 'btn-login']) {
+      document.getElementById(id).disabled = pending;
+    }
+    document.getElementById('login-session-status').hidden = !pending;
   },
 
   /**
@@ -105,9 +128,11 @@ const App = {
      */
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); // Impede o recarregamento padrão da página do HTML.
+      const btnLogin = document.getElementById('btn-login');
+      // Também bloqueia Enter e eventos de submit disparados durante a checagem.
+      if (this.sessionChecking || btnLogin.disabled) return;
       const email = document.getElementById('login-email').value.trim();
       const senha = document.getElementById('login-password').value;
-      const btnLogin = document.getElementById('btn-login');
 
       // Limpa alertas de erros anteriores.
       errorEl.style.display = 'none';

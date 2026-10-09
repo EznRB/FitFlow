@@ -140,3 +140,19 @@ test('7 dias separa aquecimento, desconhecidos e grupos diretos sem inventar sec
   assert.equal(summary.unknownMuscleSets, 1);
   assert.equal(summary.directSetsByMuscle.Triceps, undefined);
 });
+test('7 dias mantém categorias genéricas desconhecidas e preserva snapshot, nulo explícito e aquecimento', () => {
+  const categories = [' MÚLTIPLOS ', 'multiplos', 'Mu\u0301ltiplos', ' OUTROS ', ' NÃO INFORMADO ',
+    'nao   informado', ' cardio ', 'FUNCIONAL', ' '];
+  const summary = summarizeSessions([{ planSnapshot: { exercises: [{ id: entry.exerciseId, muscleGroup: ' Peito ' }] },
+    sets: categories.map((muscleGroup, i) => ({ ...entry, id: `generic-${i}`, muscleGroup }))
+      .concat([{ ...entry, id: 'snapshot-fallback' }, { ...entry, id: 'explicit-null', muscleGroup: null },
+        { ...entry, id: 'warmup-generic', muscleGroup: 'Múltiplos', kind: 'warmup', weightKg: 10 },
+        { ...entry, id: 'warmup-known', muscleGroup: 'Peito', kind: 'warmup', weightKg: 10 }]),
+  }], new Date('2026-10-07T12:00:00Z'));
+  assert.deepEqual({ ...summary.directSetsByMuscle }, { Peito: 1 });
+  assert.equal(summary.unknownMuscleSets, categories.length + 1);
+  assert.equal(summary.workingSets, categories.length + 2);
+  assert.equal(summary.workingVolumeKg, (categories.length + 2) * entry.weightKg * entry.reps);
+  assert.equal(summary.warmupSets, 2);
+  assert.equal(summary.warmupVolumeKg, 2 * 10 * entry.reps);
+});

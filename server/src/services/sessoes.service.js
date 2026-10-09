@@ -41,6 +41,13 @@ function sessionSummary(session) {
   return { workingVolumeKg, warmupVolumeKg, workingSets, warmupSets, plannedWorkingSets, missingPlannedSets, planFullyLogged: exercises.length > 0 && missingPlannedSets === 0 };
 }
 function present(session) { return { ...session, summary: sessionSummary(session) }; }
+const genericMuscleGroups = new Set(['multiplos', 'outros', 'nao informado', 'cardio', 'funcional']);
+function directMuscleGroup(value) {
+  if (typeof value !== 'string') return null;
+  const group = value.trim();
+  const key = group.normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').toLowerCase();
+  return !group || genericMuscleGroups.has(key) ? null : group;
+}
 function summarizeSessions(sessions, now = new Date()) {
   const from = new Date(now.getTime() - 7 * 86400000);
   const result = { from: from.toISOString(), to: now.toISOString(), workingSets: 0, warmupSets: 0, workingVolumeKg: 0, warmupVolumeKg: 0, directSetsByMuscle: Object.create(null), unknownMuscleSets: 0, timing: 'performedAt informado pelo aluno', scope: 'Somente grupo registrado na ficha; músculos secundários não são estimados.' };
@@ -53,8 +60,8 @@ function summarizeSessions(sessions, now = new Date()) {
     else if (set.kind === 'working') {
       result.workingSets++; result.workingVolumeKg += weight * reps;
       const exercise = session.planSnapshot.exercises.find(e => e.id === set.exerciseId);
-      const muscle = Object.hasOwn(set, 'muscleGroup') ? set.muscleGroup : exercise?.muscleGroup;
-      if (typeof muscle === 'string' && muscle.trim()) result.directSetsByMuscle[muscle] = (result.directSetsByMuscle[muscle] || 0) + 1;
+      const muscle = directMuscleGroup(Object.hasOwn(set, 'muscleGroup') ? set.muscleGroup : exercise?.muscleGroup);
+      if (muscle !== null) result.directSetsByMuscle[muscle] = (result.directSetsByMuscle[muscle] || 0) + 1;
       else result.unknownMuscleSets++;
     }
   }

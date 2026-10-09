@@ -55,6 +55,13 @@
     return integer(input?.setsPerExposure, 'séries por exposição do mesmo grupo', 0, 1000) *
       integer(input?.exposures, 'exposições semanais desse grupo', 0, 21);
   }
+  const genericMuscleGroups = new Set(['multiplos', 'outros', 'nao informado', 'cardio', 'funcional']);
+  function directMuscleGroup(value) {
+    if (typeof value !== 'string') return null;
+    const group = value.trim();
+    const key = group.normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ').toLowerCase();
+    return !group || genericMuscleGroups.has(key) ? null : group;
+  }
   function summarizeRoutine(exercises) {
     const directSets = Object.create(null);
     let totalSets = 0, unassignedSets = 0, incompleteExercises = 0;
@@ -62,8 +69,8 @@
       let sets;
       try { sets = integer(exercise.sets, 'séries', 1, 100); } catch { incompleteExercises++; continue; }
       totalSets += sets;
-      const group = typeof exercise.muscleGroup === 'string' ? exercise.muscleGroup.trim() : '';
-      if (!group || ['Múltiplos', 'Outros', 'Não informado', 'Cardio', 'Funcional'].includes(group)) unassignedSets += sets;
+      const group = directMuscleGroup(exercise.muscleGroup);
+      if (group === null) unassignedSets += sets;
       else directSets[group] = (directSets[group] || 0) + sets;
     }
     return { directSets, totalSets, unassignedSets, incompleteExercises };

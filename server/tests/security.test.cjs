@@ -173,7 +173,7 @@ test('pagamentos validam método em criação e atualização antes do banco', a
 });
 
 function browser(files, globals = {}, exports = '') {
-  const context = vm.createContext({ window: {}, console, ...globals });
+  const context = vm.createContext({ window: {}, console, AbortController, setTimeout, clearTimeout, ...globals });
   for (const file of files) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', file), 'utf8'), context);
   vm.runInContext(exports, context); return context;
 }

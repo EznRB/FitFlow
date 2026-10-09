@@ -43,3 +43,13 @@ test('resumo de ficha não soma músculos indiretos nem multiplica por uma frequ
   assert.equal(r.unassignedSets, 5); assert.equal(r.incompleteExercises, 1); assert.equal(r.totalSets, 10);
   assert.equal(r.weeklySets, undefined);
 });
+test('categorias genéricas com espaços, caixa ou acentos variados permanecem sem músculo direto', () => {
+  const categories = [' MÚLTIPLOS ', 'multiplos', 'Mu\u0301ltiplos', ' OUTROS ', ' NÃO INFORMADO ',
+    'nao   informado', ' cardio ', 'FUNCIONAL', ' ', null];
+  const r = planner.summarizeRoutine(categories.map(muscleGroup => ({ muscleGroup, sets: 2 }))
+    .concat([{ muscleGroup: ' Peito ', sets: 3 }]));
+  assert.deepEqual({ ...r.directSets }, { Peito: 3 });
+  assert.equal(r.unassignedSets, categories.length * 2);
+  assert.equal(r.totalSets, categories.length * 2 + 3);
+  assert.equal(r.incompleteExercises, 0);
+});

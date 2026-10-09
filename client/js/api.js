@@ -37,16 +37,19 @@ const API = {
     }
 
     try {
+      if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');
       const response = await fetch(url, config);
+      if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');
       // Gateways podem devolver HTML. O status HTTP permanece a fonte do erro.
       const text = await response.text();
+      if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');
       let data = null;
       if (text) {
         try { data = JSON.parse(text); } catch { /* Mensagem segura abaixo. */ }
       }
 
       if (!response.ok) {
-        // Se token expirou, tenta refresh ou redireciona
+        // Um 401 sinaliza perda de autenticação ao módulo Auth.
         if (response.status === 401) {
           // Dispara evento para o auth.js tratar
           window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: requestIdentity }));
@@ -78,8 +81,8 @@ const API = {
 
   // --- Métodos HTTP de conveniência ---
 
-  get(endpoint) {
-    return this.request(endpoint, { method: 'GET' });
+  get(endpoint, options = {}) {
+    return this.request(endpoint, { method: 'GET', signal: options.signal });
   },
 
   post(endpoint, body) {

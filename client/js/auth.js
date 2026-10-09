@@ -12,6 +12,7 @@ const Auth = {
   logoutPending: null,
   expiredUserId: null,
   generation: 0,
+  sessionCheckError: null,
   remoteLogoutPending: null,
   logoutRetryPending: null,
   logoutIntentKey: 'fitflow_logout_pending',
@@ -111,15 +112,23 @@ const Auth = {
    */
   async checkAuth() {
     const generation = ++this.generation;
+    this.sessionCheckError = null;
     if (this.getLogoutIntent()) {
       this.user = null; localStorage.removeItem('fitflow_user');
-      try { await this.finishPendingLogout(); } catch { /* Remain on login while the cookie cleanup is pending. */ }
+      this.showLogoutNotice(true);
+      // A limpeza mantém sua intenção persistida e continua em background.
+      // Login ainda aguarda essa mesma operação antes de emitir outro cookie.
+      this.finishPendingLogout().catch(() => {});
       return false;
     }
     // O cookie da sessão é a autoridade, inclusive quando não há cache local.
+    // Só esta leitura tem timeout; abortar uma escrita não confirma seu resultado.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await API.get('/auth/me');
+      const response = await API.get('/auth/me', { signal: controller.signal });
       if (generation !== this.generation) return false;
+      if (controller.signal.aborted) throw new Error('Verificação de sessão interrompida.');
       this.user = response.data.user;
       this.saveUserLocal(response.data.user);
       return true;
@@ -128,12 +137,17 @@ const Auth = {
       // Token inválido ou expirado
       this.user = null;
       localStorage.removeItem('fitflow_user');
+      if (controller.signal.aborted || !error.status || [502, 503].includes(error.status)) {
+        this.sessionCheckError = 'Não foi possível verificar sua sessão. Confira a conexão e tente entrar novamente.';
+      }
       return false;
+    } finally {
+      clearTimeout(timer);
     }
   },
 
   /**
-   * Salva dados do usuário no localStorage (apenas para restaurar sessão).
+   * Salva um cache de exibição no localStorage, sem autoridade de autenticação.
    * ⚠️ O token JWT fica em cookie httpOnly — NÃO é armazenado aqui.
    */
   saveUserLocal(user) {
@@ -159,7 +173,7 @@ const Auth = {
 
   /**
    * Verifica se o usuário tem uma role específica.
-   * @param {string} role - 'admin' ou 'aluno'
+   * @param {string} role - 'admin', 'instructor' ou 'student'
    */
   hasRole(role) {
     return this.user && this.user.role === role;

@@ -80,9 +80,10 @@
           terça-feira, 21 de abril de 2026
         </div>
         
-        <form id="login-form" class="login-form" autocomplete="on">
+        <form id="login-form" class="login-form" autocomplete="on" aria-busy="true" aria-describedby="login-session-status">
           <h2>Bem-vindo de volta.</h2>
           <p class="login-form-subtitle">Entre na sua conta para acompanhar a academia e sua evolução.</p>
+          <p id="login-session-status" class="login-help" role="status" aria-live="polite">Verificando sua sessão...</p>
 
           <label class="login-field-label" for="login-email">E-mail</label>
           <div class="form-group input-with-icon">
@@ -94,6 +95,7 @@
               placeholder="seu@email.com" 
               required 
               autocomplete="email"
+              disabled
             >
           </div>
 
@@ -108,15 +110,16 @@
               required 
               minlength="6"
               autocomplete="current-password"
+              disabled
             >
-            <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha">
+            <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha" disabled>
               <i data-lucide="eye-off"></i>
             </button>
           </div>
 
           <div id="login-error" class="alert alert-error" style="display: none;" role="alert"></div>
 
-          <button type="submit" class="btn btn-primary btn-full btn-login-glow" id="btn-login">
+          <button type="submit" class="btn btn-primary btn-full btn-login-glow" id="btn-login" disabled>
             <span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i>
           </button>
           
