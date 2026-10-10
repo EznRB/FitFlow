@@ -2,6 +2,12 @@
 
 Projeto acadêmico de gestão de academia, com áreas de administrador, instrutor e aluno. Interface em português, identidade laranja e azul escuro. A [landing publicada](https://fitflow-lp.vercel.app) apresenta o sistema e aponta ao aplicativo; seu código fica no repositório [fitflow-LP](https://github.com/EznRB/fitflow-LP).
 
+[Abrir o aplicativo](https://fit-flow-indol.vercel.app) · [Estado da entrega](docs/STATUS_ENTREGA.md) · [Guia de desenvolvimento](docs/DESENVOLVIMENTO.md) · [Ciência e limites](docs/CIENCIA.md)
+
+![Tela de acesso publicada do FitFlow em desktop](docs/evidence/28-login-desktop-vercel.png)
+
+Login editorial publicado na revisão `3adf5c1`. Captura de desktop; versões mobile e tablet verificadas em [Estado da entrega](docs/STATUS_ENTREGA.md). As contas demonstrativas são fornecidas por arquivo privado, sem senha universal publicada.
+
 ## Desenvolvimento
 
 Node.js **24.x**; MySQL/MariaDB acessível para a demonstração local. **Docker não é necessário.** O ambiente preparado neste computador usa MariaDB nativo em `127.0.0.1:3308`, isolado em `.local-db/`.
@@ -32,7 +38,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 - Fila de séries por conta em IndexedDB, com estado de sincronização e conflitos visíveis. Leituras e callbacks tardios verificam identidade e tela de origem; logout aguarda limpeza antes de liberar outro login.
 - Recuperação de sessão rejeitada com confirmação e preservação local dos registros. Logout sem conexão não restaura automaticamente a conta ao reconectar.
 - Nutrição com Mifflin–St Jeor ou Harris–Benedict revisada, hipóteses explícitas e parâmetros salvos/restaurados por consentimento.
-- Fundamentos científicos com referências; IA educativa opcional no servidor, sem envio de medidas corporais.
+- Fundamentos científicos com referências; IA educativa opcional para divisões e nutrição, sem envio de medidas corporais. Indicadores usam glossário revisado determinístico, com identificação de conteúdo não gerado por IA.
 - Séries com grupos genéricos ou desconhecidos ficam como não classificadas; não são atribuídas artificialmente a um músculo.
 - PWA com manifesto e fallback público offline. Novas abas offline exigem reconexão para validar autenticação.
 - Gestão responsiva com filtros/ações ajustados a 375 pixels, tabelas em regiões roláveis por teclado e campos com labels. Respostas obsoletas não repovoam a tela de treinos nem encerram a nova sessão.
@@ -48,17 +54,27 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **287 testes aprovados, zero falhas e zero ignorados** na revisão `7b856e0`. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **309 testes aprovados, zero falhas e zero ignorados** na revisão `f9ac83d`. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
 
 ## Publicação e limites atuais
 
 O login antigo da Vercel falhava porque o host Aiven configurado não resolvia no DNS; a tentativa retornou 500. **O login no domínio final foi recuperado com o novo banco Neon.** A demonstração remota tem cinco contas com senhas novas em `server/.demo-credentials.remote.local.json`, ignorado pelo Git, três alunos, duas fichas e 798 exercícios. As credenciais antigas do GitHub não foram restauradas, e os dados antigos do Aiven não foram recuperados. Código enviado às branches e disponível nos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum foi mesclado à branch principal.
 
-Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. Retorno do navegador não comprova pagamento. Lançamento manual idempotente está publicado; o gate HTTPS da revisão `4b89e3` confirmou replay sem terceiro registro, conflito 409 e sessão divergente 403, além de gestão/cadastro/data civil. IA educativa agora usa GPT-OSS 120B via Groq Free, com chave privada e confirmação do plano exigidas; geração real continua pendente. [Configuração](docs/IA_GRATUITA.md). Checkout depende de credenciais e webhook do provedor. Revisão atual `7b856e0` em READY, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38017533596) e **287 testes aprovados**. Saúde e hash do script Fundamentos conferidos; status autenticado confirmou geração desativada/Groq, sem chave ou modelo. Navegador restaurou sessão após recarga e confirmou fontes acessíveis. Sessões em 375 × 812 foram verificadas na revisão anterior `62ff0af`; telefone físico e instalação não foram testados. Estado e gates em [STATUS_ENTREGA.md](docs/STATUS_ENTREGA.md). Revisão/merge dos PRs e gates restantes continuam pendentes. Consulte a [meta completa](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
+Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. Sua validação real depende de conta, credenciais e webhook do Mercado Pago: cartão aprovado/rejeitado/pendente; Pix com QR e estado pendente sem renovação. Não exigir liquidação Pix em sandbox, nem considerar retorno do navegador como confirmação. O lançamento manual já foi verificado em HTTPS e registra recebimento informado, sem cobrar ou validar Pix/cartão. [Roteiro de configuração e testes](docs/PAGAMENTOS_SANDBOX.md).
+
+A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
+
+A revisão atual `f9ac83d` está publicada em READY, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38055351767), banco pronto e API sem cache. HTML, login.css, WEBP e evidencias.js coincidiram com o checkout. Suíte local **309/309**, revisão IA 19/19 e glossário no navegador aprovados. O prompt nutricional distingue repouso e basal; testes de contrato não certificam cada frase gerada.
+
+A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
+
+Mercado Pago real de teste, telefone físico/instalação, reconexão publicada e revisão/merge dos PRs continuam pendentes. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 ## Documentação
 
 - [Estado da entrega e evidências](docs/STATUS_ENTREGA.md)
+- [Revisão atual e gates de entrega](docs/REVISAO_FINAL.md)
+- [Mercado Pago sandbox: configuração e limites](docs/PAGAMENTOS_SANDBOX.md)
 - [Desenvolvimento e banco nativo](docs/DESENVOLVIMENTO.md)
 - [Arquitetura e contratos](docs/ARQUITETURA.md)
 - [Datas civis e calendário operacional](docs/DATAS_E_FUSO.md)

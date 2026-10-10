@@ -1,6 +1,6 @@
 # Auditoria científica do FitFlow
 
-Data: 08/10/2026; verificação complementar da correção de Morton em 09/10/2026. Revisão de implementação e fontes científicas; não constitui validação clínica do aplicativo.
+Auditoria inicial: 08/10/2026; correção de Morton conferida em 09/10/2026; complemento de geração real e indicadores revisados em 10/10/2026. Revisão de implementação e fontes científicas; não constitui validação clínica do aplicativo. Referências de linhas abaixo pertencem à implementação examinada na auditoria inicial.
 
 ## Escopo e conclusão
 
@@ -34,11 +34,21 @@ Antes da correção, uma ficha com duas séries em `Múltiplos` gerava duas sér
 
 `client/js/evidencias.js:8` agora descreve registros por série, RIR estimado e aquecimentos separados. Também informa que finalizar uma sessão não comprova executar toda a ficha; a comparação exige contexto.
 
-### 3. Explicitar os limites da IA educativa
+### 3. Limites da IA educativa — auditoria inicial histórica
 
-**Limite relevante; não foi observado um resultado real incorreto.** `server/src/services/ia.service.js:22` envia resumos curados, não artigos integrais. A validação em `:47` verifica formato e IDs permitidos, sem verificar se cada afirmação decorre da fonte. O tema volume tem apenas o resumo geral do ACSM (`:9`); é contexto insuficiente para certificar toda explicação sobre tonelagem e séries.
+Na auditoria inicial de 08/10/2026, não havia resultado real incorreto observado. Essa condição foi superada pelas verificações publicadas descritas no complemento abaixo. A implementação então examinada em `server/src/services/ia.service.js:22` enviava resumos curados, não artigos integrais. A validação em `:47` verificava formato e IDs permitidos, sem verificar se cada afirmação decorria da fonte. O tema volume tinha apenas o resumo geral do ACSM (`:9`), contexto insuficiente para certificar toda explicação sobre tonelagem e séries.
 
 Manter a identificação de IA e os limites já documentados em `CIENCIA.md`. Para maior controle, ampliar a curadoria específica e revisar amostras reais por tema ou fornecer explicações determinísticas aprovadas. Os testes com provedor simulado não validam a ciência de respostas do modelo ao vivo.
+
+#### Complemento de 10/10/2026: resultados reais e correção
+
+Duas amostras públicas de volume foram reprovadas na inspeção factual: `3adf5c1` confundiu contagem de séries com tonelagem; `9e1b5c5`, mesmo após reforço do contexto, confundiu séries previstas com repetições. Contrato JSON, IDs, testes e deploy aprovados não impediram esses erros de conteúdo.
+
+A revisão publicada `f9ac83d` substituiu a inferência de volume por glossário fixo revisado, `generatedByAI: false`. **Entender indicadores** informa texto não gerado por IA e separa definições operacionais do FitFlow do contexto científico ACSM. Não chama provedor nem usa quota de inferência; autenticação, autorização, CSRF e proteção global permanecem. Navegador autenticado confirmou o conteúdo e o rótulo, captura [32](evidence/32-indicadores-revisados-vercel.png). A aritmética das métricas continua determinística.
+
+Divisões tiveram amostras reais local e HTTPS conferidas contra Ramos-Campo (2024)/ACSM (2026). Nutrição real em `9e1b5c5` foi inspecionada contra Mifflin/Harris/Morton/DRI, captura [30](evidence/30-groq-explicacao-vercel.png); usou “metabolismo basal” onde as equações estimam repouso, limitação registrada sem certificação factual integral. O prompt de `f9ac83d` passou a distinguir esses conceitos. Esse ajuste não garante a correção de toda resposta futura.
+
+Verificação do código atual: suíte local 309/309, zero falhas/ignorados, revisão IA 19/19 e [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38055351767). Os testes de IA validam contrato, texto revisado sem chamada externa, quota dos temas gerados e guards; não certificam toda frase de modelos ao vivo. [Configuração e limites](IA_GRATUITA.md), [estado publicado](STATUS_ENTREGA.md).
 
 ### 4. Evoluir comparabilidade entre revisões de ficha
 

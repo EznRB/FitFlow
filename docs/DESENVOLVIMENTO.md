@@ -101,7 +101,7 @@ O wrapper `with-neon-owner-env.cjs` restringe administração ao projeto/branch/
 
 A demonstração remota usa cinco contas com senhas novas em `server/.demo-credentials.remote.local.json`, três alunos, duas fichas e 798 exercícios. Não copia históricos de QA e não recupera os dados do Aiven. O seed local continua restrito ao banco local; a preparação remota usa script próprio com destino explícito.
 
-[Preview HTTPS](https://fit-flow-aii93048s-eznrbs-projects.vercel.app) em READY, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. Os gates seguintes passaram, no diretório `server`, utilizando apenas arquivos privados ignorados:
+[Preview HTTPS inicial](https://fit-flow-aii93048s-eznrbs-projects.vercel.app) em READY, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. Os gates seguintes passaram nessa etapa, no diretório `server`, utilizando apenas arquivos privados ignorados. Para uma revisão nova, confirmar primeiro sua URL exata em [Estado da entrega](STATUS_ENTREGA.md):
 
 ```powershell
 node scripts/check-neon-runtime.cjs
@@ -111,7 +111,7 @@ node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
 
 O gate hospedado usa autenticação autorizada para o Preview protegido e confere health/banco, login/me nos três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. O script não divulga token/senha e não realiza cobrança. `.vercelignore` exclui arquivos privados, bancos nativos, testes e documentação do pacote.
 
-O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_EcdSkc32v2Fw3ZNdhBXroAieUkMD`, revisão `7b856e0`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/38017533596) aprovada. Banco ready, API no-store e hash do script Fundamentos iguais ao checkout. Status IA autenticado confirmou `enabled: false`, `provider: groq`; navegador restaurou a sessão e exibiu fontes/aviso, captura 27. Sem geração real. Sessões/histórico em 375 pixels foram verificados em `62ff0af`, captura 26; gestão/data civil/replay em `4b89e3`, captura 24; modal em `24e77b4`, captura 23; Fundamentos em `65fb32c`, captura 21.
+O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_AhGq8iVB9UYq55ZjDmP51zpDPZGq`, revisão `f9ac83d`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/38055351767) aprovada. Banco ready, API no-store e hashes de HTML/login.css/WEBP/evidencias.js iguais ao checkout. Na revisão anterior `3adf5c1`, gestão HTTPS aprovada com fixtures limpas; capturas 28/29/31 registram o acesso em 1280 × 720, 375 × 812 e 768 × 1024. Divisões reais em HTTPS foram conferidas; nutrição foi gerada e inspecionada com limitação basal/repouso, captura 30. Após duas respostas imprecisas, volume usa glossário determinístico confirmado no navegador autenticado, captura 32. Captura 27 pertence a `7b856e0`, quando a geração estava desativada.
 
 Gates no mesmo domínio confirmaram três perfis, autorização, CSRF e logout. Treino demonstrativo finalizado persistiu após recarga: 20 kg × 8, RIR 2, 160 kg·reps. Nutrição fictícia foi salva/restaurada no navegador com escopo desmarcado até nova confirmação, captura 20. Gestão HTTPS foi repetida após `4b89e3`: CRUD, perfis, nutrição consentida/isolada, presença auditável, duas renovações de sete dias concorrentes e replay do mesmo UUID sem terceiro registro/renovação. Fixtures UUID próprias removidas; quotas reais preservadas.
 
@@ -130,7 +130,7 @@ A Vercel precisa alcançar o banco remoto com TLS e ter os valores definidos par
 ## Testes
 
 - `npm test`: lógica, API com doubles, autorização, matemática, catálogo, fila e PWA; sem cobrança de provedor.
-- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **287 aprovados, zero falhas e zero ignorados** na revisão `7b856e0`; revisão independente IA 9/9. A revisão anterior `62ff0af` teve 279/279 e revisão focada 41/41.
+- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **309 aprovados, zero falhas e zero ignorados** na revisão `f9ac83d`. Revisão IA focada 19/19. Na revisão de gestão/login `3adf5c1`, foram 304/304, verificação independente 29/29 e backend 48/48. Os subconjuntos não devem ser somados ao total da suíte.
 - `npm audit`: auditoria de dependências conhecidas. Não equivale a uma auditoria completa de segurança.
 - `node scripts/with-local-env.cjs node scripts/smoke-local.cjs`: login e persistência via HTTP no servidor local ativo.
 - `node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs`: concorrência real de sessões/séries no MariaDB.
@@ -156,9 +156,9 @@ Seu constructor Prisma recebe a URL privada guardada explicitamente, sem usar a 
 
 ## Integrações opcionais
 
-Foi escolhido GPT-OSS 120B via Groq Free. Sem chave e confirmação explícita do plano Free, a IA informa indisponibilidade e fórmulas/fontes continuam acessíveis. A chave fica exclusivamente no servidor; não há fallback automático para serviço pago. Gemini permanece como alternativa explícita. [Configuração, fontes e verificação real](IA_GRATUITA.md).
+Foi escolhido GPT-OSS 120B via Groq Free. O console confirmou plano Free a US$ 0; divisões reais foram conferidas localmente e em HTTPS, e nutrição publicada foi inspecionada com limitação terminológica registrada. Chave e ativação ficam privadamente em Production/Preview. A revisão publicada `f9ac83d` retorna glossário revisado para volume, sem chamada externa nem quota de inferência, preservando autenticação/CSRF/proteção global. Navegador confirmou **Entender indicadores** e a identificação de conteúdo não gerado por IA, captura 32. Sem chave, as fontes/fórmulas e o glossário continuam disponíveis. Não há fallback automático para serviço pago. [Configuração, fontes e verificação real](IA_GRATUITA.md).
 
-Checkout depende dos campos Mercado Pago de `server/.env.example`, conta de teste e webhook HTTPS. O modo implementado é sandbox. Testes com provedor simulado não substituem confirmação canônica de um pagamento real de teste.
+Checkout depende dos campos Mercado Pago de `server/.env.example`, contas de teste e webhook HTTPS. O modo implementado é sandbox. Gate real: cartão `APRO`/rejeitado/`CONT`; Pix QR/pendente sem renovação. A documentação do provedor não permite exigir liquidação Pix nesse sandbox; conciliação Pix `approved` continua coberta por doubles. [Roteiro de configuração e fontes oficiais](PAGAMENTOS_SANDBOX.md). Não executar pagamento de produção para completar esse gate.
 
 ### Lançamento manual e migração aditiva
 
