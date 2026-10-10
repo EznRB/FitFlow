@@ -23,6 +23,7 @@ Atualizado em 10/10/2026 após revisão da interface e do login. Preservar o tem
 - Formulários com labels, unidades, exemplos e erros próximos ao campo. Inputs mobile em 16px.
 - Gráficos e indicadores somente com dados existentes. Sem percentuais de crescimento decorativos.
 - Estados vazio, carregando, erro, sem conexão e dados incompletos devem explicar a próxima ação.
+- Em Sessões, o estado da consulta ao servidor é separado da fila local. Exibir vazio confirmado somente após resposta válida; durante espera/falha identificar registros locais e permitir nova tentativa. Usar os tokens existentes `--primary-400/500`, `--bg-base/surface` e raios 6–8 px; inputs em 16 px.
 - Cabeçalho, conteúdo principal, navegação e diálogos semanticamente identificáveis; teclado e contraste revisados.
 
 ## Landing

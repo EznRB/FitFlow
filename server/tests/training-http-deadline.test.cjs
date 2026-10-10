@@ -134,7 +134,7 @@ test('refresh com duas leituras paradas libera syncing e preserva cache, permiti
   const h = harness(async url => stalled ? new Promise(() => {}) : response(url.endsWith('/treinos/meus') ? [] : { sessions: [], summary7Days: null }));
   const view = sessions(h), store = await view.ensureStore(), errors = [];
   await store.cacheWorkouts([{ id: 2, name: 'Ficha offline', exercises: [] }]);
-  view.container = { isConnected: true, querySelector: selector => selector === '[data-set-form]' ? null : {} };
+  view.container = { isConnected: true, querySelector: selector => selector === '[data-set-form]' ? null : { setAttribute() {} } };
   view.draw = () => {}; view.updateIndicators = () => {}; view.error = value => { if (value) errors.push(value); };
   const refresh = observe(view.refresh()); await tick();
   assert.equal(h.requests.length, 2); h.expire(); await tick();

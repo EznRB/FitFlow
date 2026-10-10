@@ -7,7 +7,14 @@ const training = require('../../client/js/training-store.js');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 const state = id => ({ userId: id, workouts: [], sessions: [], operations: [], nextSequence: 1 });
-function container() { return { isConnected: true, innerHTML: '', querySelector: selector => selector === '[data-set-form]' ? null : {}, querySelectorAll: () => [] }; }
+function container() {
+  const nodes = new Map();
+  return { isConnected: true, innerHTML: '', querySelector: selector => {
+    if (selector === '[data-set-form]') return null;
+    if (!nodes.has(selector)) nodes.set(selector, { attributes: {}, setAttribute(name, value) { this.attributes[name] = String(value); } });
+    return nodes.get(selector);
+  }, querySelectorAll: () => [] };
+}
 function fixture() {
   const records = new Map(), reads = [], callbacks = [], stores = [], guards = [], listeners = {};
   let heldRead = null, epoch = 'initial';

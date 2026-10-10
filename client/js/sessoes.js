@@ -2,6 +2,7 @@
 // Account identity comes only from Auth.user after the application's /auth/me check.
 const SessoesView = {
   store: null, storeIdentity: null, storeRequest: null, accountCleanups: new Map(), userId: null, container: null, workouts: [], summary: null, renderGeneration: 0, syncing: null, renderedSessionKey: null,
+  queryStates: { workouts: 'loading', history: 'loading' }, queryVersion: 0,
   identity() {
     return { userId: Auth.user?.id, role: Auth.user?.role, generation: Auth.generation,
       epoch: typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
@@ -47,13 +48,14 @@ const SessoesView = {
   current() { return this.container?.isConnected && this.container.querySelector('[data-session-page]') && Auth.user?.id === this.userId && Auth.user?.role === 'student' && (!this.storeIdentity || this.ownsIdentity(this.storeIdentity)); },
   escape(value) { return FitFlowSecurity.escapeHtml(value); },
   async render(container) {
-    const generation = ++this.renderGeneration, identity = this.identity();
+    const generation = ++this.renderGeneration, identity = this.identity(), queryVersion = this.queryVersion;
     this.container = container; this.summary = null;
+    this.queryStates = { workouts: navigator.onLine ? 'loading' : 'offline', history: navigator.onLine ? 'loading' : 'offline' };
     container.innerHTML = `<section class="sessions-page" data-session-page>
-      <header class="sessions-header"><div><p class="sessions-eyebrow">REGISTRO DE TREINO</p><h2>Sessões e séries</h2><p>Registre o que você executou na ficha do instrutor.</p></div><button class="btn btn-secondary" type="button" data-sync>Sincronizar</button></header>
+      <header class="sessions-header"><div><p class="sessions-eyebrow">REGISTRO DE TREINO</p><h2>Sessões e séries</h2><p>Registre o que você executou na ficha do instrutor.</p></div><button class="btn btn-secondary" type="button" data-sync disabled aria-busy="true">Atualizando…</button></header>
       <p class="sessions-sync" role="status" aria-live="polite" data-sync-status>Carregando a fila deste dispositivo…</p>
       <p class="sessions-message" role="alert" data-session-error hidden></p>
-      <div data-active-session></div><div data-workouts></div><div data-week-summary></div><div data-session-history></div>
+      <div data-active-session></div><p class="sessions-query" role="status" aria-live="polite" data-workouts-query></p><div data-workouts></div><p class="sessions-query" role="status" aria-live="polite" data-history-query></p><div data-week-summary></div><div data-session-history></div>
       <aside class="sessions-evidence"><h3>Como ler seus registros</h3><p>Volume é a soma de carga × repetições das séries registradas. Aquecimentos ficam separados. Com peso corporal, 0 kg representa carga externa declarada; não estima o peso movimentado.</p><p>Séries diretas usam somente o grupo muscular informado na ficha. Finalizar encerra a sessão e pode deixar séries planejadas sem registro.</p><a href="https://pubmed.ncbi.nlm.nih.gov/41843416/" target="_blank" rel="noopener noreferrer">ACSM 2026: ajustar o treinamento ao objetivo</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/38595233/" target="_blank" rel="noopener noreferrer">Divisão e full body com volume igualado</a></aside>
     </section>`;
     container.querySelector('[data-sync]').onclick = () => {
@@ -62,25 +64,66 @@ const SessoesView = {
     try {
       const store = await this.ensureStore();
       const context = this.context(store);
-      if (generation !== this.renderGeneration || !this.ownsIdentity(identity) || !this.ownsContext(context)) return;
+      if (generation !== this.renderGeneration || queryVersion !== this.queryVersion || !this.ownsIdentity(identity) || !this.ownsContext(context)) return;
       const state = await store.state();
-      if (!this.ownsContext(context) || !this.current()) return;
+      if (queryVersion !== this.queryVersion || !this.ownsContext(context) || !this.current()) return;
       this.workouts = state.workouts || []; this.draw(state);
       await this.refresh();
-    } catch (error) { if (generation === this.renderGeneration && this.ownsIdentity(identity) && !error.obsolete) this.error(error.message); }
+    } catch (error) {
+      // Uma atualização aceita supera tanto o resultado quanto o erro da leitura
+      // inicial, inclusive quando a atualização já terminou nesta mesma tela.
+      if (generation !== this.renderGeneration || queryVersion !== this.queryVersion || container !== this.container || !container.isConnected || !this.ownsIdentity(identity) || error.obsolete) return;
+      this.queryStates = { workouts: navigator.onLine ? 'unavailable' : 'offline', history: navigator.onLine ? 'unavailable' : 'offline' };
+      this.updateQueryStatus();
+      // O armazenamento pode falhar antes de instalar o store; current() ainda
+      // será falso. A identidade e a navegação acima protegem esta recuperação.
+      const button = container.querySelector('[data-sync]');
+      button.disabled = false; button.textContent = 'Sincronizar'; button.setAttribute('aria-busy', 'false');
+      if (this.current()) this.error(error.message);
+      else {
+        const node = container.querySelector('[data-session-error]'); node.textContent = error.message; node.hidden = false;
+        for (const resource of ['workouts', 'history']) container.querySelector(`[data-${resource}-query]`).textContent = 'Não foi possível carregar os registros deste dispositivo. Tente sincronizar novamente.';
+      }
+    }
   },
   error(message) {
     if (!this.current()) return;
     const node = this.container.querySelector('[data-session-error]'); node.textContent = message || ''; node.hidden = !message;
   },
+  queryEmpty(resource) {
+    const status = this.queryStates[resource];
+    if (status === 'loading') return resource === 'workouts' ? 'Consultando suas fichas…' : 'Consultando sessões finalizadas…';
+    if (status === 'ready') return resource === 'workouts' ? 'Nenhuma ficha encontrada. Peça uma ficha ao instrutor.' : 'Sua primeira sessão finalizada aparecerá aqui.';
+    return resource === 'workouts' ? 'Nenhuma ficha salva neste dispositivo. Suas fichas no servidor não foram confirmadas.' : 'Não há sessões finalizadas salvas neste dispositivo. O histórico do servidor não foi confirmado.';
+  },
+  updateQueryStatus() {
+    if (!this.current()) return;
+    const busy = !!(this.syncing && this.ownsContext(this.syncing));
+    const button = this.container.querySelector('[data-sync]');
+    button.disabled = busy; button.textContent = busy ? 'Atualizando…' : 'Sincronizar'; button.setAttribute('aria-busy', String(busy));
+    const notices = {
+      workouts: { loading: `Consultando fichas no servidor.${this.workouts.length ? ' Você pode usar as fichas salvas neste dispositivo.' : ''}`, ready: 'Fichas atualizadas a partir do servidor.', unavailable: 'Não foi possível atualizar suas fichas. Exibindo apenas as fichas salvas neste dispositivo.', offline: 'Sem conexão. Exibindo apenas as fichas salvas neste dispositivo.' },
+      history: { loading: 'Consultando o histórico no servidor. Os registros locais continuam disponíveis.', ready: 'Histórico consultado no servidor; registros ainda pendentes permanecem neste dispositivo.', unavailable: 'Histórico do servidor indisponível. Os registros exibidos são os disponíveis neste dispositivo.', offline: 'Sem conexão. O histórico exibido contém apenas registros disponíveis neste dispositivo.' },
+    };
+    for (const resource of ['workouts', 'history']) {
+      const notice = this.container.querySelector(`[data-${resource}-query]`);
+      if (notice) notice.textContent = notices[resource][this.queryStates[resource]];
+      const empty = this.container.querySelector(`[data-${resource}-empty]`);
+      if (empty) empty.textContent = this.queryEmpty(resource);
+    }
+  },
   async refresh() {
     const operation = this.context();
     if (this.syncing && this.ownsContext(this.syncing)) return;
+    ++this.queryVersion;
     this.syncing = operation;
+    this.queryStates = { workouts: navigator.onLine ? 'loading' : 'offline', history: navigator.onLine ? 'loading' : 'offline' };
+    this.updateQueryStatus();
     try {
       const store = await this.ensureStore();
       if (!this.ownsIdentity(operation.identity) || operation.container !== this.container || operation.renderGeneration !== this.renderGeneration) return;
       operation.store = store;
+      this.updateQueryStatus();
       this.error('');
       await store.flush();
       if (!this.ownsContext(operation)) return;
@@ -94,15 +137,17 @@ const SessoesView = {
           await store.cacheWorkouts(outcomes[0].value.data);
           if (!this.ownsContext(operation)) return;
           this.workouts = outcomes[0].value.data;
+          this.queryStates.workouts = 'ready';
         }
-        else this.error(outcomes[0].reason.message);
+        else { this.queryStates.workouts = 'unavailable'; this.error(outcomes[0].reason.message); }
         if (outcomes[1].status === 'fulfilled') {
           await store.mergeHistory(outcomes[1].value.data.sessions);
           if (!this.ownsContext(operation)) return;
           this.summary = outcomes[1].value.data.summary7Days;
+          this.queryStates.history = 'ready';
           await store.flush();
           if (!this.ownsContext(operation)) return;
-        } else this.error(outcomes[1].reason.message);
+        } else { this.queryStates.history = 'unavailable'; this.error(outcomes[1].reason.message); }
       }
       const state = await store.state();
       if (this.ownsContext(operation) && this.current()) {
@@ -111,10 +156,19 @@ const SessoesView = {
         else { this.updateIndicators(state); this.drawHistory(state); this.drawRecords(state); }
       }
     } catch (error) { if (this.ownsContext(operation) && !error.obsolete) this.error(error.message); }
-    finally { if (this.syncing === operation) this.syncing = null; }
+    finally {
+      if (this.syncing === operation) {
+        this.syncing = null;
+        if (this.ownsContext(operation)) {
+          for (const resource of ['workouts', 'history']) if (this.queryStates[resource] === 'loading') this.queryStates[resource] = navigator.onLine ? 'unavailable' : 'offline';
+          this.updateQueryStatus();
+        }
+      }
+    }
   },
   updateIndicators(state) {
     if (!this.current()) return;
+    this.updateQueryStatus();
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     const key = active ? `${active.id}:${active.status}` : null;
     if (key !== this.renderedSessionKey) { this.draw(state); return; }
@@ -134,7 +188,7 @@ const SessoesView = {
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     this.renderedSessionKey = active ? `${active.id}:${active.status}` : null;
     const section = this.container.querySelector('[data-active-session]');
-    this.container.querySelector('[data-workouts]').innerHTML = active ? '' : `<section class="sessions-panel"><h3>Iniciar uma sessão</h3><div class="sessions-workouts">${this.workouts.length ? this.workouts.map((w, index) => `<button class="sessions-workout" data-start="${index}" type="button"><strong>${this.escape(w.name)}</strong><span>${w.exercises.length} ${w.exercises.length === 1 ? 'exercício' : 'exercícios'} · ficha do instrutor</span><span>Iniciar treino →</span></button>`).join('') : '<p>Nenhuma ficha disponível. Conecte-se para carregar suas fichas ou peça uma ficha ao instrutor.</p>'}</div></section>`;
+    this.container.querySelector('[data-workouts]').innerHTML = active ? '' : `<section class="sessions-panel"><h3>Iniciar uma sessão</h3><div class="sessions-workouts">${this.workouts.length ? this.workouts.map((w, index) => `<button class="sessions-workout" data-start="${index}" type="button"><strong>${this.escape(w.name)}</strong><span>${w.exercises.length} ${w.exercises.length === 1 ? 'exercício' : 'exercícios'} · ficha do instrutor</span><span>Iniciar treino →</span></button>`).join('') : `<p data-workouts-empty>${this.queryEmpty('workouts')}</p>`}</div></section>`;
     if (active) {
       const plan = active.planSnapshot;
       section.innerHTML = `<section class="sessions-panel"><div class="sessions-header"><div><p class="sessions-eyebrow">${active.status === 'completing' ? 'FINALIZAÇÃO NA FILA' : 'SESSÃO ATUAL'}</p><h3>${this.escape(plan.name)}</h3><p>Iniciada em ${this.escape(new Date(active.clientStartedAt).toLocaleString('pt-BR'))}</p></div>${active.status === 'active' ? '<button class="btn btn-secondary" type="button" data-complete>Finalizar sessão</button>' : ''}</div>
@@ -217,7 +271,7 @@ const SessoesView = {
       const working = sets.filter(x => x.kind === 'working'), warmup = sets.filter(x => x.kind === 'warmup');
       const volume = rows => rows.reduce((sum, x) => sum + Number(x.weightKg) * Number(x.reps), 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
       return `<details class="sessions-history"><summary><strong>${this.escape(s.planSnapshot.name)}</strong><span>${this.escape(new Date(s.clientStartedAt).toLocaleDateString('pt-BR'))} · ${working.length} ${working.length === 1 ? 'série' : 'séries'} de trabalho · ${volume(working)} kg·reps</span></summary><p>${summary ? `${summary.missingPlannedSets} ${summary.missingPlannedSets === 1 ? 'série planejada ficou' : 'séries planejadas ficaram'} sem registro.` : 'Sessão finalizada; contagem baseada nos registros disponíveis.'} Aquecimentos: ${warmup.length} ${warmup.length === 1 ? 'série' : 'séries'} · ${volume(warmup)} kg·reps.</p><ol class="sessions-records">${sets.map(x => `<li><div><strong>${this.escape(x.exerciseName || s.planSnapshot.exercises.find(e => e.id === x.exerciseId)?.name)}</strong><span>${x.kind === 'warmup' ? 'Aquecimento' : 'Trabalho'} · ${this.escape(x.weightKg)} kg × ${x.reps} reps${x.rir !== null && x.rir !== undefined ? ` · RIR ${this.escape(x.rir)}` : ''}</span>${x.notes ? `<p>${this.escape(x.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`;
-    }).join('') : '<p>Sua primeira sessão finalizada aparecerá aqui.</p>'}</section>`;
+    }).join('') : `<p data-history-empty>${this.queryEmpty('history')}</p>`}</section>`;
     const archived = state.sessions.filter(session => session.status === 'abandoned');
     if (archived.length) this.container.querySelector('[data-session-history]').insertAdjacentHTML('beforeend', `<section class="sessions-panel"><h3>Sessões arquivadas neste dispositivo</h3><p>Estes envios foram interrompidos por sua confirmação. Séries sem confirmação não entram no resumo sincronizado. Este arquivo local é apagado ao sair da conta.</p>${archived.map(session => `<details class="sessions-history"><summary><strong>${this.escape(session.recordedPlanSnapshot?.name || session.planSnapshot.name)}</strong><span>${this.escape(new Date(session.clientStartedAt).toLocaleString('pt-BR'))} · ${session.sets.length} ${session.sets.length === 1 ? 'série registrada' : 'séries registradas'}</span></summary><p>${session.synced ? 'Sessão iniciada no servidor; seu encerramento não foi confirmado por este arquivamento.' : 'Início da sessão sem confirmação do servidor.'}</p><ul>${(session.abandonedOperations || []).filter(op => op.status === 'blocked').map(op => `<li>${this.escape(op.error || 'Envio rejeitado.')}</li>`).join('')}</ul><ol class="sessions-records">${session.sets.map(set => `<li><div><strong>${this.escape(set.exerciseName || session.recordedPlanSnapshot?.exercises.find(exercise => exercise.id === set.exerciseId)?.name || 'Exercício registrado')}</strong><span>${this.escape(set.weightKg)} kg × ${this.escape(set.reps)} reps · ${set.synced ? 'Confirmada no servidor' : 'Sem confirmação; não será enviada'}</span>${set.notes ? `<p>${this.escape(set.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`).join('')}</section>`);
     const week = this.summary;

@@ -1,9 +1,0 @@
-// Integrar em CatalogoExercicio e gerar migration + Prisma Client antes de sync.
-// Registros existentes recebem source=local e curated=true. Não adotar por nome.
-  source         String   @default("local") @db.VarChar(20)
-  externalId     String?  @map("external_id") @db.VarChar(50)
-  locale         String   @default("pt") @db.VarChar(10)
-  curated        Boolean  @default(true)
-  sourceMetadata Json?    @map("source_metadata")
-
-  @@unique([source, externalId])
