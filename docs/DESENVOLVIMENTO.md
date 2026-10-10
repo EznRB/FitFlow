@@ -111,7 +111,7 @@ node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
 
 O gate hospedado usa autenticação autorizada para o Preview protegido e confere health/banco, login/me nos três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. O script não divulga token/senha e não realiza cobrança. `.vercelignore` exclui arquivos privados, bancos nativos, testes e documentação do pacote.
 
-O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_413ri2Ff698zGmAXGq9gKUY2bmW9`, revisão `62ff0af`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/38016513262) aprovada. Quatro scripts alterados com hashes iguais ao checkout; banco ready e API no-store. Navegador confirmou login de aluno, recarga e histórico em 375 pixels, captura 26. Gate de gestão/data civil/replay foi aprovado anteriormente em `4b89e3`, captura 24; modal em `24e77b4`, captura 23; Fundamentos em `65fb32c`, captura 21.
+O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_EcdSkc32v2Fw3ZNdhBXroAieUkMD`, revisão `7b856e0`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/38017533596) aprovada. Banco ready, API no-store e hash do script Fundamentos iguais ao checkout. Status IA autenticado confirmou `enabled: false`, `provider: groq`; navegador restaurou a sessão e exibiu fontes/aviso, captura 27. Sem geração real. Sessões/histórico em 375 pixels foram verificados em `62ff0af`, captura 26; gestão/data civil/replay em `4b89e3`, captura 24; modal em `24e77b4`, captura 23; Fundamentos em `65fb32c`, captura 21.
 
 Gates no mesmo domínio confirmaram três perfis, autorização, CSRF e logout. Treino demonstrativo finalizado persistiu após recarga: 20 kg × 8, RIR 2, 160 kg·reps. Nutrição fictícia foi salva/restaurada no navegador com escopo desmarcado até nova confirmação, captura 20. Gestão HTTPS foi repetida após `4b89e3`: CRUD, perfis, nutrição consentida/isolada, presença auditável, duas renovações de sete dias concorrentes e replay do mesmo UUID sem terceiro registro/renovação. Fixtures UUID próprias removidas; quotas reais preservadas.
 
@@ -130,7 +130,7 @@ A Vercel precisa alcançar o banco remoto com TLS e ter os valores definidos par
 ## Testes
 
 - `npm test`: lógica, API com doubles, autorização, matemática, catálogo, fila e PWA; sem cobrança de provedor.
-- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **279 aprovados, zero falhas e zero ignorados** na revisão `62ff0af`; revisão independente focada 41/41.
+- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **287 aprovados, zero falhas e zero ignorados** na revisão `7b856e0`; revisão independente IA 9/9. A revisão anterior `62ff0af` teve 279/279 e revisão focada 41/41.
 - `npm audit`: auditoria de dependências conhecidas. Não equivale a uma auditoria completa de segurança.
 - `node scripts/with-local-env.cjs node scripts/smoke-local.cjs`: login e persistência via HTTP no servidor local ativo.
 - `node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs`: concorrência real de sessões/séries no MariaDB.

@@ -6,10 +6,12 @@ A meta completa está ativa. O login publicado foi recuperado com Neon; aplicati
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app) | `62ff0af`, branch `codex/science-ux-foundation`, deployment `dpl_413ri2Ff698zGmAXGq9gKUY2bmW9`, READY e alias canônico confirmado. URL exata: `https://fit-flow-68pa9eggg-eznrbs-projects.vercel.app`. Quatro scripts alterados com hashes iguais ao checkout; `/api/health` HTTP 200, banco ready e API no-store. Navegador confirmou login de aluno, recarga, sessões e histórico em 375 pixels. |
+| [FitFlow](https://fit-flow-indol.vercel.app) | `7b856e0`, branch `codex/science-ux-foundation`, deployment `dpl_EcdSkc32v2Fw3ZNdhBXroAieUkMD`, READY e alias canônico confirmado. URL exata: `https://fit-flow-7hivg7yai-eznrbs-projects.vercel.app`. Script Fundamentos com hash igual ao checkout; `/api/health` HTTP 200, banco ready e API no-store. Status autenticado da IA confirmou `enabled: false`, `provider: groq`, sem chave/modelo. Navegador restaurou a sessão após recarga e confirmou Fundamentos com geração desativada. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-[CI GitHub da revisão atual 62ff0af](https://github.com/EznRB/FitFlow/actions/runs/38016513262): sucesso. Node 24.x, função `gru1`, Client PostgreSQL Prisma 6.19.3 gerado no Linux. Patch de cliente sem migration; 279 testes locais e revisão independente 41/41 aprovados. Captura 26 registra o histórico publicado após recarga, com 20 kg × 8, RIR 2 e 160 kg·reps. As corridas de timing foram reproduzidas nos testes controlados; a captura comprova o fluxo normal publicado.
+[CI GitHub da revisão atual 7b856e0](https://github.com/EznRB/FitFlow/actions/runs/38017533596): sucesso. Node 24.x, função `gru1`, Client PostgreSQL Prisma 6.19.3 gerado no Linux. Adaptador Groq/GPT-OSS sem migration ou nova dependência; 287 testes locais aprovados, revisão independente dos testes IA 9/9 e gate privado em 284 arquivos. Captura 27 registra Fundamentos sem geração ativada. Nenhuma requisição de geração real foi feita.
+
+Revisão anterior `62ff0af`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38016513262), 279 testes e revisão independente 41/41. Captura 26 registra o histórico publicado após recarga, com 20 kg × 8, RIR 2 e 160 kg·reps. As corridas de timing foram reproduzidas nos testes controlados; a captura comprova o fluxo normal publicado.
 
 Gate HTTPS de gestão/nutrição/presença/renovação e idempotência manual foi aprovado na revisão anterior `4b89e3`, com [CI](https://github.com/EznRB/FitFlow/actions/runs/37993027731) aprovada. Incluiu dois cadastros editados com CPF/nascimento vazios, retorno NULL, rejeição de data inválida e matrícula no dia civil brasileiro. Captura 24 registra Alunos em `4b89e3`; captura 23 registra modal/recarga admin em `24e77b4`, sem submissão; captura 21 registra Fundamentos em `65fb32c`.
 
@@ -32,7 +34,7 @@ Gate HTTPS de gestão/nutrição/presença/renovação e idempotência manual fo
 | Nutrição publicada | Gate HTTPS: consentimento obrigatório, persistência JSONB, isolamento por conta e exclusão de fixture própria. Mifflin, 80 kg/180 cm/30 anos/homem/fator 1,5: repouso 1780 kcal, estimativa 2670 kcal, proteína 128 g, carboidratos 372,6 g, gordura 74,2 g. Navegador salvou/restaurou cenário fictício; restauração exige nova confirmação de escopo. Captura 20. |
 | Mobile/PWA | Viewport emulada 375 × 812 sem overflow horizontal, captura 17. Localmente, série 27 kg × 8 permaneceu pendente offline e sincronizou uma vez, 216 kg·reps. Recarga offline apresenta fallback público. Telefone físico/instalação não testados. |
 | Pagamentos | Lançamento manual recebido tem UUID único, hash da intenção e ator, consulta de reconciliação e proteção de sessão/abas. HTTPS após deploy confirmou duas renovações distintas de sete dias, replay sem terceiro registro/renovação, conflito 409 e sessão divergente 403. Não cobra nem valida Pix/cartão. Checkout Pro sandbox tem HMAC, ownership, confirmação canônica e conciliação idempotente com provedor simulado; nenhuma cobrança ao Mercado Pago. |
-| IA | Corpus curado, chave somente no servidor, resposta estruturada validada, sem envio de medidas corporais. Provedor simulado nos testes; chave e teste reais pendentes. Alternativa Vercel AI Gateway pesquisada: consulta autenticada com OIDC renovado retornou HTTP 200, saldo 0 e uso total 0; não houve geração nem habilitação de cobrança. |
+| IA | GPT-OSS 120B via Groq Free escolhido e adaptador publicado; Gemini permanece alternativa explícita. Corpus curado, chave somente no servidor, JSON/IDs validados, sem medidas corporais. Groq exige chave + confirmação explícita do plano Free + modelo permitido; quota/erro não acionam outro provedor. Status HTTPS autenticado confirmou geração desativada/groq; chave, plano e explicação reais pendentes. Testes usam provedor simulado. Vercel Gateway só pesquisado, sem compra ou geração. [Configuração e limites](IA_GRATUITA.md). |
 | Datas | `America/Sao_Paulo`, filtros validados, datas civis DATE e instantes UTC agrupados no calendário brasileiro. TIME legado preservado. Gates publicados de presença e financeiro passaram. |
 | Landing | Laranja/navy e Barlow, fotografia ilustrativa nova, autoria e estado real. Build TypeScript e audit aprovados. Gate público e navegador confirmaram a implantação atual. |
 | Limpeza | Repositório de pagamentos sem imports removido após busca global. Documentação corrente consolidada; migrations aplicadas preservadas. Papel administrativo não utilizado `fitflow_runtime` removido pelo MCP com autorização explícita; restaram `fitflow_app` e `fitflow_owner`. |
@@ -54,7 +56,9 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral atual `62ff0af`: **279 aprovados, zero falhas e zero ignorados**; revisão independente focada 41/41. Vinte testes foram acrescentados ao baseline `4b89e3` de 259. No domínio final, hashes dos quatro scripts alterados coincidiram com o checkout; login de aluno e restauração após recarga preservaram o histórico demonstrativo. Sessões em 375 × 812: documento 369 pixels, dentro da viewport; captura 26. Sem nova gravação de treino neste gate de navegador.
+Suíte integral atual `7b856e0`: **287 aprovados, zero falhas e zero ignorados**, incluindo oito testes novos de Groq/rota/UI. Revisão independente IA 9/9; gate privado em 284 arquivos. Saúde e hash do script Fundamentos conferidos no domínio final. Um login HTTP demonstrativo verificou status autenticado desativado/groq e logout; nenhuma geração solicitada. Navegador restaurou a sessão e apresentou fontes e aviso de indisponibilidade, captura 27.
+
+Revisão anterior `62ff0af`: 279 testes, revisão independente focada 41/41 e vinte testes novos sobre o baseline `4b89e3` de 259. Hashes dos quatro scripts alterados coincidiram com o checkout; login de aluno e restauração após recarga preservaram o histórico demonstrativo. Sessões em 375 × 812: documento 369 pixels, dentro da viewport; captura 26. Sem nova gravação de treino nesse gate de navegador.
 
 Na revisão anterior, a revisão independente passou em 30/30; telas administrativas foram conferidas em 375 pixels e seis telas locais em 768/1280. Relatório respondeu ao teclado com deslocamento horizontal 0 → 38. Duas abas reais confirmaram fechamento do modal/limpeza de conteúdo após logout na outra aba, login interativo e nova sessão de aluno persistida após recarga, captura 25. As novas corridas de identidade/IDB foram testadas em harness controlado, sem afirmar injeção desse timing no navegador público.
 
@@ -78,7 +82,7 @@ Na landing: `npm run build` e `npm audit`; `lint` verifica tipos, sem representa
 ## Pendências obrigatórias
 
 1. **Mercado Pago sandbox:** vendedor/comprador de teste, token, segredo de webhook e URL HTTPS; confirmar/rejeitar eventos reais de teste. Segredos não vão ao chat/frontend.
-2. **IA real:** chave, quota, limite de gasto e explicação real com referências. IDs válidos de fontes não comprovam cada frase gerada.
+2. **IA real:** usuário irá configurar Groq Free; confirmar plano e quota, chave privada e explicação real com referências. Não contratar plano pago. A flag de conferência não determina faturamento. IDs válidos de fontes não comprovam cada frase gerada. [Receita](IA_GRATUITA.md).
 3. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate.
 4. **Revisão final:** áreas de gestão publicadas, reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal.
 
@@ -111,5 +115,6 @@ Na landing: `npm run build` e `npm audit`; `lint` verifica tipos, sem representa
 - `evidence/24-gestao-alunos-mobile-vercel.png`: Alunos em 375 pixels na revisão publicada `4b89e3`; busca e matrícula dentro da tela, tabela com rolagem interna.
 - `evidence/25-sessao-outra-aba-login-local.png`: navegador local após mudança de sessão em outra aba; conteúdo/modal anteriores removidos e login disponível. Não é prova de publicação.
 - `evidence/26-sessoes-vercel-isolamento-mobile.png`: histórico normal após login/recarga na revisão `62ff0af`, viewport emulada 375 × 812; registro anterior 20 kg × 8, RIR 2 e 160 kg·reps. Não reproduz os timings das corridas nem comprova telefone físico.
+- `evidence/27-groq-fundamentos-vercel.png`: Fundamentos em `7b856e0` após recarga da sessão; fontes acessíveis e botão IA desativado. Complementa o gate HTTP que confirmou `provider: groq`; não comprova geração real.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.
