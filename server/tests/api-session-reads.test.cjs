@@ -5,12 +5,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const source = fs.readFileSync(path.resolve(__dirname, '../../client/js/api.js'), 'utf8');
 function fixture() {
-  let reply, epoch = 'first'; const events = [];
-  const Auth = { user: { id: 7 }, generation: 1, getSessionEpoch: () => epoch };
-  const context = vm.createContext({ Auth, fetch: () => new Promise(resolve => { reply = resolve; }),
+  let reply, epoch = 'first', calls = 0; const events = [];
+  const Auth = { user: { id: 7 }, generation: 1, sessionEpoch: 'first', getSessionEpoch: () => epoch };
+  const context = vm.createContext({ Auth, fetch: () => { calls++; return new Promise(resolve => { reply = resolve; }); },
     window: { dispatchEvent: event => events.push(event.type) }, CustomEvent: class { constructor(type) { this.type = type; } } });
   vm.runInContext(`${source}\nglobalThis.testAPI = API;`, context);
-  return { api: context.testAPI, Auth, events, epoch: value => { epoch = value; },
+  return { api: context.testAPI, Auth, events, calls: () => calls, epoch: value => { epoch = value; },
     reply: (status = 200) => reply(new Response(JSON.stringify({ data: { name: 'Private fixture' } }), { status })) };
 }
 test('GET antigo após logout ou troca de conta não entrega dados pessoais nem emite 401 antigo', async () => {
@@ -35,4 +35,21 @@ test('GET da sessão atual retorna dados; resposta de escrita não é convertida
   const write = fixture(), writeRequest = write.api.post('/pagamentos', { idempotencyKey: 'fixture' });
   write.Auth.user = null; write.Auth.generation++; write.epoch('another-tab'); write.reply();
   assert.equal((await writeRequest).data.name, 'Private fixture');
+});
+
+test('marcador alterado antes do storage event impede novas leituras e escritas com identidade antiga', async () => {
+  for (const method of ['get', 'post', 'put', 'delete']) {
+    const current = fixture(); current.epoch('cookie-now-another-account');
+    const outcome = current.api[method]('/alunos', { name: 'Fixture' });
+    // Settle the request on the old implementation so the regression fails without hanging.
+    if (current.calls()) current.reply();
+    await assert.rejects(outcome, error => error.status === 409 && error.obsolete === true);
+    assert.equal(current.calls(), 0); assert.deepEqual(current.events, []);
+  }
+});
+
+test('login sem identidade autenticada continua permitido após mudança do marcador', async () => {
+  const current = fixture(); current.Auth.user = null; current.epoch('new-login-epoch');
+  const request = current.api.post('/auth/login', { email: 'fixture@example.test', password: 'fixture-only' });
+  current.reply(); assert.equal((await request).data.name, 'Private fixture'); assert.equal(current.calls(), 1);
 });

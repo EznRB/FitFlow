@@ -38,6 +38,14 @@ const API = {
     }
 
     try {
+      // O cookie pode mudar em outra aba antes de seu storage event chegar aqui.
+      // Não enviar uma nova operação usando uma identidade já desatualizada.
+      if (requestIdentity && requestIdentity.userId !== null &&
+          typeof Auth.getSessionEpoch === 'function' && Auth.sessionEpoch !== Auth.getSessionEpoch()) {
+        const obsolete = new Error('A sessão mudou em outra aba. Entre novamente para continuar.');
+        obsolete.status = 409; obsolete.obsolete = true;
+        throw obsolete;
+      }
       if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');
       const response = await fetch(url, config);
       if (config.signal?.aborted) throw new Error('A solicitação foi cancelada.');

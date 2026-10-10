@@ -133,3 +133,28 @@ test('logout explícito de tela obsoleta preserva cookie da nova conta e elimina
   assert.equal(f.requests.length, 1); assert.equal(f.cookie.user.id, 8); assert.equal(a.auth.user, null);
   assert.equal(f.storage.has('fitflow_logout_pending'), false);
 });
+
+test('logout aguarda limpeza local antes de permitir login da mesma conta em outra aba', async () => {
+  const f = fixture(), a = f.tab('A'), b = f.tab('B'); await a.auth.checkAuth();
+  let release; const cleanup = new Promise(resolve => { release = resolve; });
+  a.context.window.addEventListener('auth:logout', event => {
+    if (event.detail.reason !== 'expired' && typeof event.detail.waitUntil === 'function') event.detail.waitUntil(cleanup);
+  });
+  const exiting = a.auth.logout(); await tick(); f.requests[0].resolve({}); await tick();
+  const entering = b.auth.login('same@example.invalid', 'fixture'); await tick();
+  const earlyLogin = f.requests.some(request => request.endpoint === '/auth/login');
+  release(); await exiting; await tick();
+  f.requests.find(request => request.endpoint === '/auth/login').resolve({ data: { user: { id: 7, role: 'student' } } });
+  await entering; assert.equal(earlyLogin, false, 'a limpeza antiga não pode alcançar a nova fila');
+  assert.equal(f.cookie.user.id, 7);
+});
+
+test('logout de epoch obsoleto sinaliza expiração e não autoriza limpar fila da sessão nova', async () => {
+  const f = fixture(), a = f.tab('A'), b = f.tab('B'); await a.auth.checkAuth();
+  const entering = b.auth.login('same@example.invalid', 'fixture'); await tick();
+  f.requests[0].resolve({ data: { user: { id: 7, role: 'student' } } }); await entering;
+  await a.auth.logout();
+  const event = a.events.find(event => event.type === 'auth:logout');
+  assert.equal(event.detail.reason, 'expired'); assert.equal(event.detail.sessionChanged, true);
+  assert.equal(f.requests.length, 1); assert.equal(f.cookie.user.id, 7);
+});

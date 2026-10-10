@@ -45,9 +45,15 @@
     let disposed = false, running = null;
     const empty = () => ({ userId, workouts: [], sessions: [], operations: [], nextSequence: 1 });
     function active() { if (disposed) throw new Error('A fila desta conta foi encerrada.'); }
-    async function mutate(fn) {
+    async function mutate(fn, { serverAcknowledgement = false } = {}) {
       active();
-      const result = await storage.update(userId, data => { const state = data || empty(); fn(state); return state; });
+      const result = await storage.update(userId, data => {
+        // Opening IndexedDB and obtaining the transaction's row are asynchronous.
+        // A logout can dispose this instance while that work is still pending.
+        active();
+        if (!serverAcknowledgement && !isCurrentUser()) throw new Error('A sessão mudou. Entre novamente para registrar neste dispositivo.');
+        const state = data || empty(); fn(state); return state;
+      });
       if (!disposed) onChange(result);
       return result;
     }
@@ -56,7 +62,7 @@
     }
     function find(state, id) { const session = state.sessions.find(s => s.id === id); if (!session) throw new Error('Sessão local não encontrada.'); return session; }
     const store = {
-      async state() { active(); return await storage.read(userId) || empty(); },
+      async state() { active(); const result = await storage.read(userId); active(); return result || empty(); },
       async cacheWorkouts(workouts) { return mutate(state => { state.workouts = workouts.map(planOnly); }); },
       async start(workout) {
         if (!workout?.id || !Array.isArray(workout.exercises) || !workout.exercises.length) throw new Error('Escolha uma ficha com exercícios.');
@@ -153,7 +159,7 @@
                 if (pending.type === 'set') { const entry = session.sets.find(s => s.id === pending.payload.id); if (entry) entry.synced = true; }
                 if (pending.type === 'complete') { session.status = 'completed'; session.summary = received?.summary; }
                 current.operations = current.operations.filter(op => op.id !== pending.id);
-              });
+              }, { serverAcknowledgement: true });
             } catch (error) {
               if (disposed) break;
               if (error.status === 0 || error.status === undefined || error.status >= 500 || error.status === 401 || error.status === 429) {

@@ -58,6 +58,16 @@ const Auth = {
       if (node) { node.textContent = 'A sessão foi alterada em outra aba. Entre novamente para continuar nesta tela.'; node.style.display = 'flex'; }
     }
   },
+  async notifyLogout(detail) {
+    const cleanups = [];
+    window.dispatchEvent(new CustomEvent('auth:logout', { detail: {
+      ...detail, waitUntil: pending => cleanups.push(Promise.resolve(pending)),
+    } }));
+    // Listeners register synchronously; keep the cookie lock until their local
+    // cleanup settles, so a login in another tab cannot create a queue too early.
+    const outcomes = await Promise.allSettled(cleanups);
+    if (outcomes.some(outcome => outcome.status === 'rejected')) console.warn('Não foi possível concluir a limpeza dos registros locais.');
+  },
   getLogoutIntent() {
     const stored = typeof localStorage.getItem === 'function' ? localStorage.getItem(this.logoutIntentKey) : this.remoteLogoutPending;
     return stored || null;
@@ -145,6 +155,7 @@ const Auth = {
     this.expiredUserId = reason === 'expired' ? userId : null;
     localStorage.removeItem('fitflow_user');
     this.logoutPending = Promise.resolve().then(() => this.withCookieLock(async () => {
+      const sessionChanged = this.getSessionEpoch() !== expectedEpoch;
       let serverConfirmed = false;
       try {
         await this.finishLogoutIntentLocked(intent, expectedEpoch);
@@ -153,11 +164,12 @@ const Auth = {
         // Mesmo que o servidor falhe, limpa dados locais.
         console.warn('Erro ao fazer logout no servidor:', e.message);
       }
-      window.dispatchEvent(new CustomEvent('auth:logout', { detail: { reason, userId, serverConfirmed } }));
+      await this.notifyLogout({ reason: sessionChanged ? 'expired' : reason, userId, serverConfirmed, sessionChanged });
       if (!serverConfirmed) this.showLogoutNotice(true);
-    })).catch(error => {
+    })).catch(async error => {
       console.warn('Erro ao coordenar saída no servidor:', error.message);
-      window.dispatchEvent(new CustomEvent('auth:logout', { detail: { reason, userId, serverConfirmed: false } }));
+      const sessionChanged = this.getSessionEpoch() !== expectedEpoch;
+      await this.notifyLogout({ reason: sessionChanged ? 'expired' : reason, userId, serverConfirmed: false, sessionChanged });
       this.showLogoutNotice(true);
     }).finally(() => { this.logoutPending = null; });
     return this.logoutPending;

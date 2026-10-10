@@ -1,24 +1,53 @@
 'use strict';
 // Account identity comes only from Auth.user after the application's /auth/me check.
 const SessoesView = {
-  store: null, userId: null, container: null, workouts: [], summary: null, renderGeneration: 0, syncing: false, renderedSessionKey: null,
-  async ensureStore() {
-    const user = typeof Auth !== 'undefined' ? Auth.user : null;
-    if (!user || user.role !== 'student') throw new Error('Entre com sua conta de aluno para registrar sessões.');
-    if (this.store && this.userId === user.id) return this.store;
-    if (this.store) await this.store.dispose();
-    this.userId = user.id;
-    this.store = FitFlowTrainingStore.createTrainingStore({ userId: user.id,
-      send: (path, payload) => API.post(path, payload),
-      isCurrentUser: () => Auth.user?.id === user.id && Auth.user?.role === 'student',
-      onChange: state => { if (this.current()) this.updateIndicators(state); },
-    });
-    return this.store;
+  store: null, storeIdentity: null, storeRequest: null, accountCleanups: new Map(), userId: null, container: null, workouts: [], summary: null, renderGeneration: 0, syncing: null, renderedSessionKey: null,
+  identity() {
+    return { userId: Auth.user?.id, role: Auth.user?.role, generation: Auth.generation,
+      epoch: typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
   },
-  current() { return this.container?.isConnected && this.container.querySelector('[data-session-page]') && Auth.user?.id === this.userId; },
+  sameIdentity(a, b) { return a && b && a.userId === b.userId && a.role === b.role && a.generation === b.generation && a.epoch === b.epoch; },
+  ownsIdentity(identity) {
+    const sharedEpoch = typeof Auth.getSessionEpoch === 'function' ? Auth.getSessionEpoch() : null;
+    return this.sameIdentity(identity, this.identity()) && identity.epoch === sharedEpoch;
+  },
+  context(store = this.store) { return { store, identity: this.identity(), container: this.container, renderGeneration: this.renderGeneration }; },
+  ownsContext(context) {
+    return context && context.store === this.store && this.ownsIdentity(context.identity) &&
+      context.container === this.container && context.renderGeneration === this.renderGeneration;
+  },
+  obsolete() { const error = new Error('A sessão mudou. Atualize a tela para continuar.'); error.obsolete = true; return error; },
+  async ensureStore() {
+    const identity = this.identity();
+    if (!identity.userId || identity.role !== 'student') throw new Error('Entre com sua conta de aluno para registrar sessões.');
+    // Auth.user still belongs to the observed cookie epoch until the storage
+    // event is delivered. Never relabel that account with another tab's epoch.
+    if (!this.ownsIdentity(identity)) throw this.obsolete();
+    if (this.store && this.sameIdentity(this.storeIdentity, identity)) return this.store;
+    if (this.storeRequest && this.sameIdentity(this.storeRequest.identity, identity)) return this.storeRequest.promise;
+    const previous = this.store, request = { identity };
+    this.storeRequest = request; this.store = null; this.storeIdentity = null; this.userId = null;
+    request.promise = (async () => {
+      // The logout event is asynchronous. A new instance for this account must
+      // not write records that an earlier explicit logout is about to delete.
+      const cleanup = this.accountCleanups.get(identity.userId);
+      if (cleanup) await cleanup;
+      if (previous) await previous.dispose();
+      if (this.storeRequest !== request || !this.ownsIdentity(identity)) throw this.obsolete();
+      const store = FitFlowTrainingStore.createTrainingStore({ userId: identity.userId,
+        send: (path, payload) => API.post(path, payload),
+        isCurrentUser: () => this.store === store && this.ownsIdentity(identity),
+        onChange: state => { if (this.store === store && this.ownsIdentity(identity) && this.current()) this.updateIndicators(state); },
+      });
+      this.userId = identity.userId; this.storeIdentity = identity; this.store = store;
+      return store;
+    })().finally(() => { if (this.storeRequest === request) this.storeRequest = null; });
+    return request.promise;
+  },
+  current() { return this.container?.isConnected && this.container.querySelector('[data-session-page]') && Auth.user?.id === this.userId && Auth.user?.role === 'student' && (!this.storeIdentity || this.ownsIdentity(this.storeIdentity)); },
   escape(value) { return FitFlowSecurity.escapeHtml(value); },
   async render(container) {
-    const generation = ++this.renderGeneration;
+    const generation = ++this.renderGeneration, identity = this.identity();
     this.container = container; this.summary = null;
     container.innerHTML = `<section class="sessions-page" data-session-page>
       <header class="sessions-header"><div><p class="sessions-eyebrow">REGISTRO DE TREINO</p><h2>Sessões e séries</h2><p>Registre o que você executou na ficha do instrutor.</p></div><button class="btn btn-secondary" type="button" data-sync>Sincronizar</button></header>
@@ -27,43 +56,59 @@ const SessoesView = {
       <div data-active-session></div><div data-workouts></div><div data-week-summary></div><div data-session-history></div>
       <aside class="sessions-evidence"><h3>Como ler seus registros</h3><p>Volume é a soma de carga × repetições das séries registradas. Aquecimentos ficam separados. Com peso corporal, 0 kg representa carga externa declarada; não estima o peso movimentado.</p><p>Séries diretas usam somente o grupo muscular informado na ficha. Finalizar encerra a sessão e pode deixar séries planejadas sem registro.</p><a href="https://pubmed.ncbi.nlm.nih.gov/41843416/" target="_blank" rel="noopener noreferrer">ACSM 2026: ajustar o treinamento ao objetivo</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/38595233/" target="_blank" rel="noopener noreferrer">Divisão e full body com volume igualado</a></aside>
     </section>`;
-    container.querySelector('[data-sync]').onclick = () => this.refresh();
+    container.querySelector('[data-sync]').onclick = () => {
+      if (generation === this.renderGeneration && container === this.container && this.ownsIdentity(identity)) return this.refresh();
+    };
     try {
-      const store = await this.ensureStore(), state = await store.state();
-      if (generation !== this.renderGeneration || !this.current()) return;
+      const store = await this.ensureStore();
+      const context = this.context(store);
+      if (generation !== this.renderGeneration || !this.ownsIdentity(identity) || !this.ownsContext(context)) return;
+      const state = await store.state();
+      if (!this.ownsContext(context) || !this.current()) return;
       this.workouts = state.workouts || []; this.draw(state);
       await this.refresh();
-    } catch (error) { if (generation === this.renderGeneration) this.error(error.message); }
+    } catch (error) { if (generation === this.renderGeneration && this.ownsIdentity(identity) && !error.obsolete) this.error(error.message); }
   },
   error(message) {
     if (!this.current()) return;
     const node = this.container.querySelector('[data-session-error]'); node.textContent = message || ''; node.hidden = !message;
   },
   async refresh() {
-    if (this.syncing) return;
-    this.syncing = true;
+    const operation = this.context();
+    if (this.syncing && this.ownsContext(this.syncing)) return;
+    this.syncing = operation;
     try {
       const store = await this.ensureStore();
+      if (!this.ownsIdentity(operation.identity) || operation.container !== this.container || operation.renderGeneration !== this.renderGeneration) return;
+      operation.store = store;
       this.error('');
       await store.flush();
-      if (navigator.onLine && Auth.user?.id === this.userId) {
+      if (!this.ownsContext(operation)) return;
+      if (navigator.onLine) {
         const outcomes = await Promise.allSettled([API.get('/treinos/meus'), API.get('/sessoes/mine')]);
-        if (Auth.user?.id !== this.userId) return;
-        if (outcomes[0].status === 'fulfilled') { this.workouts = outcomes[0].value.data; await store.cacheWorkouts(this.workouts); }
+        if (!this.ownsContext(operation)) return;
+        if (outcomes[0].status === 'fulfilled') {
+          await store.cacheWorkouts(outcomes[0].value.data);
+          if (!this.ownsContext(operation)) return;
+          this.workouts = outcomes[0].value.data;
+        }
         else this.error(outcomes[0].reason.message);
         if (outcomes[1].status === 'fulfilled') {
-          await store.mergeHistory(outcomes[1].value.data.sessions); this.summary = outcomes[1].value.data.summary7Days;
+          await store.mergeHistory(outcomes[1].value.data.sessions);
+          if (!this.ownsContext(operation)) return;
+          this.summary = outcomes[1].value.data.summary7Days;
           await store.flush();
+          if (!this.ownsContext(operation)) return;
         } else this.error(outcomes[1].reason.message);
       }
       const state = await store.state();
-      if (this.current()) {
+      if (this.ownsContext(operation) && this.current()) {
         // Keep a typed set form intact during background synchronization.
         if (!this.container.querySelector('[data-set-form]')) this.draw(state);
         else { this.updateIndicators(state); this.drawHistory(state); this.drawRecords(state); }
       }
-    } catch (error) { this.error(error.message); }
-    finally { this.syncing = false; }
+    } catch (error) { if (this.ownsContext(operation) && !error.obsolete) this.error(error.message); }
+    finally { if (this.syncing === operation) this.syncing = null; }
   },
   updateIndicators(state) {
     if (!this.current()) return;
@@ -82,6 +127,7 @@ const SessoesView = {
   },
   draw(state) {
     if (!this.current()) return;
+    const context = this.context();
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     this.renderedSessionKey = active ? `${active.id}:${active.status}` : null;
     const section = this.container.querySelector('[data-active-session]');
@@ -108,39 +154,49 @@ const SessoesView = {
         };
         form.elements.exerciseId.onchange = prescription; prescription();
         form.onsubmit = async event => {
-          event.preventDefault(); if (!form.reportValidity()) return;
+          event.preventDefault(); if (!this.ownsContext(context) || !form.reportValidity()) return;
           const button = form.querySelector('[type="submit"]'); button.disabled = true;
           try {
-            await this.store.addSet(active.id, { exerciseId: Number(form.elements.exerciseId.value), kind: form.elements.kind.value,
+            await context.store.addSet(active.id, { exerciseId: Number(form.elements.exerciseId.value), kind: form.elements.kind.value,
               weightKg: Number(form.elements.weightKg.value), reps: Number(form.elements.reps.value),
               rir: form.elements.rir.value === '' ? null : Number(form.elements.rir.value), notes: form.elements.notes.value });
+            if (!this.ownsContext(context) || !this.current()) return;
             section.querySelector('[data-set-feedback]').textContent = 'Série salva neste dispositivo.';
             form.elements.notes.value = ''; await this.refresh();
-          } catch (error) { this.error(error.message); }
+          } catch (error) { if (this.ownsContext(context)) this.error(error.message); }
           finally { button.disabled = false; }
         };
       }
       const complete = section.querySelector('[data-complete]');
       if (complete) complete.onclick = async () => {
+        if (!this.ownsContext(context)) return;
         complete.disabled = true;
-        try { await this.store.complete(active.id); this.draw(await this.store.state()); await this.refresh(); }
-        catch (error) { this.error(error.message); complete.disabled = false; }
+        try { await context.store.complete(active.id); await this.afterMutation(context); }
+        catch (error) { if (this.ownsContext(context)) this.error(error.message); complete.disabled = false; }
       };
       section.querySelector('[data-abandon-session]').onclick = () => {
-        const store = this.store, userId = this.userId;
+        if (!this.ownsContext(context)) return;
+        const store = context.store;
         Modal.confirm('Arquivar esta sessão? Todos os seus envios pendentes deixarão de ser enviados, inclusive séries ainda não enviadas. As séries e os motivos da rejeição ficam somente neste dispositivo até você sair da conta ou limpar seus dados. Registros já confirmados no servidor permanecem no histórico; uma sessão iniciada no servidor poderá continuar incompleta. Você poderá iniciar outra sessão.', async () => {
-          if (this.store !== store || Auth.user?.id !== userId) return;
-          try { await store.abandonBlocked(active.id, { confirmed: true }); if (this.current()) this.draw(await store.state()); await this.refresh(); }
-          catch (error) { this.error(error.message); }
+          if (!this.ownsContext(context)) return;
+          try { await store.abandonBlocked(active.id, { confirmed: true }); await this.afterMutation(context); }
+          catch (error) { if (this.ownsContext(context)) this.error(error.message); }
         }, 'Arquivar envios e liberar nova sessão');
       };
     } else section.innerHTML = '';
     this.container.querySelectorAll('[data-start]').forEach(button => { button.onclick = async () => {
+      if (!this.ownsContext(context)) return;
       button.disabled = true;
-      try { await this.store.start(this.workouts[Number(button.dataset.start)]); this.draw(await this.store.state()); await this.refresh(); }
-      catch (error) { this.error(error.message); button.disabled = false; }
+      try { await context.store.start(this.workouts[Number(button.dataset.start)]); await this.afterMutation(context); }
+      catch (error) { if (this.ownsContext(context)) this.error(error.message); button.disabled = false; }
     }; });
     this.updateIndicators(state);
+  },
+  async afterMutation(context) {
+    if (!this.ownsContext(context) || !this.current()) return;
+    const state = await context.store.state();
+    if (!this.ownsContext(context) || !this.current()) return;
+    this.draw(state); await this.refresh();
   },
   drawRecords(state) {
     const slot = this.container?.querySelector('[data-set-records]'); if (!slot) return;
@@ -164,20 +220,39 @@ const SessoesView = {
     const week = this.summary;
     this.container.querySelector('[data-week-summary]').innerHTML = week ? `<section class="sessions-panel"><h3>Últimos 7 dias · registros sincronizados</h3><div class="sessions-metrics"><div><strong>${week.workingSets}</strong><span>Séries de trabalho</span></div><div><strong>${Number(week.workingVolumeKg).toLocaleString('pt-BR')} kg·reps</strong><span>Volume de trabalho registrado</span></div><div><strong>${week.warmupSets}</strong><span>Séries de aquecimento</span></div></div><p>Horário de execução informado pelo aluno. Aquecimento: ${Number(week.warmupVolumeKg).toLocaleString('pt-BR')} kg·reps.</p><ul class="sessions-muscles">${Object.entries(week.directSetsByMuscle).map(([muscle, count]) => `<li>${this.escape(muscle)}: ${count} ${count === 1 ? 'série direta' : 'séries diretas'}</li>`).join('')}</ul>${week.unknownMuscleSets ? `<p>${week.unknownMuscleSets} ${week.unknownMuscleSets === 1 ? 'série' : 'séries'} sem grupo muscular conhecido.</p>` : ''}<p>Compare exercícios equivalentes e a mesma técnica. O volume registrado não mede estímulo muscular nem determina uma prescrição individual.</p></section>` : '';
   },
-  destroy() { ++this.renderGeneration; this.container = null; this.renderedSessionKey = null; },
+  destroy() { ++this.renderGeneration; this.container = null; this.renderedSessionKey = null; this.syncing = null; },
+  clearAccount(userId, store = null) {
+    const pending = this.accountCleanups.get(userId);
+    if (pending) return pending;
+    const cleanup = store ? store.dispose({ clear: true }) : FitFlowTrainingStore.createIndexedDbStorage().clear(userId);
+    this.accountCleanups.set(userId, cleanup);
+    const settled = () => { if (this.accountCleanups.get(userId) === cleanup) this.accountCleanups.delete(userId); };
+    cleanup.then(settled, settled);
+    return cleanup;
+  },
   async logout(reason, loggedOutUserId) {
     if (!Number.isSafeInteger(loggedOutUserId) || loggedOutUserId < 1) return;
     // Um evento de outra conta nunca pode descartar a fila atualmente aberta.
-    if (this.userId !== loggedOutUserId) {
-      if (reason !== 'expired') await FitFlowTrainingStore.createIndexedDbStorage().clear(loggedOutUserId);
+    if (this.userId !== loggedOutUserId && this.storeRequest?.identity.userId !== loggedOutUserId) {
+      if (reason !== 'expired') await this.clearAccount(loggedOutUserId);
       return;
     }
     ++this.renderGeneration;
-    const store = this.store; this.store = null; this.userId = null; this.workouts = []; this.summary = null; this.container = null;
-    if (store) await store.dispose({ clear: reason !== 'expired' });
-    if (!store && reason !== 'expired' && Number.isSafeInteger(loggedOutUserId)) await FitFlowTrainingStore.createIndexedDbStorage().clear(loggedOutUserId);
+    const store = this.store; this.store = null; this.storeIdentity = null; this.storeRequest = null; this.syncing = null;
+    this.userId = null; this.workouts = []; this.summary = null; this.container = null; this.renderedSessionKey = null;
+    if (reason !== 'expired') await this.clearAccount(loggedOutUserId, store);
+    else if (store) await store.dispose({ clear: false });
   },
 };
-window.addEventListener('auth:logout', event => { SessoesView.logout(event.detail?.reason, event.detail?.userId).catch(() => {}); });
+window.addEventListener('auth:logout', event => {
+  const pending = SessoesView.logout(event.detail?.reason, event.detail?.userId);
+  event.detail?.waitUntil?.(pending);
+  pending.catch(() => {});
+});
 window.addEventListener('online', () => { if (SessoesView.store && Auth.user?.id === SessoesView.userId) SessoesView.refresh(); });
-window.addEventListener('offline', () => { if (SessoesView.store) SessoesView.store.state().then(state => SessoesView.updateIndicators(state)).catch(() => {}); });
+window.addEventListener('offline', () => {
+  const context = SessoesView.context();
+  if (context.store) context.store.state().then(state => {
+    if (SessoesView.ownsContext(context)) SessoesView.updateIndicators(state);
+  }).catch(() => {});
+});

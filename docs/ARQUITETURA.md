@@ -10,13 +10,15 @@ Controllers tratam HTTP; services validam regras; repositories usam o singleton 
 
 JWT HS256 em cookie httpOnly. O middleware consulta usuário ativo e função atual no banco; o papel declarado no token não concede acesso. Registro de conta exige administrador. Alunos usam apenas o perfil ligado à própria identidade. Instrutores gerenciam suas fichas e recebem listas mínimas para seleção de alunos; não recebem acesso financeiro.
 
-Falha de banco retorna indisponibilidade, não expiração fictícia. Segredo fraco impede iniciar produção. Login e IA têm limite de dez solicitações por janela de quinze minutos: identidade de IP no login e conta autenticada na IA. Produção usa `RateLimitBucket` no MySQL/MariaDB, com chave HMAC e incremento atômico; desenvolvimento usa memória. Falha ao confirmar a quota compartilhada retorna 503 antes da operação. O limitador global de tráfego permanece por processo e não é um teto financeiro do provedor.
+Falha de banco retorna indisponibilidade, não expiração fictícia. Segredo fraco impede iniciar produção. Login e IA têm limite de dez solicitações por janela de quinze minutos: identidade de IP no login e conta autenticada na IA. Produção usa `RateLimitBucket` no banco, com chave HMAC e incremento atômico; a publicação atual usa PostgreSQL e a demonstração nativa usa MariaDB. Desenvolvimento usa memória. Falha ao confirmar a quota compartilhada retorna 503 antes da operação. O limitador global de tráfego permanece por processo e não é um teto financeiro do provedor.
 
 Na Vercel, a identidade de IP usa exclusivamente seu cabeçalho canônico `x-vercel-forwarded-for`; fora dela, usa `req.ip`. IPv6 é agrupado por /64. Não se aceita `trust proxy=true` irrestrito.
 
-Solicitações de escrita com cookie exigem `Origin` presente na lista exata de `CORS_ORIGIN`. A exceção JSON de `POST /api/checkout/webhook` apenas encaminha à verificação HMAC do provedor. Clientes sem cookie ou metadados de navegador podem usar Bearer; login JSON sem cookie também é permitido nesse contexto. Respostas da API usam `Cache-Control: no-store`, e corpos HTTP têm limite de 256 KB. A CSP permite scripts somente da mesma origem, sem inline/eval, tanto no Helmet quanto nas rotas estáticas da Vercel; estilos inline legados continuam permitidos. Headers reais da publicação ainda exigem validação.
+Solicitações de escrita com cookie exigem `Origin` presente na lista exata de `CORS_ORIGIN`. A exceção JSON de `POST /api/checkout/webhook` apenas encaminha à verificação HMAC do provedor. Clientes sem cookie ou metadados de navegador podem usar Bearer; login JSON sem cookie também é permitido nesse contexto. Respostas da API usam `Cache-Control: no-store`, e corpos HTTP têm limite de 256 KB. A CSP permite scripts somente da mesma origem, sem inline/eval, tanto no Helmet quanto nas rotas estáticas da Vercel; estilos inline legados continuam permitidos. Em 09/10/2026, os headers reais do domínio final confirmaram CSP no HTML e em `/api/health`, com API `no-store`; `frame-ancestors 'none'` está presente em ambos.
 
 Logout cujo POST não é confirmado persiste uma intenção de saída e não restaura a conta a partir do cookie ao reconectar/recarregar. A limpeza é repetida antes de um novo login. Isso impede restauração automática no navegador; não é uma lista de revogação de JWTs copiados.
+
+O cliente compara o epoch observado pelo Auth com o marcador compartilhado antes de enviar uma nova consulta ou escrita autenticada. Isso cobre o intervalo anterior à entrega do evento entre abas. Respostas de escritas já enviadas conservam o resultado HTTP real. Logout explícito aguarda as promises de limpeza registradas pelos listeners ainda dentro do Web Lock de cookie; uma saída iniciada por tela com epoch antigo sinaliza expiração, preservando a fila da sessão nova.
 
 ## Planejamento e execução
 
@@ -38,6 +40,10 @@ Volume: soma de carga externa × repetições dos registros. Aquecimento é sepa
 ## Persistência mobile
 
 IndexedDB tem uma fila separada por conta. Ordem: início, séries, finalização. Erros transitórios preservam envios; erro de validação cria conflito visível. Cache de ficha elimina pessoas e histórico legado da resposta original.
+
+A instância encerrada não pode devolver uma leitura que terminou depois do logout, nem executar a transformação de uma gravação ainda pendente. O guard de escrita é conferido dentro do callback da transação IndexedDB, incluindo a identidade corrente antes das gravações locais; isso impede recriar uma fila depois da limpeza explícita, mesmo com evento entre abas atrasado. A confirmação HTTP real de uma escrita já enviada pode atualizar somente uma sessão ainda presente; não recria uma sessão apagada. Expiração encerra a instância, preservando registros já gravados para autenticação posterior na mesma conta. Uma escrita já executada não recebe confirmação fictícia nem sofre cancelamento retroativo.
+
+A tela de sessões captura conta, papel, geração do Auth, epoch observado, store, container e geração da tela antes de aguardar operações. Leituras, erros e callbacks visuais tardios não atualizam a conta ou navegação nova. A criação de uma fila aguarda a limpeza anterior da mesma conta; outra conta não aguarda essa limpeza. Leituras obsoletas também deixam de bloquear a atualização da tela corrente.
 
 Logout avisa se existem registros pendentes. O aluno pode continuar, tentar sincronizar ou confirmar descarte. Expiração mantém a fila da conta para retomada após autenticação. Trocar de conta não concede acesso à fila anterior.
 

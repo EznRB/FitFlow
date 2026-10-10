@@ -114,3 +114,54 @@ test('partida rejeitada arquiva somente seus envios e mantém isolamento entre c
   await assert.rejects(() => q.abandonBlocked(next.id, { confirmed: true }), /não tem envios rejeitados/);
   assert.equal((await q.state()).sessions.find(session => session.id === next.id).status, 'active');
 });
+
+test('gravação iniciada antes do logout não recria fila explicitamente apagada', async () => {
+  for (const operation of ['start', 'cache', 'history']) {
+    const storage = memoryStorage();
+    const q = queue(storage, 1, async () => {});
+    const pending = operation === 'start' ? q.start(workout) : operation === 'cache' ? q.cacheWorkouts([workout]) :
+      q.mergeHistory([{ id: 'previous-session', status: 'completed', planSnapshot: workout, sets: [] }]);
+    // O callback de uma transação pode aguardar a abertura do banco. O logout
+    // encerra a instância antes de esse callback obter seus dados para gravar.
+    const rejected = assert.rejects(pending, /fila desta conta foi encerrada/i);
+    await q.dispose({ clear: true });
+    await rejected;
+    assert.equal(await storage.read(1), null, operation);
+  }
+});
+
+test('expiração preserva fila já salva e rejeita atualização ainda não iniciada no armazenamento', async () => {
+  const storage = memoryStorage(), q = queue(storage, 1, async () => {});
+  await q.cacheWorkouts([workout]);
+  const session = await q.start(workout);
+  await q.addSet(session.id, entry);
+  const saved = await storage.read(1);
+  const pending = q.cacheWorkouts([{ ...workout, name: 'Resposta atrasada' }]);
+  const rejected = assert.rejects(pending, /fila desta conta foi encerrada/i);
+  await q.dispose();
+  await rejected;
+  assert.deepEqual(await storage.read(1), saved);
+  const restored = queue(storage, 1, async () => {});
+  assert.equal((await restored.state()).sessions[0].sets.length, 1);
+  assert.equal((await restored.state()).operations.length, 2);
+});
+
+test('leitura já iniciada não devolve estado privado de uma instância encerrada', async () => {
+  const storage = memoryStorage(), q = queue(storage, 1, async () => {});
+  await q.start(workout);
+  const pending = q.state();
+  const rejected = assert.rejects(pending, /fila desta conta foi encerrada/i);
+  await q.dispose();
+  await rejected;
+  assert.equal((await storage.read(1)).sessions.length, 1, 'expiração conserva os registros para a próxima autenticação');
+});
+
+test('callback local de outra aba não recria fila após descarte mesmo antes do evento de logout', async () => {
+  const storage = memoryStorage(); let current = true;
+  const old = queue(storage, 1, async () => {}, () => false, () => current);
+  const pending = old.start(workout);
+  // The shared epoch has changed, but the old tab has not received its event.
+  current = false; await storage.clear(1);
+  const rejected = assert.rejects(pending, /sessão mudou/i);
+  await rejected; assert.equal(await storage.read(1), null);
+});
