@@ -107,7 +107,7 @@ A atualização documental `7cf0d2b` passou na [CI Build & Verify](https://githu
 
 Um Preview separado, enviado pelo CLI a partir do checkout `7cf0d2b`, ficou **READY**: `dpl_9Liep4Va8vcpmVznhe2f7wmyUZ8t`, `https://fit-flow-9cwftu56a-eznrbs-projects.vercel.app`. Build PostgreSQL aprovado e `/api/health` retornou `database: ready` pelo acesso autorizado `vercel curl`; proteção do Preview preservada. Essa publicação manual não resolve nem torna verde o status Git automático. Production continua na revisão `f9ac83d` descrita acima.
 
-O titular precisa concluir a verificação e conferir o acesso da integração ao repositório, seguindo a [orientação oficial de acesso Git](https://vercel.com/docs/errors/error-list#lost-git-repository-access). Depois, validar um novo deployment disparado pelo Git antes do merge.
+O novo commit `89ba731` foi publicado **automaticamente pelo GitHub** em READY: `dpl_8xdgivRXVBJ6TvXC3J688xX69QNP`, `https://fit-flow-beg7ud4mp-eznrbs-projects.vercel.app`. A API confirmou `source: git` e o SHA correto; [CI Build & Verify](https://github.com/EznRB/FitFlow/actions/runs/38056482679) e status Vercel aprovados. `/api/health` confirmou banco pronto pelo acesso autorizado. A recuperação foi observada sem alterar permissões, proteção ou contas; não há bloqueio atual dessa integração. A causa específica da falha anterior permanece desconhecida. Se voltar a ocorrer, seguir a [orientação oficial de acesso Git](https://vercel.com/docs/errors/error-list#lost-git-repository-access), com verificação do titular quando exigida.
 
 ### Etapas restantes
 

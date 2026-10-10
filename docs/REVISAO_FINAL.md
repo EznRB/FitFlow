@@ -29,7 +29,7 @@ Revisão publicada `f9ac83d`, READY com [CI aprovada](https://github.com/EznRB/F
 
 ## Gates em aberto
 
-O commit documental `7cf0d2b` passou na [CI](https://github.com/EznRB/FitFlow/actions/runs/38056127829). Seu Preview Git falhou antes do build (`git_info_fail`); Preview enviado pelo CLI ficou READY em `dpl_9Liep4Va8vcpmVznhe2f7wmyUZ8t`, com banco pronto, sem alterar Production. Conferência da instalação GitHub exige verificação de identidade do titular. A causa específica da falha da integração ainda não foi confirmada; o status automático continua reprovado. [Diagnóstico e próximos passos](STATUS_ENTREGA.md#publicação-automática-pelo-github).
+O commit documental `7cf0d2b` passou na [CI](https://github.com/EznRB/FitFlow/actions/runs/38056127829). Seu Preview Git falhou antes do build (`git_info_fail`); Preview CLI ficou READY. No commit seguinte `89ba731`, a publicação automática pelo GitHub voltou a funcionar: `dpl_8xdgivRXVBJ6TvXC3J688xX69QNP` READY, SHA e `source: git` conferidos, [CI](https://github.com/EznRB/FitFlow/actions/runs/38056482679) e status Vercel aprovados, banco pronto. Nenhuma permissão ou proteção alterada. A causa da falha anterior permanece desconhecida; não há bloqueio atual da integração. [Histórico e próximos passos](STATUS_ENTREGA.md#publicação-automática-pelo-github).
 
 1. Criar/configurar conta e credenciais Mercado Pago sandbox, webhook HTTPS; cartão `APRO`/rejeitado/`CONT`, Pix QR/pendente sem renovar plano. Não exigir liquidação Pix em sandbox; `approved` de Pix fica nos testes com doubles. [Roteiro de configuração e fontes oficiais](PAGAMENTOS_SANDBOX.md).
 2. Telefone físico: instalação PWA, teclado, interrupção de rede e retorno; reconexão na publicação.
