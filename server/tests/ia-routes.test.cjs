@@ -31,10 +31,47 @@ test('IA HTTP exige sessão/role e limita chamadas por usuário', async t => {
   const status = await fetch(`${url}/status`, { headers: { cookie: cookie('student') } });
   assert.deepEqual(await status.json(), { status: 'success', data: { enabled: true } });
   for (let i = 0; i < 11; i++) {
-    const response = await fetch(`${url}/explicar`, { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: cookie('student') }, body: JSON.stringify({ topic: 'volume' }) });
+    const response = await fetch(`${url}/explicar`, { method: 'POST', headers: { 'Content-Type': 'application/json', cookie: cookie('student') }, body: JSON.stringify({ topic: 'divisoes' }) });
     assert.equal(response.status, i < 10 ? 200 : 429);
   }
   assert.equal(calls, 10);
+});
+
+test('glossário autenticado não consome quota de geração e continua disponível após esgotá-la', async t => {
+  let quotaHits = 0, generations = 0, role = 'student';
+  const service = createIaService({ provider: 'groq', groqApiKey: 'fixture-groq-key', freeTierConfirmed: true,
+    fetchImpl: async () => {
+      generations++;
+      return new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: {
+        content: JSON.stringify({ explanation: 'Divisões organizam o trabalho considerando disponibilidade e volume comparado.', sourceIds: ['split-2024'] }),
+      } }] }));
+    } });
+  const authenticate = createAuthenticate({ findUser: async id => ({ id, role, active: true }) });
+  const app = express(); app.use(express.json(), cookieParser());
+  app.use('/api/ia', createIaRouter(service, { authenticate, quotaOptions: { production: true, store: {
+    increment: async () => ({ totalHits: ++quotaHits, resetTime: new Date(Date.now() + 900000) }),
+  } } }));
+  app.use((error, req, res, next) => res.status(error.statusCode || 500).json({ message: error.message }));
+  const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  const url = `http://127.0.0.1:${server.address().port}/api/ia/explicar`;
+  const cookie = `access_token=${jwt.sign({ id: 72502, role: 'student' }, env.jwt.secret, { expiresIn: '5m' })}`;
+  const post = (topic, authenticated = true) => fetch(url, { method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(authenticated ? { cookie } : {}) }, body: JSON.stringify({ topic }) });
+  assert.equal((await post('volume', false)).status, 401);
+  role = 'unknown'; assert.equal((await post('volume')).status, 403); role = 'student';
+  for (let i = 0; i < 11; i++) {
+    const response = await post('volume');
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).data.generatedByAI, false);
+  }
+  assert.equal(quotaHits, 0); assert.equal(generations, 0);
+  for (let i = 0; i < 11; i++) assert.equal((await post('divisoes')).status, i < 10 ? 200 : 429);
+  assert.equal(quotaHits, 11); assert.equal(generations, 10);
+  assert.equal((await post('volume')).status, 200);
+  assert.equal(quotaHits, 11); assert.equal(generations, 10);
+  for (const topic of ['nutricao', 'unknown', ['volume']]) assert.equal((await post(topic)).status, 429);
+  assert.equal(quotaHits, 14); assert.equal(generations, 10);
 });
 
 test('IA HTTP Groq revela só disponibilidade/provedor e retorna fontes curadas sem credencial', async t => {

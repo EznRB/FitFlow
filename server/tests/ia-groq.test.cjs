@@ -62,38 +62,45 @@ test('Groq respeita seleção explícita de GPT-OSS 20B e rejeita tema livre ant
   assert.equal(calls, 0); await current.explain('divisoes'); assert.equal(model, 'openai/gpt-oss-20b');
 });
 
-test('explicação de volume recebe definições do produto separadas das fontes científicas em ambos os provedores', async t => {
-  for (const provider of ['groq', 'gemini']) {
-    await t.test(provider, async () => {
-      let request;
-      const result = { explanation: 'Tonelagem e contagem de séries são métricas distintas dos registros informados pelo aluno.', sourceIds: ['acsm-2026'] };
-      const current = service({ provider, apiKey: 'fixture-gemini-key', fetchImpl: async (_, options) => {
-        request = JSON.parse(options.body);
-        return provider === 'groq' ? upstream(result) : new Response(JSON.stringify({
-          candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(result) }] } }],
-        }));
-      } });
-      await current.explain('volume');
-      const context = JSON.parse(provider === 'groq' ? request.messages[1].content : request.contents[0].parts[0].text);
-      const instruction = provider === 'groq' ? request.messages[0].content : request.systemInstruction.parts[0].text;
-      assert.deepEqual(context.sources.map(source => source.id), ['acsm-2026']);
-      assert.equal(context.productDefinitions?.origin, 'Definições operacionais do FitFlow; não são conclusões científicas.');
-      const facts = context.productDefinitions.facts.join(' ');
-      assert.match(facts, /tonelagem.*carga externa.*repetições/i);
-      assert.match(facts, /séries de trabalho.*contagem.*não equivale.*tonelagem/i);
-      assert.match(facts, /auto relatados.*não.*estímulo muscular.*hipertrofia/i);
-      assert.match(facts, /planejado.*não.*executado automaticamente/i);
-      assert.match(facts, /legados.*não.*sessões completas/i);
-      assert.match(facts, /finalizar.*não.*séries planejadas sem registro/i);
-      assert.match(facts, /incompletos.*não.*zero.*prescrição/i);
-      assert.match(facts, /Compare.*exercício.*equipamento.*técnica.*amplitude/i);
-      assert.match(facts, /tonelagem.*não.*trabalho mecânico/i);
-      assert.match(facts, /0 kg.*não significa ausência de trabalho ou estímulo.*peso corporal/i);
-      assert.match(instruction, /Distingua.*definições operacionais.*resumos científicos/i);
-      assert.match(instruction, /Não atribua.*definições do produto.*referências científicas/i);
-      assert.ok(!JSON.stringify(context).includes('fixture-gemini-key'));
-    });
+test('indicadores usam definições revisadas, mesmo sem IA configurada, sem chamar provedor', async () => {
+  for (const options of [{}, { provider: 'gemini', apiKey: '' }, { groqApiKey: '', freeTierConfirmed: false }, { provider: 'unknown' }]) {
+    let calls = 0;
+    const result = await service({ ...options, fetchImpl: async () => { calls++; return upstream(); } }).explain('volume');
+    assert.equal(calls, 0);
+    assert.equal(result.generatedByAI, false);
+    assert.deepEqual(result.sources.map(source => source.id), ['acsm-2026']);
+    assert.match(result.explanation, /Séries previstas.*quantidade de séries.*repetições.*distinto/i);
+    assert.match(result.explanation, /tonelagem.*carga externa.*repetições/i);
+    assert.match(result.explanation, /séries de trabalho.*contagem.*não equivale.*tonelagem/i);
+    assert.match(result.explanation, /auto relatados.*não.*estímulo muscular.*hipertrofia/i);
+    assert.match(result.explanation, /planejado.*não.*executado automaticamente/i);
+    assert.match(result.explanation, /legados.*não.*sessões completas/i);
+    assert.match(result.explanation, /finalizar.*não.*séries planejadas sem registro/i);
+    assert.match(result.explanation, /incompletos.*não.*zero.*prescrição/i);
+    assert.match(result.explanation, /Compare.*exercício.*equipamento.*técnica.*amplitude/i);
+    assert.match(result.explanation, /tonelagem.*não.*trabalho mecânico/i);
+    assert.match(result.explanation, /0 kg.*não significa ausência de trabalho ou estímulo.*peso corporal/i);
+    assert.match(result.explanation, /Definições operacionais do FitFlow.*ACSM.*contexto científico/i);
   }
+});
+
+test('temas científicos sem provedor não recebem texto determinístico como fallback', async () => {
+  let calls = 0;
+  const current = service({ groqApiKey: '', freeTierConfirmed: false, fetchImpl: async () => { calls++; return upstream(); } });
+  for (const topic of ['divisoes', 'nutricao']) await assert.rejects(current.explain(topic), error => error.statusCode === 503);
+  assert.equal(calls, 0);
+});
+
+test('nutrição mantém geração científica e distingue gasto em repouso de gasto basal no contexto', async () => {
+  let request;
+  const current = service({ fetchImpl: async (_, options) => {
+    request = JSON.parse(options.body);
+    return upstream({ explanation: 'As equações estimam o gasto em repouso, e a aplicação individual exige revisão profissional.', sourceIds: ['mifflin-1990'] });
+  } });
+  const result = await current.explain('nutricao');
+  assert.equal(result.generatedByAI, true);
+  assert.match(request.messages[0].content, /Mifflin–St Jeor e Harris–Benedict revisada use gasto em repouso; não trate repouso e gasto basal como conceitos idênticos/);
+  assert.deepEqual(JSON.parse(request.messages[1].content).sources.map(source => source.id), ['mifflin-1990', 'harris-1984', 'protein-2018', 'dri']);
 });
 
 test('Groq recusa truncamento, recusa de segurança, JSON inválido e fonte incompatível', async () => {

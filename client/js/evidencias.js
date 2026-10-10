@@ -29,11 +29,16 @@ const EvidenciasView = {
   },
 
   async mountAI(container, topic) {
+    const curated = topic === 'volume';
     container.className = 'science-ai';
-    container.innerHTML = '<button type="button" class="btn btn-secondary" disabled>Explicar com IA</button><p class="science-note" role="status">Verificando disponibilidade da IA…</p><div class="science-ai-text" aria-live="polite"></div>';
+    container.innerHTML = `<button type="button" class="btn btn-secondary" disabled>${curated ? 'Entender indicadores' : 'Explicar com IA'}</button><p class="science-note" role="status">${curated ? 'Definições dos indicadores do FitFlow.' : 'Verificando disponibilidade da IA…'}</p><div class="science-ai-text" aria-live="polite"></div>`;
     const button = container.querySelector('button');
     const status = container.querySelector('[role="status"]');
-    try {
+    if (curated) {
+      if (!container.isConnected) return;
+      button.disabled = false;
+      status.textContent = 'Definições revisadas do FitFlow. Nenhuma informação é enviada a um provedor de IA.';
+    } else try {
       const response = await API.get('/ia/status');
       if (!container.isConnected) return;
       if (!response.data.enabled) {
@@ -50,7 +55,7 @@ const EvidenciasView = {
     }
     button.addEventListener('click', async () => {
       button.disabled = true;
-      status.textContent = 'Gerando explicação educativa…';
+      status.textContent = curated ? 'Consultando definições dos indicadores…' : 'Gerando explicação educativa…';
       const output = container.querySelector('.science-ai-text');
       output.replaceChildren();
       try {
@@ -62,7 +67,9 @@ const EvidenciasView = {
         const sources = document.createElement('div');
         this.renderSources(sources, response.data.sources.map(source => source.id));
         output.appendChild(sources);
-        status.textContent = 'Texto gerado por IA: pode conter erros. As fontes associadas não verificam automaticamente cada frase. Confira os artigos.';
+        status.textContent = response.data.generatedByAI === false
+          ? 'Texto revisado do FitFlow, não gerado por IA. A referência oferece contexto científico geral; as definições dos indicadores pertencem ao sistema.'
+          : 'Texto gerado por IA: pode conter erros. As fontes associadas não verificam automaticamente cada frase. Confira os artigos.';
       } catch (error) {
         if (container.isConnected) status.textContent = error.message;
       } finally { button.disabled = false; }
