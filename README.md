@@ -55,7 +55,7 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **309 testes aprovados, zero falhas e zero ignorados** na revisão `f9ac83d`. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **316 testes aprovados, zero falhas e zero ignorados** na revisão `143c228`. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
 
 ## Publicação e limites atuais
 
@@ -65,7 +65,7 @@ Checkout Pix/cartão está implementado exclusivamente em sandbox, com concilia�
 
 A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
 
-A revisão atual `f9ac83d` está publicada em READY, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38055351767), banco pronto e API sem cache. HTML, login.css, WEBP e evidencias.js coincidiram com o checkout. Suíte local **309/309**, revisão IA 19/19 e glossário no navegador aprovados. O prompt nutricional distingue repouso e basal; testes de contrato não certificam cada frase gerada.
+A revisão atual `143c228` está publicada em READY pelo CLI, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38057480596), banco pronto e API sem cache. api.js, sessoes.js e app.js coincidiram com o checkout; login de aluno, atualização e histórico persistido foram conferidos no navegador. Suíte local **316/316** e revisão independente focada 12/12 aprovadas. O Preview automático dessa revisão falhou antes do build ao obter informações Git; a publicação Production pelo CLI funciona. [Evidências e histórico da integração](docs/STATUS_ENTREGA.md). O glossário determinístico e o prompt nutricional de `f9ac83d` estão preservados; testes de contrato não certificam cada frase gerada.
 
 A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
 
