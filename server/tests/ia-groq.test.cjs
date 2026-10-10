@@ -62,6 +62,40 @@ test('Groq respeita seleção explícita de GPT-OSS 20B e rejeita tema livre ant
   assert.equal(calls, 0); await current.explain('divisoes'); assert.equal(model, 'openai/gpt-oss-20b');
 });
 
+test('explicação de volume recebe definições do produto separadas das fontes científicas em ambos os provedores', async t => {
+  for (const provider of ['groq', 'gemini']) {
+    await t.test(provider, async () => {
+      let request;
+      const result = { explanation: 'Tonelagem e contagem de séries são métricas distintas dos registros informados pelo aluno.', sourceIds: ['acsm-2026'] };
+      const current = service({ provider, apiKey: 'fixture-gemini-key', fetchImpl: async (_, options) => {
+        request = JSON.parse(options.body);
+        return provider === 'groq' ? upstream(result) : new Response(JSON.stringify({
+          candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(result) }] } }],
+        }));
+      } });
+      await current.explain('volume');
+      const context = JSON.parse(provider === 'groq' ? request.messages[1].content : request.contents[0].parts[0].text);
+      const instruction = provider === 'groq' ? request.messages[0].content : request.systemInstruction.parts[0].text;
+      assert.deepEqual(context.sources.map(source => source.id), ['acsm-2026']);
+      assert.equal(context.productDefinitions?.origin, 'Definições operacionais do FitFlow; não são conclusões científicas.');
+      const facts = context.productDefinitions.facts.join(' ');
+      assert.match(facts, /tonelagem.*carga externa.*repetições/i);
+      assert.match(facts, /séries de trabalho.*contagem.*não equivale.*tonelagem/i);
+      assert.match(facts, /auto relatados.*não.*estímulo muscular.*hipertrofia/i);
+      assert.match(facts, /planejado.*não.*executado automaticamente/i);
+      assert.match(facts, /legados.*não.*sessões completas/i);
+      assert.match(facts, /finalizar.*não.*séries planejadas sem registro/i);
+      assert.match(facts, /incompletos.*não.*zero.*prescrição/i);
+      assert.match(facts, /Compare.*exercício.*equipamento.*técnica.*amplitude/i);
+      assert.match(facts, /tonelagem.*não.*trabalho mecânico/i);
+      assert.match(facts, /0 kg.*não significa ausência de trabalho ou estímulo.*peso corporal/i);
+      assert.match(instruction, /Distingua.*definições operacionais.*resumos científicos/i);
+      assert.match(instruction, /Não atribua.*definições do produto.*referências científicas/i);
+      assert.ok(!JSON.stringify(context).includes('fixture-gemini-key'));
+    });
+  }
+});
+
 test('Groq recusa truncamento, recusa de segurança, JSON inválido e fonte incompatível', async () => {
   for (const fetchImpl of [async () => upstream(valid, {}, 'length'), async () => upstream(valid, {}, 'content_filter'),
     async () => upstream(valid, { refusal: 'fixture refusal' }), async () => upstream(valid, { content: '{' }),

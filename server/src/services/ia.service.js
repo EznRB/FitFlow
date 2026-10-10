@@ -6,11 +6,26 @@ const AppError = require('../utils/AppError');
 const { references } = require('../../../client/js/science');
 const topics = {
   divisoes: { title: 'Como comparar divisões de treino?', ids: ['split-2024', 'acsm-2026'] },
-  volume: { title: 'Como distinguir séries previstas, registros e volume executado?', ids: ['acsm-2026'] },
+  volume: { title: 'Como distinguir séries previstas, registros e volume executado?', ids: ['acsm-2026'],
+    productDefinitions: {
+      origin: 'Definições operacionais do FitFlow; não são conclusões científicas.',
+      facts: [
+        'Tonelagem (kg·reps) é a soma de carga externa × repetições dos registros com ambos os valores informados; aquecimentos são separados do trabalho.',
+        'Séries de trabalho é uma contagem dos registros classificados como trabalho; não equivale à tonelagem.',
+        'Os dados são auto relatados pelo aluno: tonelagem e contagem de séries não medem estímulo muscular nem hipertrofia.',
+        'Tonelagem não é trabalho mecânico: não inclui deslocamento nem mede a carga movimentada do corpo.',
+        'Carga externa registrada como 0 kg não significa ausência de trabalho ou estímulo, especialmente em exercícios com peso corporal.',
+        'Compare tonelagem somente no mesmo exercício, equipamento, técnica e amplitude; diferenças nesses fatores limitam a comparação.',
+        'Dados incompletos não são zero; valores ausentes não são preenchidos pela prescrição da ficha.',
+        'O treino planejado não é executado automaticamente; somente os registros informados compõem as métricas executadas.',
+        'Finalizar uma sessão não transforma séries planejadas sem registro em séries executadas.',
+        'Registros legados não comprovam sessões completas nem a execução de todas as séries planejadas.',
+      ],
+    } },
   nutricao: { title: 'Por que fórmulas de nutrição são estimativas e os parâmetros precisam de revisão?', ids: ['mifflin-1990', 'harris-1984', 'protein-2018', 'dri'] },
 };
 
-const systemInstruction = 'Explique em português brasileiro somente os resumos fornecidos. Não invente números, referências ou conclusões. Não prescreva dieta, exercício ou carga. Explicite incerteza e população adulta saudável. Tonelagem não mede hipertrofia; registros legados não representam sessões completas. Responda texto simples, sem HTML, links ou Markdown. Não apresente cálculos. Retorne explanation e sourceIds citados.';
+const systemInstruction = 'Explique de forma breve em português brasileiro somente o contexto fornecido. Distingua as definições operacionais do FitFlow dos resumos científicos. Não atribua definições do produto às referências científicas. Não invente números, referências, relações causais ou conclusões. Não prescreva dieta, exercício ou carga. Explicite incerteza e população adulta saudável. Tonelagem não é contagem de séries nem mede estímulo muscular ou hipertrofia; registros legados não comprovam sessões completas. Responda texto simples, sem HTML, links ou Markdown. Não apresente cálculos. Retorne explanation e sourceIds citados.';
 const groqModels = new Set(['openai/gpt-oss-120b', 'openai/gpt-oss-20b']);
 
 function createIaService({ provider = process.env.IA_PROVIDER || 'gemini',
@@ -29,6 +44,8 @@ function createIaService({ provider = process.env.IA_PROVIDER || 'gemini',
       if (!enabled) throw new AppError('IA não configurada. As fórmulas e referências continuam disponíveis.', 503);
       const selected = topics[topic];
       const context = selected.ids.map(id => ({ id, ...references[id] }));
+      const requestContext = { question: selected.title, sources: context,
+        ...(selected.productDefinitions ? { productDefinitions: selected.productDefinitions } : {}) };
       try {
         let text;
         if (provider === 'groq') {
@@ -38,7 +55,7 @@ function createIaService({ provider = process.env.IA_PROVIDER || 'gemini',
             body: JSON.stringify({ model: groqModel, stream: false, reasoning_effort: 'low', include_reasoning: false,
               max_completion_tokens: 2000, service_tier: 'on_demand',
               messages: [{ role: 'system', content: systemInstruction },
-                { role: 'user', content: JSON.stringify({ question: selected.title, sources: context }) }],
+                { role: 'user', content: JSON.stringify(requestContext) }],
               response_format: { type: 'json_schema', json_schema: { name: 'fitflow_educational_explanation', strict: true,
                 schema: { type: 'object', additionalProperties: false,
                   properties: { explanation: { type: 'string' }, sourceIds: { type: 'array', items: { type: 'string', enum: selected.ids } } },
@@ -61,7 +78,7 @@ function createIaService({ provider = process.env.IA_PROVIDER || 'gemini',
             signal: AbortSignal.timeout(timeoutMs),
             body: JSON.stringify({
               systemInstruction: { parts: [{ text: systemInstruction }] },
-              contents: [{ role: 'user', parts: [{ text: JSON.stringify({ question: selected.title, sources: context }) }] }],
+              contents: [{ role: 'user', parts: [{ text: JSON.stringify(requestContext) }] }],
               generationConfig: { temperature: 0.2, maxOutputTokens: 1200,
                 ...(model.startsWith('gemini-3.5-flash-lite') ? { thinkingConfig: { thinkingLevel: 'MINIMAL' } } : {}),
                 responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: {
