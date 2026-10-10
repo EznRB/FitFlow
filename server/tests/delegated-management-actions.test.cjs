@@ -11,6 +11,7 @@ function harness(api = {}) {
     return nodes.get(id);
   };
   const context = vm.createContext({ window: {}, console, setTimeout: () => {}, API: api,
+    Auth: { user: { id: 1, role: 'admin' }, generation: 1 },
     document: { getElementById: node }, Modal: { open: (title, html) => modals.push({ title, html }) }, Toast: { error: message => { throw new Error(message); } } });
   for (const file of ['security', 'alunos', 'pagamentos']) vm.runInContext(fs.readFileSync(path.join(__dirname, `../../client/js/${file}.js`), 'utf8'), context);
   vm.runInContext('globalThis.views = { AlunosView, PagamentosView };', context);

@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="/css/dashboard-redesign.css">
   <!-- Regras compartilhadas de acabamento mantêm a marca e a legibilidade. -->
   <link rel="stylesheet" href="/css/professional.css">
+  <link rel="stylesheet" href="/css/login.css">
   <link rel="stylesheet" href="/css/sessoes.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -41,97 +42,63 @@
   <!-- TELA DE LOGIN -->
   <!-- ============================================ -->
   <div id="login-screen" class="login-screen">
-    <div class="login-container">
-      <!-- Lado esquerdo — branding -->
-      <div class="login-branding">
-        <div class="login-branding-content">
-          <div class="login-logo-container">
-            <i data-lucide="dumbbell" class="login-logo-icon"></i>
-            <div class="login-logo-text">
-              <h1>FITFLOW</h1>
-              <span class="login-logo-subtitle">Caraguá</span>
-            </div>
-          </div>
-          <p class="login-tagline">Uma rotina mais organizada.<br>Dentro e fora do treino.</p>
-          <div class="login-features">
-            <div class="login-feature">
-              <i data-lucide="users"></i>
-              <span>Gestão de Alunos</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="settings"></i>
-              <span>Treinos Personalizados</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="circle-dollar-sign"></i>
-              <span>Controle Financeiro</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="file-text"></i>
-              <span>Relatórios Completos</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <header class="login-header">
+      <a class="login-brand" href="https://fitflow-lp.vercel.app/" aria-label="FitFlow Caraguá — conhecer o projeto">
+        <i data-lucide="dumbbell" aria-hidden="true"></i>
+        <span>FitFlow<span class="login-brand-location">Caraguá</span></span>
+      </a>
+      <a class="login-back-link" href="https://fitflow-lp.vercel.app/">Voltar ao projeto <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+    </header>
 
-      <!-- Lado direito — formulário -->
+    <main class="login-shell">
+      <section class="login-editorial" aria-labelledby="login-editorial-title">
+        <img class="login-editorial-image" src="/img/login-gym.webp" alt="" width="1254" height="1254" fetchpriority="high">
+        <div class="login-editorial-top"><span>Treino. Ciência. Constância.</span><span class="login-image-credit">Imagem ilustrativa</span></div>
+        <div class="login-editorial-copy">
+          <p class="login-editorial-kicker">FitFlow Caraguá / Desde o primeiro treino</p>
+          <h2 id="login-editorial-title">Seu próximo passo.<br><em>Série por série.</em></h2>
+          <p>Organize sua rotina, registre cada treino<br>e acompanhe o caminho que você está construindo.</p>
+          <ul class="login-editorial-features" aria-label="Recursos do FitFlow">
+            <li><span>01</span> Treinos</li><li><span>02</span> Progressão</li><li><span>03</span> Nutrição</li>
+          </ul>
+        </div>
+      </section>
       <div class="login-form-wrapper">
-        <div class="login-date" id="current-date">
-          terça-feira, 21 de abril de 2026
-        </div>
-        
         <form id="login-form" class="login-form" autocomplete="on" aria-busy="true" aria-describedby="login-session-status">
-          <h2>Bem-vindo de volta.</h2>
-          <p class="login-form-subtitle">Entre na sua conta para acompanhar a academia e sua evolução.</p>
-          <p id="login-session-status" class="login-help" role="status" aria-live="polite">Verificando sua sessão...</p>
-
-          <label class="login-field-label" for="login-email">E-mail</label>
-          <div class="form-group input-with-icon">
-            <i data-lucide="mail" class="input-icon"></i>
-            <input 
-              type="email" 
-              id="login-email" 
-              name="email"
-              placeholder="seu@email.com" 
-              required 
-              autocomplete="email"
-              disabled
-            >
+          <div class="login-intro">
+            <p class="login-eyebrow"><i data-lucide="log-in" aria-hidden="true"></i> Acesse seu FitFlow</p>
+            <h1>Bem-vindo de volta.</h1>
+            <p class="login-form-subtitle">Entre com a conta cadastrada pela sua academia.</p>
           </div>
+          <p id="login-session-status" class="login-session-status" role="status" aria-live="polite">Verificando sua sessão...</p>
 
-          <label class="login-field-label" for="login-password">Senha</label>
-          <div class="form-group input-with-icon">
-            <i data-lucide="lock" class="input-icon"></i>
-            <input 
-              type="password" 
-              id="login-password" 
-              name="senha"
-              placeholder="••••••••" 
-              required 
-              minlength="6"
-              autocomplete="current-password"
-              disabled
-            >
-            <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha" disabled>
-              <i data-lucide="eye-off"></i>
-            </button>
+          <div class="login-field">
+            <label class="login-field-label" for="login-email">E-mail</label>
+            <input type="email" id="login-email" name="email" placeholder="seu@email.com" required autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" disabled>
+          </div>
+          <div class="login-field">
+            <label class="login-field-label" for="login-password">Senha</label>
+            <div class="login-password-control">
+              <input type="password" id="login-password" name="password" placeholder="Digite sua senha" required autocomplete="current-password" disabled>
+              <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha" aria-controls="login-password" disabled><i data-lucide="eye" aria-hidden="true"></i></button>
+            </div>
           </div>
 
           <div id="login-error" class="alert alert-error" style="display: none;" role="alert"></div>
-
-          <button type="submit" class="btn btn-primary btn-full btn-login-glow" id="btn-login" disabled>
-            <span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i>
-          </button>
-          
-          <p class="login-help">Precisa recuperar seu acesso? Fale com a administração da academia.</p>
-          <a class="login-lab-link" href="/laboratorio.html">Consultar nutrição e fundamentos sem entrar <span aria-hidden="true">↗</span></a>
+          <button type="submit" class="btn btn-primary btn-full login-submit" id="btn-login" disabled><span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+          <details class="login-support">
+            <summary>Precisa de ajuda para entrar?</summary>
+            <p>Para cadastrar ou recuperar seu acesso, fale com a administração da sua academia.</p>
+          </details>
         </form>
 
-        <p class="login-footer">
-          FitFlow Caraguá © 2026 — Caraguatatuba, SP
-        </p>
+        <div class="login-public-access">
+          <p>Conheça os recursos abertos do FitFlow.</p>
+          <a class="login-lab-link" href="/laboratorio.html">Nutrição e fundamentos <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+        </div>
       </div>
-    </div>
+    </main>
+    <footer class="login-footer"><span>FitFlow Caraguá</span><span>Caraguatatuba, SP · © 2026</span></footer>
   </div>
 
   <!-- ============================================ -->

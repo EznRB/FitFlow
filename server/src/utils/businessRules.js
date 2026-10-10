@@ -50,6 +50,9 @@ class BusinessRules {
     if (student.user && !student.user.active) {
       throw new AppError('Este aluno está desativado do sistema.', 400);
     }
+    if (student.status === 'inactive') {
+      throw new AppError('Matrícula inativa. Regularize a matrícula antes de fazer check-in.', 403);
+    }
 
     // Regra de bloqueio financeiro também se aplica ao check-in físico
     if (student.status === 'blocked' || (student.planEndDate && isOverdue(student.planEndDate, 5))) {

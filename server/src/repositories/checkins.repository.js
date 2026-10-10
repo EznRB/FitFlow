@@ -123,18 +123,25 @@ class CheckinsRepository {
    * Esse é o fluxo administrativo controlado exigido pela regra de negócio.
    */
   async cancelCheckin(id, motivo, adminId) {
-    return this.db.checkin.update({
-      where: { id: positiveInteger(id, 'ID do check-in', 2147483647) },
+    const checkinId = positiveInteger(id, 'ID do check-in', 2147483647);
+    // A condição faz a primeira transição vencer, mesmo quando dois serviços
+    // leram "present" simultaneamente. A auditoria confirmada não é regravada.
+    const result = await this.db.checkin.updateMany({
+      where: { id: checkinId, status: 'present' },
       data: {
         status: 'cancelled',
         cancelReason: motivo,
         cancelledBy: positiveInteger(adminId, 'ID do administrador', 2147483647),
         cancelledAt: new Date(),
       },
-      include: {
-        student: { include: { user: { select: { name: true } } } },
-      },
     });
+    if (result.count !== 1) {
+      const AppError = require('../utils/AppError');
+      const existing = await this.findById(checkinId);
+      if (!existing) throw new AppError('Check-in não encontrado.', 404);
+      throw new AppError('Este check-in já foi cancelado anteriormente. A auditoria original foi preservada.', 409);
+    }
+    return this.findById(checkinId);
   }
 
   /**

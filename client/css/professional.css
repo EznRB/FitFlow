@@ -3,8 +3,8 @@
 .main-content h2, .main-content h3, .modal h2, .modal h3 { font-family: var(--font-family); text-transform: none; letter-spacing: -.015em; }
 .main-content { min-width: 0; }
 .btn { min-height: 42px; border-radius: 6px; box-shadow: none; transition: background 150ms ease,border-color 150ms ease,color 150ms ease; }
-.btn-primary, .btn-login-glow { color: #101722; background: var(--primary-500); box-shadow: none; }
-.btn-primary:hover:not(:disabled), .btn-login-glow:hover { opacity: 1; color: #101722; background: var(--primary-400); transform: none; box-shadow: none; }
+.btn-primary { color: #101722; background: var(--primary-500); box-shadow: none; }
+.btn-primary:hover:not(:disabled) { opacity: 1; color: #101722; background: var(--primary-400); transform: none; box-shadow: none; }
 .btn-secondary { background: transparent; }
 .btn-secondary:hover:not(:disabled) { background: var(--bg-elevated); }
 .nav-item.active { background: rgba(249,115,22,.09); border-left: 2px solid var(--primary-500); padding-left: calc(var(--space-4) - 2px); }
@@ -19,29 +19,7 @@
 .card { box-shadow: none; border-radius: 9px; }
 .topbar-title { font-size: 17px; font-weight: 600; }
 .topbar { background: var(--bg-base); }
-/* Login mantém a fotografia original da academia e um formulário compacto com labels. */
-.login-screen { padding: 40px; background: var(--bg-base); }
-.login-container { width: 100%; max-width: 1120px; min-height: 650px; border: 1px solid var(--border-color); border-radius: 12px; box-shadow: none; animation: none; }
-.login-branding { flex: 1.05; padding: 52px; background: linear-gradient(180deg,rgba(10,15,26,.32),rgba(10,15,26,.94)),url('../img/bg-gym.png') center/cover; align-items: flex-end; }
-.login-branding-content { margin: 0; max-width: 350px; }
-.login-logo-text h1 { font-size: 52px; letter-spacing: -.02em; }
-.login-logo-subtitle { color: var(--primary-400); text-align: left; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
-.login-logo-icon { width: 38px; height: 38px; }
-.login-logo-container { margin-bottom: 24px; }
-.login-tagline { font: 500 24px/1.3 var(--font-family); letter-spacing: -.02em; margin-bottom: 30px; }
-.login-features { gap: 14px; border-top: 1px solid rgba(255,255,255,.15); padding-top: 24px; }
-.login-feature { font-size: 13px; }
-.login-form-wrapper { padding: 52px; justify-content: center; }
-.login-form h2 { font: 600 30px/1.2 var(--font-family); text-transform: none; letter-spacing: -.035em; margin-bottom: 12px; }
-.login-form-subtitle { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 28px; }
-.login-field-label { display: block; font-size: 13px; font-weight: 500; margin: 18px 0 8px; }
 .input-with-icon input { min-height: 48px; font-size: 16px; background: var(--bg-base); }
-.input-with-icon input[type="password"] { padding-right: 50px; }
-.btn-toggle-password { width: 44px; height: 44px; right: 4px; }
-.login-date { top: 28px; right: 52px; }
-.login-footer { font-size: 11px; bottom: 24px; }
-.login-help { font-size: 12px; line-height: 1.6; margin-top: 20px; color: var(--text-secondary); }
-.login-lab-link { display: inline-flex; gap: 8px; align-items: center; font-size: 12px; color: var(--primary-400); margin-top: 12px; }
 /* O conteúdo rola sem tirar o título e as ações da área visível. */
 .modal { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .modal-header, .modal-footer { flex: 0 0 auto; background: var(--bg-surface); }
@@ -86,16 +64,5 @@
   .admin-date-range { max-width: none; }
   .admin-card-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-checkin-metrics { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .login-screen { padding: 20px; align-items: flex-start; }
-  .login-container { max-width: 480px; min-height: 0; }
-  .login-branding { min-height: 200px; padding: 26px; align-items: center; }
-  .login-logo-text h1 { font-size: 36px; }
-  .login-logo-container { margin-bottom: 14px; }
-  .login-tagline { font-size: 18px; margin-bottom: 0; }
-  .login-features { display: none; }
-  .login-form-wrapper { padding: 30px 26px 60px; }
-  .login-date { display: none; }
-  .login-form h2 { font-size: 26px; }
-  .login-footer { bottom: 20px; font-size: 10px; }
   .btn, .btn-icon { min-height: 44px; }
 }

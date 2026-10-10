@@ -182,19 +182,21 @@ class AlunosService {
       this.db.user.update({
         where: { id: alunoAlvo.userId },
         data: {
-          name: name ?? alunoAlvo.user.name,
-          email: email ?? alunoAlvo.user.email,
+          ...(name != null ? { name } : {}),
+          ...(email != null ? { email } : {}),
         },
       }),
       this.db.student.update({
         where: { id: studentId },
         data: {
-          cpf: cpf !== undefined ? cpf : alunoAlvo.cpf,
-          phone: phone !== undefined ? phone : alunoAlvo.phone,
-          address: address !== undefined ? address : alunoAlvo.address,
-          notes: notes !== undefined ? notes : alunoAlvo.notes,
-          status: status ?? alunoAlvo.status,
-          birthDate: birthDate !== undefined ? birthDate : alunoAlvo.birthDate,
+          // Omitir um campo preserva seu valor atual no banco, inclusive quando
+          // uma renovação ou outra edição ocorreu após a leitura acima.
+          ...(cpf !== undefined ? { cpf } : {}),
+          ...(phone !== undefined ? { phone } : {}),
+          ...(address !== undefined ? { address } : {}),
+          ...(notes !== undefined ? { notes } : {}),
+          ...(status != null ? { status } : {}),
+          ...(birthDate !== undefined ? { birthDate } : {}),
           ...updatePlanData // Propaga as datas de plano, se houver alteração
         },
       }),
