@@ -112,7 +112,7 @@ O novo commit `89ba731` foi publicado **automaticamente pelo GitHub** em READY: 
 ### Etapas restantes
 
 1. **Mercado Pago sandbox:** criar/configurar conta, contas de teste, token, segredo de webhook e URL HTTPS. Gate de cartão: aprovado `APRO`, rejeitado e pendente `CONT`; Pix: QR/pendente **sem renovação**. O sandbox não simula liquidação Pix; conciliação `approved` de Pix permanece coberta por doubles. Segredos ficam no backend. [Roteiro e documentação oficial](PAGAMENTOS_SANDBOX.md).
-2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate.
+2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate. [Matriz M01–M14 e evidências necessárias](VALIDACAO_MOBILE.md), todos inicialmente NÃO FEITO.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
 ## Roteiro de apresentação

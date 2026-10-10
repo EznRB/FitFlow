@@ -35,7 +35,7 @@ const SessoesView = {
       if (previous) await previous.dispose();
       if (this.storeRequest !== request || !this.ownsIdentity(identity)) throw this.obsolete();
       const store = FitFlowTrainingStore.createTrainingStore({ userId: identity.userId,
-        send: (path, payload) => API.post(path, payload),
+        send: (path, payload) => API.post(path, payload, { timeoutMs: 15000 }),
         isCurrentUser: () => this.store === store && this.ownsIdentity(identity),
         onChange: state => { if (this.store === store && this.ownsIdentity(identity) && this.current()) this.updateIndicators(state); },
       });
@@ -85,7 +85,10 @@ const SessoesView = {
       await store.flush();
       if (!this.ownsContext(operation)) return;
       if (navigator.onLine) {
-        const outcomes = await Promise.allSettled([API.get('/treinos/meus'), API.get('/sessoes/mine')]);
+        const outcomes = await Promise.allSettled([
+          API.get('/treinos/meus', { timeoutMs: 15000 }),
+          API.get('/sessoes/mine', { timeoutMs: 15000 }),
+        ]);
         if (!this.ownsContext(operation)) return;
         if (outcomes[0].status === 'fulfilled') {
           await store.cacheWorkouts(outcomes[0].value.data);

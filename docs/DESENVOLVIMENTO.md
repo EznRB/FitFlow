@@ -182,6 +182,12 @@ Checkout do provedor possui conciliação idempotente separada; suas credenciais
 
 ## Mobile
 
+As operações idempotentes de treino (`start`, série e conclusão) e as duas consultas da atualização usam `timeoutMs: 15000`. O prazo cobre a requisição e o corpo; respostas tardias não confirmam a fila nem encerram a sessão. O registro mantém seu UUID, pois o servidor pode ter concluído a escrita antes do timeout. O prazo é por operação, não por atualização inteira; várias etapas podem somar mais de 15 segundos. Login e financeiro não recebem esse novo prazo optativo. Suspensão de timers pelo navegador pode adiar o vencimento.
+
+No checkout de 10/10, a suíte integral passou em **316/316**, sem falhas ou ignorados, incluindo sete novos testes controlados de transporte, fila e atualização. Eles simulam conexão/corpo parados e respostas tardias; não comprovam reconexão em telefone físico ou na publicação.
+
+Seguir a [matriz de validação em telefone físico](VALIDACAO_MOBILE.md), com instalação Android/iPhone, teclado, retorno da rede, UUID e um único registro remoto. Seus 14 casos estão inicialmente **NÃO FEITO**; preencher por dispositivo e superfície efetivamente testados.
+
 PWA e service workers precisam de HTTPS, salvo exceções de localhost. Abrir `http://IP-DA-LAN:3107` em um telefone não prova funcionamento de service worker. Validar instalação/offline em uma implantação HTTPS ou em um túnel autorizado, com dados demonstrativos. O fallback offline é público; não mantém uma sessão autenticada após recarregamento sem revalidação.
 
 No aplicativo Production, viewport emulada 375 × 812 apresentou largura do documento 369 diante de largura interna 375, sem overflow horizontal. Captura em `docs/evidence/17-vercel-mobile-375.png`. Essa prova de responsividade não substitui telefone físico, teclado real, instalação de PWA ou embalagem nativa.

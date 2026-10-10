@@ -36,6 +36,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 - Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
 - Registro de sessões e séries com carga externa, repetições, RIR opcional, aquecimento/trabalho, snapshot da ficha e IDs idempotentes.
 - Fila de séries por conta em IndexedDB, com estado de sincronização e conflitos visíveis. Leituras e callbacks tardios verificam identidade e tela de origem; logout aguarda limpeza antes de liberar outro login.
+- Operações idempotentes de treino e consultas de atualização têm prazo de resposta de 15 segundos por requisição, incluindo leitura do corpo. Um timeout preserva a fila e o UUID para nova tentativa; não confirma nem desfaz uma gravação no servidor.
 - Recuperação de sessão rejeitada com confirmação e preservação local dos registros. Logout sem conexão não restaura automaticamente a conta ao reconectar.
 - Nutrição com Mifflin–St Jeor ou Harris–Benedict revisada, hipóteses explícitas e parâmetros salvos/restaurados por consentimento.
 - Fundamentos científicos com referências; IA educativa opcional para divisões e nutrição, sem envio de medidas corporais. Indicadores usam glossário revisado determinístico, com identificação de conteúdo não gerado por IA.
@@ -75,6 +76,7 @@ Mercado Pago real de teste, telefone físico/instalação, reconexão publicada 
 - [Estado da entrega e evidências](docs/STATUS_ENTREGA.md)
 - [Revisão atual e gates de entrega](docs/REVISAO_FINAL.md)
 - [Mercado Pago sandbox: configuração e limites](docs/PAGAMENTOS_SANDBOX.md)
+- [Telefone físico: instalação, fila e reconexão](docs/VALIDACAO_MOBILE.md)
 - [Desenvolvimento e banco nativo](docs/DESENVOLVIMENTO.md)
 - [Arquitetura e contratos](docs/ARQUITETURA.md)
 - [Datas civis e calendário operacional](docs/DATAS_E_FUSO.md)

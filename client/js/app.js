@@ -243,9 +243,8 @@ const App = {
   },
 
   /**
-   * Renderização Dinâmica (Switch Case):
-   * Injeta o código HTML necessário para cada página selecionada.
-   * Atualmente em fase de construção com placeholders (prototipagem).
+   * Renderiza a estrutura da página e inicializa seu módulo de dados.
+   * Sessões, progressão e conteúdo educativo possuem renderizadores próprios.
    */
   renderPage(page) {
     const content = document.getElementById('page-content');
@@ -269,7 +268,7 @@ const App = {
     }
 
     // Mapeamento de HTML para cada "View".
-    const placeholders = {
+    const pageTemplates = {
       dashboard: `
         <div class="premium-dashboard">
           
@@ -731,7 +730,7 @@ const App = {
       if (typeof DashboardView !== 'undefined') DashboardView.destroyChart();
       
       // Injeta o HTML no container principal.
-      content.innerHTML = placeholders[page] || placeholders.default;
+      content.innerHTML = pageTemplates[page] || pageTemplates.default;
     }
 
     if (page === 'dashboard' && typeof DashboardView !== 'undefined') {
