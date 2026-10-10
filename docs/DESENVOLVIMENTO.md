@@ -111,9 +111,9 @@ node scripts/check-hosted-fitflow.cjs https://fit-flow-indol.vercel.app/
 
 O gate hospedado usa autenticação autorizada para o Preview protegido e confere health/banco, login/me nos três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. O script não divulga token/senha e não realiza cobrança. `.vercelignore` exclui arquivos privados, bancos nativos, testes e documentação do pacote.
 
-O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_9TiPE1WdMZaCyhy1WtsX6H93rPiy`, revisão `24e77b4`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/37991180996) aprovada. Gate HTTPS de gestão passou após o deploy, incluindo replay manual, conflito 409 e sessão divergente 403. Navegador restaurou admin e confirmou modal, data brasileira 09/10/2026 e orientação de registro manual, captura 23; nenhum formulário submetido. Fundamentos conferido na revisão `65fb32c`, captura 21.
+O [domínio Production](https://fit-flow-indol.vercel.app) aponta ao deployment READY `dpl_TpDR4v7efCQNs13PzLB96ji3Jwmp`, revisão `4b89e3`, Node 24.x, função `gru1` e Client PostgreSQL Prisma 6.19.3 gerado no build Linux. [CI da revisão](https://github.com/EznRB/FitFlow/actions/runs/37993027731) aprovada. Gate HTTPS de gestão passou após o deploy, incluindo edição de dois alunos com CPF/nascimento vazios, data inválida rejeitada, matrícula civil brasileira, replay manual, conflito 409 e sessão divergente 403. Navegador restaurou admin e confirmou Alunos/Planos em 375 pixels sem overflow da página, captura 24. Captura 23 preserva modal/data/orientação de registro manual em `24e77b4`, sem submissão; Fundamentos foi conferido em `65fb32c`, captura 21.
 
-Gates no mesmo domínio confirmaram três perfis, autorização, CSRF e logout. Treino demonstrativo finalizado persistiu após recarga: 20 kg × 8, RIR 2, 160 kg·reps. Nutrição fictícia foi salva/restaurada no navegador com escopo desmarcado até nova confirmação, captura 20. Gestão HTTPS foi repetida após `24e77b4`: CRUD, perfis, nutrição consentida/isolada, presença auditável, duas renovações de sete dias concorrentes e replay do mesmo UUID sem terceiro registro/renovação.
+Gates no mesmo domínio confirmaram três perfis, autorização, CSRF e logout. Treino demonstrativo finalizado persistiu após recarga: 20 kg × 8, RIR 2, 160 kg·reps. Nutrição fictícia foi salva/restaurada no navegador com escopo desmarcado até nova confirmação, captura 20. Gestão HTTPS foi repetida após `4b89e3`: CRUD, perfis, nutrição consentida/isolada, presença auditável, duas renovações de sete dias concorrentes e replay do mesmo UUID sem terceiro registro/renovação. Fixtures UUID próprias removidas; quotas reais preservadas.
 
 O login foi recuperado com Neon e senhas novas; credenciais antigas do GitHub e dados Aiven não foram restaurados. Código nas branches `codex/science-ux-foundation` e `codex/landing-improvements`, PRs draft [do app](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1). Nenhum merge realizado. Estado e pendências em [STATUS_ENTREGA.md](STATUS_ENTREGA.md).
 
@@ -130,7 +130,7 @@ A Vercel precisa alcançar o banco remoto com TLS e ter os valores definidos par
 ## Testes
 
 - `npm test`: lógica, API com doubles, autorização, matemática, catálogo, fila e PWA; sem cobrança de provedor.
-- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **233 aprovados, zero falhas e zero ignorados** na revisão `24e77b4`.
+- `node scripts/with-local-env.cjs node --test tests/*.test.cjs`: suíte integral com ambiente MariaDB isolado e concorrência real; **259 aprovados, zero falhas e zero ignorados** na revisão `4b89e3`.
 - `npm audit`: auditoria de dependências conhecidas. Não equivale a uma auditoria completa de segurança.
 - `node scripts/with-local-env.cjs node scripts/smoke-local.cjs`: login e persistência via HTTP no servidor local ativo.
 - `node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs`: concorrência real de sessões/séries no MariaDB.
@@ -166,6 +166,16 @@ O modal registra **pagamento já recebido**; não cobra, gera Pix nem valida car
 
 O frontend mantém a intenção para reconciliação/retry e usa Web Locks entre abas. Essa proteção de interface complementa a constraint única do servidor. Intenções diferentes continuam sendo lançamentos diferentes; o UUID não substitui a conferência administrativa do recebimento.
 
+### Sessão entre abas e respostas obsoletas
+
+Na revisão `4b89e3`, login, logout e retry compartilham um mutex Web Locks para mutações do cookie, com marcador de sessão opaco no armazenamento local, sem JWT no frontend. `/auth/me` tem limite de 15 segundos incluindo espera pelo lock. A garantia entre abas exige navegador com Web Locks em contexto seguro; caminho sem esse recurso não oferece a mesma coordenação.
+
+Uma mutação de cookie HTTP pendente mantém o lock até concluir. Abortar especulativamente essa escrita não provaria seu resultado e poderia liberar outra mudança antes da primeira resposta. GET de contexto obsoleto é recusado com 409 antes de parse/tratamento de 401; escrita conserva a resposta real para reconciliação. A tela de treinos também confere aluno, geração, navegação e DOM antes de renderizar. `showLogin` fecha modal e limpa conteúdo/título/rodapé e estados inert; duas abas reais foram verificadas localmente, captura 25.
+
+### Dados de matrícula
+
+CPF vazio explícito é normalizado para NULL; valor omitido em edição preserva o existente. Nascimento omitido preserva, vazio explícito limpa e dia inexistente recebe 400. Matrícula e troca de plano usam o dia civil `America/Sao_Paulo`, com relógio injetável nos testes; o caso de 22h30 no Brasil evita mudança prematura para a data UTC seguinte. Não houve migration nesse ajuste: totais continuam cinco MySQL, duas PostgreSQL e onze CHECKs.
+
 `20261009_manual_payment_idempotency` adiciona UUID/hash e CHECK de par completo/ator, preservando pagamentos legados com campos nulos e a baseline aplicada. Aplicada nos bancos nativos e nas duas branches Neon; totais: cinco migrations MySQL, duas PostgreSQL e onze CHECKs PostgreSQL. Os Clients precisam ser gerados após atualizar o schema, usando o wrapper correspondente, e a migration deve anteceder a publicação do código. Gates manuais passaram nos dois bancos nativos, core atualizado passou na branch Neon de verificação e gestão HTTPS passou após o deploy `24e77b4`.
 
 Checkout do provedor possui conciliação idempotente separada; suas credenciais e eventos reais de sandbox continuam pendentes.
@@ -175,3 +185,5 @@ Checkout do provedor possui conciliação idempotente separada; suas credenciais
 PWA e service workers precisam de HTTPS, salvo exceções de localhost. Abrir `http://IP-DA-LAN:3107` em um telefone não prova funcionamento de service worker. Validar instalação/offline em uma implantação HTTPS ou em um túnel autorizado, com dados demonstrativos. O fallback offline é público; não mantém uma sessão autenticada após recarregamento sem revalidação.
 
 No aplicativo Production, viewport emulada 375 × 812 apresentou largura do documento 369 diante de largura interna 375, sem overflow horizontal. Captura em `docs/evidence/17-vercel-mobile-375.png`. Essa prova de responsividade não substitui telefone físico, teclado real, instalação de PWA ou embalagem nativa.
+
+Na revisão `4b89e3`, ações/filtros administrativos foram ajustados após reproduzir overflow de 432 pixels em viewport de 375; largura final ficou em 375. Labels, campos de data e regiões de tabela roláveis por teclado foram conferidos. Gestão foi verificada em 375 pixels; seis telas locais em 768/1280 ficaram dentro da largura disponível, com deslocamento de tabela por teclado. São testes de emulação, sem comprovar telefone físico.

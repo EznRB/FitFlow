@@ -26,7 +26,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 - Gestão de alunos, planos, fichas, presença, pagamentos manuais e relatórios.
 - Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão.
 - Autenticação em cookie httpOnly; autorização considera o usuário ativo e seu papel atual no banco. Escritas protegidas por origem, API sem cache e quotas de login/IA compartilhadas no banco em produção.
-- A inicialização mostra verificação acessível da sessão e impede envio prematuro do login; `/auth/me` tem timeout de 15 segundos e descarta respostas obsoletas.
+- A inicialização mostra verificação acessível da sessão e impede envio prematuro do login; `/auth/me` tem timeout de 15 segundos, incluindo espera pelo lock. Login/logout/retry coordenam o cookie entre abas com Web Locks e marcador de sessão opaco.
 - Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
 - Registro de sessões e séries com carga externa, repetições, RIR opcional, aquecimento/trabalho, snapshot da ficha e IDs idempotentes.
 - Fila de séries por conta em IndexedDB, com estado de sincronização e conflitos visíveis.
@@ -35,6 +35,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 - Fundamentos científicos com referências; IA educativa opcional no servidor, sem envio de medidas corporais.
 - Séries com grupos genéricos ou desconhecidos ficam como não classificadas; não são atribuídas artificialmente a um músculo.
 - PWA com manifesto e fallback público offline. Novas abas offline exigem reconexão para validar autenticação.
+- Gestão responsiva com filtros/ações ajustados a 375 pixels, tabelas em regiões roláveis por teclado e campos com labels. Respostas obsoletas não repovoam a tela de treinos nem encerram a nova sessão.
 
 ## Verificação
 
@@ -47,13 +48,13 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **233 testes aprovados, zero falhas e zero ignorados**. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado, incluindo concorrência real: **259 testes aprovados, zero falhas e zero ignorados** na revisão `4b89e3`. No Windows, passe `node` ao wrapper; `node scripts/with-local-env.cjs npm test` não é a receita validada, pois `npm` depende de `npm.cmd`. Os dois últimos comandos são testes integrados optativos e gravam apenas na demonstração local. Mantêm o histórico criado. Os testes com doubles não requerem credenciais de serviços externos.
 
 ## Publicação e limites atuais
 
 O login antigo da Vercel falhava porque o host Aiven configurado não resolvia no DNS; a tentativa retornou 500. **O login no domínio final foi recuperado com o novo banco Neon.** A demonstração remota tem cinco contas com senhas novas em `server/.demo-credentials.remote.local.json`, ignorado pelo Git, três alunos, duas fichas e 798 exercícios. As credenciais antigas do GitHub não foram restauradas, e os dados antigos do Aiven não foram recuperados. Código enviado às branches e disponível nos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum foi mesclado à branch principal.
 
-Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. Retorno do navegador não comprova pagamento. Lançamento manual idempotente está publicado; o gate HTTPS confirmou replay sem terceiro registro, conflito 409 e sessão divergente 403. IA real depende de chave e quota; checkout depende de credenciais e webhook do provedor. O aplicativo publicado passou na viewport emulada 375 × 812 sem overflow; telefone físico e instalação não foram testados. Revisão `24e77b4` em READY, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/37991180996), **233 testes aprovados** e gestão HTTPS validada após o deploy. Estado e gates em [STATUS_ENTREGA.md](docs/STATUS_ENTREGA.md). Revisão/merge dos PRs e gates restantes continuam pendentes. Consulte a [meta completa](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
+Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. Retorno do navegador não comprova pagamento. Lançamento manual idempotente está publicado; o gate HTTPS confirmou replay sem terceiro registro, conflito 409 e sessão divergente 403. IA real depende de acesso ao provedor e quota; a alternativa Vercel AI Gateway foi consultada com OIDC válido e retornou saldo zero. Checkout depende de credenciais e webhook do provedor. O aplicativo publicado passou na viewport emulada 375 × 812 sem overflow; telefone físico e instalação não foram testados. Revisão `4b89e3` em READY, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/37993027731), **259 testes aprovados** e gestão HTTPS validada após o deploy, incluindo correções de cadastro/data civil. Alunos e Planos foram conferidos em 375 pixels na publicação atual. Estado e gates em [STATUS_ENTREGA.md](docs/STATUS_ENTREGA.md). Revisão/merge dos PRs e gates restantes continuam pendentes. Consulte a [meta completa](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 ## Documentação
 

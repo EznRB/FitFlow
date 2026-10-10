@@ -1,6 +1,6 @@
 # Auditoria científica do FitFlow
 
-Data: 08/10/2026. Revisão de implementação e fontes científicas; não constitui validação clínica do aplicativo.
+Data: 08/10/2026; verificação complementar da correção de Morton em 09/10/2026. Revisão de implementação e fontes científicas; não constitui validação clínica do aplicativo.
 
 ## Escopo e conclusão
 
@@ -51,7 +51,7 @@ Técnica, amplitude, assistência e descanso real ainda dependem de notas/observ
 - O aceite “adulto saudável” é uma declaração do usuário, não triagem clínica. Gestação, lactação, transtornos alimentares e condições clínicas estão excluídos na UI de nutrição (`nutricao.js:34`).
 - Limites de campos como peso 30–300 kg, altura 120–230 cm, proteína 1,2–2,2 g/kg, ajuste −20 a +15% e RIR 0–10 são restrições de implementação. Não demonstram validação científica em toda combinação ou recomendação universal. A fórmula pode rejeitar macros inviáveis e sinaliza obesidade/energia abaixo do repouso (`science.js:61`).
 - Arredondamento só ocorre na apresentação (`nutricao.js:191`), podendo alterar a soma aparente dos gramas exibidos. A distribuição também não avalia micronutrientes, fibras, qualidade dos alimentos ou adequação clínica.
-- Acesso às fontes: ACSM/Mifflin/Harris/Morton/RIR tiveram registros ou resumos científicos consultados; o resumo de split foi recuperado pelo índice PubMed, apesar de falhas intermitentes na abertura direta. O texto integral original de Harris 1984 não abriu; os coeficientes foram conferidos na tabela primária de 2018. O link NCBI das DRI exibiu verificação de navegador; a faixa foi conferida diretamente nas National Academies. Existe [correção de Morton publicada em 2020](https://pubmed.ncbi.nlm.nih.gov/32943392/), cujo texto integral não pôde ser acessado nesta revisão; seu conteúdo permanece não verificado.
+- Acesso às fontes: ACSM/Mifflin/Harris/Morton/RIR tiveram registros ou resumos científicos consultados; o resumo de split foi recuperado pelo índice PubMed, apesar de falhas intermitentes na abertura direta. O texto integral original de Harris 1984 não abriu; os coeficientes foram conferidos na tabela primária de 2018. O link NCBI das DRI exibiu verificação de navegador; a faixa foi conferida diretamente nas National Academies. A [correção de Morton publicada em 2020](https://pmc.ncbi.nlm.nih.gov/articles/PMC7513243/) foi finalmente acessada na revisão complementar de 09/10: declara o vínculo de Brad Schoenfeld com o conselho consultivo da fabricante de suplementos Dymatize Nutrition. O aviso não apresenta alteração dos coeficientes ou resultados; as limitações populacionais e clínicas do estudo permanecem.
 
 ## Verificação executada
 
