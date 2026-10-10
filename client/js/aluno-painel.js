@@ -1,554 +1,190 @@
-/**
- * ============================================================================
- * FitFlow Caraguá — Área do Aluno (TASK 10)
- * ============================================================================
- * Módulo SPA com 5 views mobile-first para o aluno:
- * 1. AlunoPainelView    — Dashboard principal
- * 2. AlunoTreinoView    — Treinos e exercícios
- * 3. AlunoHistoricoView — Evolução de cargas
- * 4. AlunoMensalidadeView — Status financeiro
- * 5. AlunoCheckinView   — Check-in e frequência
- *
- * Segurança: Todos os dados vêm do endpoint /api/aluno/* que filtra
- * apenas os dados do aluno logado via JWT.
- */
-
-// ============================================
-// 1. PAINEL PRINCIPAL (DASHBOARD)
-// ============================================
-const AlunoPainelView = {
-  dados: null,
-
-  async inicializar() {
-    const container = document.getElementById('aluno-painel-container');
-    if (!container) return;
-    container.innerHTML = '<div class="page-loading"><div class="spinner"></div><span>Carregando seu painel...</span></div>';
+/** Área do aluno. Respostas pertencem à conta e à instância da página que as iniciou. */
+const AlunoUI = {
+  escape(value) { return FitFlowSecurity.escapeHtml(value ?? ''); },
+  numeric(value) { return (typeof value === 'number' || typeof value === 'string' && value.trim() !== '') && Number.isFinite(Number(value)); },
+  number(value) { return this.numeric(value) ? Number(value).toLocaleString('pt-BR') : '—'; },
+  money(value) { return this.numeric(value) ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'; },
+  date(value, options, civil = false) {
+    if (!value) return '—';
+    const date = new Date(value);
+    // Presença usa DATE no banco: 00:00 UTC é uma data civil, não o dia anterior no Brasil.
+    if (!Number.isFinite(date.getTime())) return '—';
+    return date.toLocaleDateString('pt-BR', { ...options, ...(civil ? { timeZone: 'UTC' } : {}) });
+  },
+  icons(container) { if (window.lucide) lucide.createIcons({ nodes: [container] }); },
+  capture(view, container) {
+    const sequence = view.sequence = (view.sequence || 0) + 1;
+    const userId = Auth.user?.id;
+    const generation = Auth.generation;
+    return () => Boolean(userId && Auth.user?.id === userId && Auth.generation === generation && view.sequence === sequence && container.isConnected && document.getElementById(container.id) === container);
+  },
+  async load(view, id, label, fetch, render) {
+    const container = document.getElementById(id);
+    if (!container || !Auth.user?.id) return;
+    container.classList.add('ff-student');
+    const current = this.capture(view, container);
+    container.innerHTML = `<div class="page-loading" role="status"><div class="spinner" aria-hidden="true"></div><span>${this.escape(label)}</span></div>`;
     try {
-      const resp = await API.get('/aluno/painel');
-      this.dados = resp.data;
-      this.renderizar(container);
+      const data = await fetch(current);
+      if (!current()) return;
+      render(container, data);
     } catch (error) {
-      console.error('Erro ao carregar painel:', error);
-      container.innerHTML = '<div class="alert alert-error">Erro ao carregar seu painel. Tente novamente.</div>';
+      if (!current()) return;
+      container.innerHTML = `<div class="ff-student-error" role="alert"><h3>Não foi possível carregar esta página</h3><p>${this.escape(error.message || 'Verifique sua conexão e tente novamente.')}</p><button type="button" class="btn btn-secondary" data-retry>Tentar novamente</button></div>`;
+      container.querySelector('[data-retry]').onclick = () => view.inicializar();
     }
   },
+  bind(container, actions) {
+    (container.querySelectorAll?.('[data-action]') || []).forEach(button => {
+      button.onclick = () => actions[button.dataset.action]?.(button);
+    });
+    this.icons(container);
+  },
+  heading(eyebrow, title, description) { return `<header class="ff-student-heading"><span class="ff-student-eyebrow">${this.escape(eyebrow)}</span><h2>${this.escape(title)}</h2><p>${this.escape(description)}</p></header>`; },
+  empty(title, description) { return `<div class="ff-student-empty"><h3>${this.escape(title)}</h3><p>${this.escape(description)}</p></div>`; },
+  blocked(message) { return `<div class="aluno-banner-blocked" role="status"><i data-lucide="alert-circle" aria-hidden="true"></i><span>${this.escape(message)}</span></div>`; }
+};
 
+const AlunoPainelView = {
+  dados: null,
+  inicializar() { return AlunoUI.load(this, 'aluno-painel-container', 'Carregando seu painel…', async () => (await API.get('/aluno/painel')).data, (container, data) => { this.dados = data; this.renderizar(container); }); },
   renderizar(container) {
     const d = this.dados;
-    const alertasHtml = this._renderAlertas(d.alertas);
-    const diasVenc = d.mensalidade.diasRestantes;
-    const diasTexto = diasVenc !== null ? (diasVenc > 0 ? diasVenc : 0) : '—';
-    const diasCor = diasVenc !== null ? (diasVenc <= 0 ? 'red' : diasVenc <= 5 ? 'yellow' : 'green') : 'blue';
-
-    container.innerHTML = `
-      ${alertasHtml}
-      <div class="aluno-welcome">
-        <h2>Olá, ${d.perfil.nome.split(' ')[0]}! 💪</h2>
-        <p>${this._getSaudacao()} — ${new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-      </div>
-
-      <div class="aluno-kpi-grid">
-        <div class="aluno-kpi-card" onclick="window.App && App.navigateTo('aluno-mensalidade')">
-          <div class="aluno-kpi-icon ${diasCor}">
-            <i data-lucide="calendar-clock"></i>
-          </div>
-          <div class="aluno-kpi-info">
-            <div class="aluno-kpi-value">${diasTexto}</div>
-            <div class="aluno-kpi-label">Dias até vencimento</div>
-          </div>
-        </div>
-        <div class="aluno-kpi-card" onclick="window.App && App.navigateTo('aluno-checkin')">
-          <div class="aluno-kpi-icon blue">
-            <i data-lucide="calendar-check"></i>
-          </div>
-          <div class="aluno-kpi-info">
-            <div class="aluno-kpi-value">${d.checkins.totalMes}</div>
-            <div class="aluno-kpi-label">Check-ins este mês</div>
-          </div>
-        </div>
-        <div class="aluno-kpi-card" onclick="window.App && App.navigateTo('aluno-treino')">
-          <div class="aluno-kpi-icon orange">
-            <i data-lucide="dumbbell"></i>
-          </div>
-          <div class="aluno-kpi-info">
-            <div class="aluno-kpi-value">${d.treinos.length}</div>
-            <div class="aluno-kpi-label">Treinos ativos</div>
-          </div>
-        </div>
-      </div>
-
-      ${this._renderTreinoResumo(d.treinos)}
-      ${this._renderCheckinsRecentes(d.checkins.recentes)}
-    `;
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    const dias = d.mensalidade.diasRestantes;
+    const restante = dias == null ? '—' : dias <= 0 ? 'Vencida' : `${AlunoUI.number(dias)} dias`;
+    const stats = [ ['aluno-mensalidade', 'Vigência do plano', restante, 'Ver mensalidade'], ['aluno-checkin', 'Presenças neste mês', AlunoUI.number(d.checkins.totalMes), 'Ver presenças'], ['aluno-treino', 'Fichas ativas', AlunoUI.number(d.treinos.length), 'Ver fichas'] ];
+    const cards = stats.map(([page, label, value, action]) => `<button type="button" class="ff-student-stat" data-action="navigate" data-page="${page}"><span class="ff-student-stat-label">${label}</span><strong>${value}</strong><span class="ff-student-stat-link">${action}<i data-lucide="arrow-up-right" aria-hidden="true"></i></span></button>`).join('');
+    container.innerHTML = AlunoUI.heading('Sua rotina', `Olá, ${String(d.perfil.nome).split(' ')[0]}`, 'Sua ficha, seus registros e a situação da matrícula em um só lugar.') + this._renderAlertas(d.alertas) + `<div class="ff-student-stats">${cards}</div>
+      <section class="ff-student-start"><div><span class="ff-student-eyebrow">Registro do treino</span><h3>Uma sessão, série por série</h3><p>Registre carga, repetições e esforço percebido durante o treino. Os registros confirmados compõem sua evolução.</p></div><button type="button" class="btn btn-primary" data-action="sessions"><i data-lucide="play" aria-hidden="true"></i>Abrir sessões</button></section>
+      <div class="ff-student-columns">${this._renderTreinoResumo(d.treinos)}${this._renderCheckinsRecentes(d.checkins.recentes)}</div>`;
+    AlunoUI.bind(container, { navigate: button => App.navigateTo(button.dataset.page), sessions: () => App.navigateTo('sessoes'), workout: () => App.navigateTo('aluno-treino') });
   },
-
   _renderAlertas(alertas) {
-    if (!alertas || alertas.length === 0) return '';
-    return alertas.map(a => {
-      if (a.severidade === 'critico') {
-        return `<div class="aluno-banner-blocked"><i data-lucide="${a.icone}"></i><span class="banner-text">${a.mensagem}</span></div>`;
-      }
-      const cls = a.severidade === 'aviso' ? 'alert-warning' : a.severidade === 'alerta' ? 'alert-error' : 'alert-info';
-      return `<div class="alert ${cls}" style="margin-bottom:var(--space-4)"><i data-lucide="${a.icone}" style="width:18px;height:18px;flex-shrink:0"></i>${a.mensagem}</div>`;
-    }).join('');
+    return (alertas || []).map(a => `<div class="ff-student-notice ${a.severidade === 'critico' ? 'ff-student-notice-error' : ''}" role="status"><i data-lucide="info" aria-hidden="true"></i><span>${AlunoUI.escape(a.mensagem)}</span></div>`).join('');
   },
-
   _renderTreinoResumo(treinos) {
-    if (treinos.length === 0) return `
-      <div class="aluno-section">
-        <div class="aluno-section-title"><i data-lucide="dumbbell"></i> Meu Treino</div>
-        <div class="empty-state" style="padding:2rem"><i data-lucide="clipboard-x" style="width:48px;height:48px;opacity:0.3"></i><h3>Sem treino ativo</h3><p style="color:var(--text-muted)">Fale com seu instrutor para criar sua ficha.</p></div>
-      </div>`;
-    const t = treinos[0];
-    return `
-      <div class="aluno-section">
-        <div class="aluno-section-title"><i data-lucide="dumbbell"></i> Treino Atual</div>
-        <div class="aluno-treino-card" onclick="window.App && App.navigateTo('aluno-treino')" style="cursor:pointer">
-          <div class="aluno-treino-header">
-            <h3>${t.nome}</h3>
-            <div class="treino-meta"><div>Por: ${t.instrutor}</div><div>${t.qtdExercicios} exercícios</div></div>
-          </div>
-          <div class="aluno-treino-body" style="display:flex;align-items:center;justify-content:space-between">
-            <span style="color:var(--text-secondary);font-size:var(--font-size-sm)">${t.descricao || 'Toque para ver exercícios'}</span>
-            <i data-lucide="chevron-right" style="width:20px;height:20px;color:var(--text-muted)"></i>
-          </div>
-        </div>
-      </div>`;
+    return `<section class="ff-student-section"><h3>Ficha atual</h3>${treinos.length ? `<h4>${AlunoUI.escape(treinos[0].nome)}</h4><p>${AlunoUI.escape(treinos[0].descricao || 'Exercícios e orientações cadastrados pelo seu instrutor.')}</p><div class="ff-student-detail">${AlunoUI.number(treinos[0].qtdExercicios)} exercícios · ${AlunoUI.escape(treinos[0].instrutor)}</div><button type="button" class="btn btn-secondary" data-action="workout">Consultar ficha</button>` : AlunoUI.empty('Nenhuma ficha ativa', 'Peça ao seu instrutor uma ficha adequada ao seu contexto.')}</section>`;
   },
-
   _renderCheckinsRecentes(checkins) {
-    if (checkins.length === 0) return '';
-    const itens = checkins.slice(0, 3).map(c => {
-      const data = new Date(c.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-      return `<div class="aluno-historico-item"><div class="aluno-historico-icone check"><i data-lucide="check-circle"></i></div><div class="aluno-historico-info"><div class="aluno-historico-titulo">Check-in realizado</div></div><div class="aluno-historico-data">${data}</div></div>`;
-    }).join('');
-    return `<div class="aluno-section"><div class="aluno-section-title"><i data-lucide="calendar-check"></i> Check-ins Recentes</div><div class="aluno-historico-lista">${itens}</div></div>`;
-  },
-
-  _getSaudacao() {
-    const h = new Date().getHours();
-    if (h < 12) return 'Bom dia';
-    if (h < 18) return 'Boa tarde';
-    return 'Boa noite';
+    return `<section class="ff-student-section"><h3>Presenças recentes</h3>${checkins.length ? `<ul class="ff-student-records">${checkins.slice(0, 3).map(c => `<li><span>Presença registrada</span><time>${AlunoUI.date(c.data, undefined, true)}</time></li>`).join('')}</ul>` : AlunoUI.empty('Nenhuma presença registrada', 'Registre sua entrada na página Presença.')}</section>`;
   }
 };
 
-// ============================================
-// 2. MEU TREINO (EXERCÍCIOS + REGISTRO CARGA)
-// ============================================
 const AlunoTreinoView = {
   dados: null,
   bloqueado: false,
-
-  async inicializar() {
-    const container = document.getElementById('aluno-treino-container');
-    if (!container) return;
-    container.innerHTML = '<div class="page-loading"><div class="spinner"></div><span>Carregando treinos...</span></div>';
-    try {
-      const resp = await API.get('/aluno/painel');
-      this.dados = resp.data;
-      this.bloqueado = resp.data.perfil.status === 'blocked';
-      this.renderizar(container);
-    } catch (error) {
-      container.innerHTML = '<div class="alert alert-error">Erro ao carregar treinos.</div>';
-    }
-  },
-
+  saving: false,
+  inicializar() { return AlunoUI.load(this, 'aluno-treino-container', 'Carregando suas fichas…', async () => (await API.get('/aluno/painel')).data, (container, data) => { this.dados = data; this.bloqueado = data.perfil.status !== 'active'; this.renderizar(container); }); },
   renderizar(container) {
     const d = this.dados;
-    const alertaHtml = this.bloqueado ? '<div class="aluno-banner-blocked"><i data-lucide="alert-triangle"></i><span class="banner-text">Matrícula bloqueada. Registro de cargas indisponível.</span></div>' : '';
-    
-    if (d.treinos.length === 0) {
-      container.innerHTML = `${alertaHtml}<div class="empty-state" style="padding:3rem"><i data-lucide="clipboard-x" style="width:64px;height:64px;opacity:0.3;margin-bottom:1rem"></i><h3 style="color:var(--text-primary)">Nenhum treino ativo</h3><p style="color:var(--text-muted)">Seu instrutor ainda não criou uma ficha para você.</p></div>`;
-      if (window.lucide) lucide.createIcons({ nodes: [container] });
-      return;
-    }
-
-    container.innerHTML = alertaHtml + d.treinos.map(t => {
-      const exerciciosHtml = t.exercicios.map((ex, i) => this._renderExercicio(ex, i)).join('');
-      return `
-        <div class="aluno-treino-card">
-          <div class="aluno-treino-header">
-            <div><h3>${t.nome}</h3>${t.descricao ? `<p style="color:var(--text-secondary);font-size:var(--font-size-sm);margin:4px 0 0">${t.descricao}</p>` : ''}</div>
-            <div class="treino-meta"><div>Por: ${t.instrutor}</div><div>${new Date(t.criadoEm).toLocaleDateString('pt-BR')}</div></div>
-          </div>
-          <div class="aluno-treino-body">${exerciciosHtml}</div>
-        </div>`;
-    }).join('');
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    container.innerHTML = AlunoUI.heading('Orientação do instrutor', 'Suas fichas de treino', 'Consulte a prescrição. Para acompanhar cada série e seu volume, use Sessões e séries.') +
+      (this.bloqueado ? AlunoUI.blocked('Matrícula indisponível para novos registros. Consulte a administração.') : '') +
+      (d.treinos.length ? `<div class="ff-student-toolbar"><button type="button" class="btn btn-primary" data-action="sessions">Abrir sessões e séries</button></div>` + d.treinos.map(t => `<section class="aluno-treino-card"><header class="aluno-treino-header"><div><h3>${AlunoUI.escape(t.nome)}</h3>${t.descricao ? `<p>${AlunoUI.escape(t.descricao)}</p>` : ''}</div><div class="treino-meta">${AlunoUI.escape(t.instrutor)}<br>Ficha de ${AlunoUI.date(t.criadoEm)}</div></header><div class="aluno-treino-body">${t.exercicios.map((ex, i) => this._renderExercicio(ex, i)).join('')}</div></section>`).join('') : AlunoUI.empty('Nenhuma ficha disponível', 'Se sua matrícula estiver ativa, peça ao instrutor para cadastrar uma ficha.'));
+    AlunoUI.bind(container, { sessions: () => App.navigateTo('sessoes'), load: button => this.abrirRegistroCarga(Number(button.dataset.exerciseId), button.dataset.exerciseName) });
   },
-
   _renderExercicio(ex, idx) {
-    const ultimaCarga = ex.ultimaCarga ? `<span class="aluno-metrica-valor destaque">${ex.ultimaCarga.peso}kg</span>` : '<span class="aluno-metrica-valor">—</span>';
-    const btnDisabled = this.bloqueado ? 'disabled' : '';
-    return `
-      <div class="aluno-exercicio">
-        <div class="aluno-exercicio-top">
-          <div class="aluno-exercicio-nome"><span class="aluno-exercicio-numero">${idx + 1}</span><strong>${ex.nome}</strong>${ex.grupoMuscular ? `<span class="badge badge-info" style="font-size:0.6rem;margin-left:4px">${ex.grupoMuscular}</span>` : ''}</div>
-          <button class="aluno-btn-carga" onclick="AlunoTreinoView.abrirRegistroCarga(${ex.id}, '${ex.nome.replace(/'/g, "\\'")}')" ${btnDisabled}><i data-lucide="plus"></i> Carga</button>
-        </div>
-        <div class="aluno-metricas-grid">
-          <div class="aluno-metrica"><div class="aluno-metrica-label">Séries × Reps</div><div class="aluno-metrica-valor">${ex.series} × ${ex.reps}</div></div>
-          <div class="aluno-metrica"><div class="aluno-metrica-label">Sugerido</div><div class="aluno-metrica-valor">${ex.cargaSugerida || '—'}</div></div>
-          <div class="aluno-metrica"><div class="aluno-metrica-label">Última</div>${ultimaCarga}</div>
-        </div>
-        ${ex.notas ? `<div class="aluno-exercicio-notas"><i data-lucide="info"></i>${ex.notas}</div>` : ''}
-      </div>`;
+    const ultima = ex.ultimaCarga ? `${AlunoUI.number(ex.ultimaCarga.peso)} kg${ex.ultimaCarga.reps != null ? ` × ${AlunoUI.number(ex.ultimaCarga.reps)} reps` : ''}` : 'Sem registro avulso';
+    const descanso = ex.descansoSegundos == null ? 'Não informado' : `${AlunoUI.number(ex.descansoSegundos)} s`;
+    return `<article class="aluno-exercicio"><div class="aluno-exercicio-top"><div class="aluno-exercicio-nome"><span class="aluno-exercicio-numero">${idx + 1}</span><h4>${AlunoUI.escape(ex.nome)}</h4></div><button type="button" class="btn btn-secondary ff-student-small" data-action="load" data-exercise-id="${Number(ex.id)}" data-exercise-name="${AlunoUI.escape(ex.nome)}" ${this.bloqueado ? 'disabled' : ''}>Registro avulso</button></div><dl class="ff-student-prescription"><div><dt>Séries e repetições prescritas</dt><dd>${AlunoUI.escape(ex.series)} × ${AlunoUI.escape(ex.reps)}</dd></div><div><dt>Descanso prescrito</dt><dd>${descanso}</dd></div><div><dt>Carga orientada</dt><dd>${AlunoUI.escape(ex.cargaSugerida || 'Não informada')}</dd></div><div><dt>Último registro avulso</dt><dd>${ultima}</dd></div></dl>${ex.grupoMuscular ? `<p class="ff-student-detail">Grupo cadastrado: ${AlunoUI.escape(ex.grupoMuscular)}</p>` : ''}${ex.notas ? `<p class="aluno-exercicio-notas">${AlunoUI.escape(ex.notas)}</p>` : ''}</article>`;
   },
-
   abrirRegistroCarga(exerciseId, nome) {
-    if (this.bloqueado) { Toast.error('Registro de cargas indisponível — matrícula bloqueada.'); return; }
-    const html = `
-      <form id="form-carga-aluno" style="display:flex;flex-direction:column;gap:1rem">
-        <p style="color:var(--text-secondary)">Registre a carga executada:</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div class="form-group"><label>Carga (kg)</label><input type="number" id="aluno-carga-peso" step="0.5" min="0" placeholder="Ex: 42.5" required style="font-size:var(--font-size-xl);text-align:center;padding:1rem"></div>
-          <div class="form-group"><label>Repetições</label><input type="number" id="aluno-carga-reps" min="1" placeholder="Ex: 10" style="font-size:var(--font-size-xl);text-align:center;padding:1rem"></div>
-        </div>
-        <div class="form-group"><label>Observação (opcional)</label><input type="text" id="aluno-carga-obs" placeholder="Ex: Últimas 2 reps com ajuda"></div>
-      </form>`;
-    Modal.open(`Registrar Carga: ${nome}`, html, [
-      { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-      { text: 'Salvar', class: 'btn-primary', action: () => this.salvarCarga(exerciseId) },
-    ]);
+    if (this.bloqueado || Auth.user?.role !== 'student') return;
+    const container = document.getElementById('aluno-treino-container');
+    if (!container) return;
+    this.modalCurrent = AlunoUI.capture(this, container);
+    const html = `<form id="form-carga-aluno" class="ff-student-load-form"><p>Registro avulso do histórico anterior. Ele não representa automaticamente uma sessão completa. Para registrar séries, abra Sessões e séries.</p><div class="form-group"><label for="aluno-carga-peso">Carga externa (kg)</label><input type="number" id="aluno-carga-peso" step="0.01" min="0" max="9999.99" required><small>Informe 0 quando não houver carga externa.</small></div><div class="form-group"><label for="aluno-carga-reps">Repetições realizadas (opcional)</label><input type="number" id="aluno-carga-reps" min="1" max="1000" step="1"></div><div class="form-group"><label for="aluno-carga-obs">Observação (opcional)</label><input type="text" id="aluno-carga-obs" maxlength="10000"></div><p id="aluno-carga-feedback" role="status"></p></form>`;
+    Modal.open(`Registro avulso: ${nome}`, html, [{ text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() }, { text: 'Salvar registro', class: 'btn-primary', action: () => this.salvarCarga(exerciseId) }]);
   },
-
   async salvarCarga(exerciseId) {
+    if (this.saving || !this.modalCurrent?.()) return;
+    const form = document.getElementById('form-carga-aluno');
+    if (!form?.reportValidity()) return;
     const weight = document.getElementById('aluno-carga-peso').value;
-    const repsCompleted = document.getElementById('aluno-carga-reps').value;
+    const reps = document.getElementById('aluno-carga-reps').value;
     const notes = document.getElementById('aluno-carga-obs').value.trim();
-    if (!weight || parseFloat(weight) <= 0) { Toast.warning('Informe a carga utilizada.'); return; }
+    const feedback = document.getElementById('aluno-carga-feedback');
+    const current = this.modalCurrent;
+    this.saving = true;
+    feedback.textContent = 'Salvando registro…';
     try {
-      await API.post('/treinos/carga', { exerciseId, weight: parseFloat(weight), repsCompleted: repsCompleted ? parseInt(repsCompleted) : null, notes: notes || null });
-      Toast.success('Carga registrada com sucesso!');
+      await API.post('/treinos/carga', { exerciseId, weight: Number(weight), repsCompleted: reps === '' ? null : Number(reps), notes: notes || null });
+      if (!current() || document.getElementById('form-carga-aluno') !== form) return;
       Modal.close();
+      Toast.success('Registro avulso salvo.');
       await this.inicializar();
     } catch (error) {
-      Toast.error(error.message || 'Erro ao registrar carga.');
-    }
+      if (current() && document.getElementById('form-carga-aluno') === form) feedback.textContent = error.message || 'Não foi possível salvar. Tente novamente.';
+    } finally { this.saving = false; }
   }
 };
 
-// ============================================
-// 3. HISTÓRICO DE CARGAS (EVOLUÇÃO)
-// ============================================
 const AlunoHistoricoView = {
-  async inicializar() {
-    const container = document.getElementById('aluno-historico-container');
-    if (!container) return;
-    container.innerHTML = '<div class="page-loading"><div class="spinner"></div><span>Carregando histórico...</span></div>';
-    try {
-      const resp = await API.get('/aluno/historico-carga');
-      this.renderizar(container, resp.data);
-    } catch (error) {
-      container.innerHTML = '<div class="alert alert-error">Erro ao carregar histórico de cargas.</div>';
-    }
-  },
-
+  inicializar() { return AlunoUI.load(this, 'aluno-historico-container', 'Carregando registros avulsos…', async () => (await API.get('/aluno/historico-carga')).data, (container, data) => this.renderizar(container, data)); },
   renderizar(container, grupos) {
-    if (!grupos || grupos.length === 0) {
-      container.innerHTML = '<div class="empty-state" style="padding:3rem"><i data-lucide="trending-up" style="width:64px;height:64px;opacity:0.3;margin-bottom:1rem"></i><h3 style="color:var(--text-primary)">Sem registros de carga</h3><p style="color:var(--text-muted)">Registre cargas nos seus treinos para ver sua evolução aqui.</p></div>';
-      if (window.lucide) lucide.createIcons({ nodes: [container] });
-      return;
-    }
-
-    container.innerHTML = `<div class="aluno-section-title"><i data-lucide="trending-up"></i> Evolução de Cargas</div>` +
-      grupos.map(g => {
-        const registros = g.registros.slice(0, 8).map(r => {
-          const data = new Date(r.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-          return `<div class="aluno-evolucao-reg-item"><span class="aluno-evolucao-reg-peso">${r.peso}kg${r.reps ? ` × ${r.reps}` : ''}</span><span class="aluno-evolucao-reg-data">${data}</span></div>`;
-        }).join('');
-        return `
-          <div class="aluno-evolucao-card">
-            <div class="aluno-evolucao-header">
-              <span class="aluno-evolucao-nome">${g.exercicioNome}</span>
-              ${g.grupoMuscular ? `<span class="aluno-evolucao-grupo">${g.grupoMuscular}</span>` : ''}
-            </div>
-            <div class="aluno-evolucao-registros">${registros}</div>
-          </div>`;
-      }).join('');
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    container.innerHTML = AlunoUI.heading('Histórico anterior', 'Registros avulsos de carga', 'Até 100 registros mais recentes retornados pela API. Estes registros não incluem as séries salvas em Sessões e séries.') + (!grupos?.length ? AlunoUI.empty('Nenhum registro avulso', 'Sua evolução por sessão está disponível na página Evolução.') : grupos.map(g => {
+      const summary = FitFlowScience.summarizeLogs(g.registros);
+      return `<section class="ff-student-section"><h3>${AlunoUI.escape(g.exercicioNome)}</h3>${g.grupoMuscular ? `<p class="ff-student-detail">${AlunoUI.escape(g.grupoMuscular)}</p>` : ''}<ul class="ff-student-records">${g.registros.slice(0, 8).map(r => `<li><span>${AlunoUI.number(r.peso)} kg${r.reps != null ? ` × ${AlunoUI.number(r.reps)} reps` : ' · repetições não informadas'}</span><time>${AlunoUI.date(r.data)}</time></li>`).join('')}</ul><p class="science-note">Volume conhecido dos registros retornados: ${AlunoUI.number(summary.knownVolumeKg)} kg·repetições · ${summary.completeRecords} completos · ${summary.incompleteRecords} incompletos. Carga × repetições não mede hipertrofia; compare o mesmo exercício e equipamento.</p></section>`;
+    }).join(''));
+    AlunoUI.icons(container);
   }
 };
 
-// ============================================
-// 4. MENSALIDADE (STATUS FINANCEIRO)
-// ============================================
 const AlunoMensalidadeView = {
-  async inicializar() {
-    const container = document.getElementById('aluno-mensalidade-container');
-    if (!container) return;
-    container.innerHTML = '<div class="page-loading"><div class="spinner"></div><span>Carregando dados financeiros...</span></div>';
-    try {
-      const resp = await API.get('/aluno/mensalidade');
-      this.renderizar(container, resp.data);
-    } catch (error) {
-      container.innerHTML = '<div class="alert alert-error">Erro ao carregar dados financeiros.</div>';
-    }
-  },
-
+  inicializar() { return AlunoUI.load(this, 'aluno-mensalidade-container', 'Carregando sua mensalidade…', async () => (await API.get('/aluno/mensalidade')).data, (container, data) => this.renderizar(container, data)); },
   renderizar(container, dados) {
-    const statusLabels = { em_dia: 'Em dia', vencendo: 'Vencendo em breve', vencido: 'Vencida', bloqueado: 'Bloqueado', indefinido: 'Sem informação' };
-    const statusIcons = { em_dia: 'check-circle', vencendo: 'clock', vencido: 'alert-circle', bloqueado: 'x-circle', indefinido: 'help-circle' };
-    const s = dados.statusVisual;
-    const label = statusLabels[s] || 'Indefinido';
-    const icon = statusIcons[s] || 'help-circle';
-
-    const alertaHtml = dados.statusAluno === 'blocked' ? '<div class="aluno-banner-blocked"><i data-lucide="alert-triangle"></i><span class="banner-text">Matrícula bloqueada por inadimplência. Procure a recepção para regularizar.</span></div>' : '';
-    const vencimento = dados.vencimento ? new Date(dados.vencimento).toLocaleDateString('pt-BR') : '—';
-    const diasRest = dados.diasRestantes !== null ? (dados.diasRestantes > 0 ? `${dados.diasRestantes} dias` : 'Vencida') : '—';
-
-    const pagamentosHtml = (dados.historicoPagamentos || []).map(p => {
-      const icone = p.status === 'paid' ? 'pago' : 'pendente';
-      const statusBadge = p.status === 'paid' ? '<span class="badge badge-success">Pago</span>' : p.status === 'overdue' ? '<span class="badge badge-error">Atrasado</span>' : '<span class="badge badge-warning">Pendente</span>';
-      const data = new Date(p.dataPagamento).toLocaleDateString('pt-BR');
-      return `<div class="aluno-historico-item"><div class="aluno-historico-icone ${icone}"><i data-lucide="${p.status === 'paid' ? 'check-circle' : 'clock'}"></i></div><div class="aluno-historico-info"><div class="aluno-historico-titulo">R$ ${parseFloat(p.valor).toFixed(2)} ${statusBadge}</div><div class="aluno-historico-sub">${p.metodo || '—'} · ${p.plano}</div></div><div class="aluno-historico-data">${data}</div></div>`;
-    }).join('');
-
-    const btnPagar = s !== 'em_dia' ? `
-      <div style="margin-top: 1.5rem;">
-        <button class="btn btn-primary btn-block" onclick="AlunoMensalidadeView.abrirCheckout()">
-          <i data-lucide="credit-card"></i> Pagar Mensalidade Agora
-        </button>
-      </div>
-    ` : '';
-
-    container.innerHTML = `
-      ${alertaHtml}
-      <div class="aluno-status-card">
-        <div class="aluno-status-badge ${s}"><i data-lucide="${icon}"></i> ${label}</div>
-        <div class="aluno-status-body">
-          <div class="aluno-status-detalhes">
-            <div class="aluno-status-item"><label>Plano</label><span>${dados.plano?.nome || '—'}</span></div>
-            <div class="aluno-status-item"><label>Valor</label><span>${dados.plano ? 'R$ ' + parseFloat(dados.plano.preco).toFixed(2) : '—'}</span></div>
-            <div class="aluno-status-item"><label>Vencimento</label><span>${vencimento}</span></div>
-            <div class="aluno-status-item"><label>Restante</label><span>${diasRest}</span></div>
-          </div>
-          ${btnPagar}
-        </div>
-      </div>
-      ${pagamentosHtml ? `<div class="aluno-section"><div class="aluno-section-title"><i data-lucide="receipt"></i> Últimos Pagamentos</div><div class="aluno-historico-lista">${pagamentosHtml}</div></div>` : ''}
-    `;
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
+    const statuses = { em_dia: 'Em dia', vencendo: 'Vencimento próximo', vencido: 'Vencida', bloqueado: 'Matrícula bloqueada', indefinido: 'Vigência não informada' };
+    const label = Object.hasOwn(statuses, dados.statusVisual) ? statuses[dados.statusVisual] : 'Situação não informada';
+    const dias = dados.diasRestantes == null ? 'Não informado' : dados.diasRestantes <= 0 ? 'Vencida' : `${AlunoUI.number(dados.diasRestantes)} dias`;
+    const methods = { cash: 'Dinheiro', pix: 'Pix', credit_card: 'Cartão de crédito', debit_card: 'Cartão de débito', transfer: 'Transferência', card: 'Cartão', dinheiro: 'Dinheiro', cartao: 'Cartão', cartao_credito: 'Cartão de crédito', cartao_debito: 'Cartão de débito', boleto: 'Boleto', transferencia: 'Transferência', simulado: 'Simulado' };
+    const history = dados.historicoPagamentos || [];
+    container.innerHTML = AlunoUI.heading('Sua matrícula', 'Plano e mensalidade', 'Consulte a vigência e os pagamentos registrados pela academia.') + (dados.statusAluno === 'blocked' ? AlunoUI.blocked('Matrícula bloqueada. Consulte a administração para regularização.') : '') + `<section class="ff-student-section"><div class="ff-student-section-top"><h3>Plano atual</h3><span class="ff-student-status">${label}</span></div><dl class="ff-student-prescription"><div><dt>Plano</dt><dd>${AlunoUI.escape(dados.plano?.nome || 'Não vinculado')}</dd></div><div><dt>Valor do plano</dt><dd>${dados.plano ? AlunoUI.money(dados.plano.preco) : '—'}</dd></div><div><dt>Fim da vigência</dt><dd>${AlunoUI.date(dados.vencimento, undefined, true)}</dd></div><div><dt>Tempo restante</dt><dd>${dias}</dd></div></dl><div class="ff-student-payment-action"><button type="button" class="btn btn-primary" data-action="checkout"><i data-lucide="credit-card" aria-hidden="true"></i>Consultar renovação</button><p>O checkout deste projeto usa o ambiente de testes. Um retorno do navegador não confirma pagamento: a situação é conciliada no servidor.</p></div></section><section class="ff-student-section"><h3>Últimos pagamentos registrados</h3>${history.length ? `<ul class="ff-student-records ff-student-payments">${history.map(p => { const status = p.status === 'paid' ? 'Pago' : p.status === 'overdue' ? 'Em atraso' : 'Pendente'; return `<li><div><strong>${AlunoUI.money(p.valor)}</strong><span>${AlunoUI.escape(p.plano || 'Plano não informado')} · ${AlunoUI.escape(Object.hasOwn(methods, p.metodo) ? methods[p.metodo] : p.metodo || 'Método não informado')}</span></div><div><span>${status}</span><time>${AlunoUI.date(p.dataPagamento)}</time></div></li>`; }).join('')}</ul>` : AlunoUI.empty('Nenhum pagamento registrado', 'A administração pode orientar sobre a situação da matrícula.')}</section>`;
+    AlunoUI.bind(container, { checkout: () => this.abrirCheckout() });
   },
-
-  abrirCheckout() {
-    const html = `
-      <div class="checkout-container">
-        <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">Escolha a forma de pagamento preferida para renovar sua mensalidade:</p>
-        
-        <div class="checkout-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-          <button class="btn btn-outline-primary active" id="tab-pix" onclick="AlunoMensalidadeView.mudarTabCheckout('pix')">PIX</button>
-          <button class="btn btn-outline-primary" id="tab-card" onclick="AlunoMensalidadeView.mudarTabCheckout('card')">Cartão</button>
-          <button class="btn btn-outline-primary" id="tab-boleto" onclick="AlunoMensalidadeView.mudarTabCheckout('boleto')">Boleto</button>
-        </div>
-
-        <div id="checkout-content" style="min-height: 200px;">
-          ${this._renderPix()}
-        </div>
-      </div>
-    `;
-
-    Modal.open('Checkout FitFlow', html, [
-      { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
-      { text: 'Confirmar Pagamento', id: 'btn-confirmar-pagamento', class: 'btn-primary', action: () => this.confirmarPagamento() },
-    ]);
-  },
-
-  mudarTabCheckout(tipo) {
-    const content = document.getElementById('checkout-content');
-    const tabs = ['pix', 'card', 'boleto'];
-    
-    tabs.forEach(t => {
-      const el = document.getElementById(`tab-${t}`);
-      if (el) el.classList.remove('active');
-    });
-
-    const activeTab = document.getElementById(`tab-${tipo}`);
-    if (activeTab) activeTab.classList.add('active');
-
-    if (tipo === 'pix') content.innerHTML = this._renderPix();
-    if (tipo === 'card') content.innerHTML = this._renderCard();
-    if (tipo === 'boleto') content.innerHTML = this._renderBoleto();
-    
-    if (window.lucide) lucide.createIcons({ nodes: [content] });
-  },
-
-  _renderPix() {
-    return `
-      <div style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
-        <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=fitflow-pix-mockup" alt="QR Code PIX" style="display: block;">
-        </div>
-        <div style="width: 100%;">
-          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Copia e Cola (Chave Aleatória)</label>
-          <div style="display: flex; gap: 0.5rem;">
-            <input type="text" value="00020126580014br.gov.bcb.pix0136e2f1b8a-9801-4757-9c81-f97d164964f7" readonly style="flex: 1; font-family: monospace; font-size: 0.75rem;">
-            <button class="btn btn-sm btn-outline-secondary" onclick="Toast.info('Chave copiada!')"><i data-lucide="copy" style="width:14px;height:14px"></i></button>
-          </div>
-        </div>
-        <p style="font-size: 0.85rem; color: var(--text-secondary);"><i data-lucide="info" style="width:14px;height:14px;vertical-align:middle;"></i> Após o pagamento, o sistema identificará automaticamente em alguns segundos.</p>
-        <input type="hidden" id="checkout-method" value="Pix">
-      </div>
-    `;
-  },
-
-  _renderCard() {
-    return `
-      <div class="form-grid" style="gap: 1rem;">
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Número do Cartão</label>
-          <input type="text" placeholder="0000 0000 0000 0000" maxlength="19">
-        </div>
-        <div class="form-group">
-          <label>Validade</label>
-          <input type="text" placeholder="MM/AA" maxlength="5">
-        </div>
-        <div class="form-group">
-          <label>CVV</label>
-          <input type="text" placeholder="123" maxlength="3">
-        </div>
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Nome no Cartão</label>
-          <input type="text" placeholder="Como impresso no cartão">
-        </div>
-        <input type="hidden" id="checkout-method" value="Cartão de Crédito">
-      </div>
-    `;
-  },
-
-  _renderBoleto() {
-    return `
-      <div style="text-align: center; padding: 1.5rem 0; display: flex; flex-direction: column; gap: 1rem;">
-        <i data-lucide="barcode" style="width: 64px; height: 64px; margin: 0 auto; opacity: 0.5;"></i>
-        <p>O boleto será gerado e enviado para seu e-mail cadastrado.</p>
-        <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px dashed var(--border-color);">
-          <code style="font-size: 0.9rem;">34191.09008 63561.760009 12345.670007 8 95820000015000</code>
-        </div>
-        <button class="btn btn-outline-secondary btn-sm" onclick="Toast.info('Código de barras copiado!')">Copiar Código</button>
-        <input type="hidden" id="checkout-method" value="Boleto">
-      </div>
-    `;
-  },
-
-  async confirmarPagamento() {
-    const btn = document.getElementById('btn-confirmar-pagamento');
-    const metodo = document.getElementById('checkout-method')?.value || 'Simulado';
-    
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner spinner-sm" style="border-top-color:white"></div> Processando...';
-    }
-
-    try {
-      // Simula delay de processamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      await API.post('/aluno/checkout', { paymentMethod: metodo });
-      
-      Toast.success('Pagamento confirmado com sucesso! Sua matrícula foi renovada.');
-      Modal.close();
-      this.inicializar(); // Recarrega tela de mensalidade
-      
-      // Se estiver no dashboard, recarrega também
-      if (typeof AlunoPainelView !== 'undefined' && AlunoPainelView.dados) {
-        AlunoPainelView.inicializar();
-      }
-    } catch (error) {
-      Toast.error('Erro ao confirmar pagamento: ' + error.message);
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = 'Confirmar Pagamento';
-      }
-    }
-  }
+  abrirCheckout() { if (typeof MercadoPagoCheckout !== 'undefined') return MercadoPagoCheckout.abrir(); Toast.error('Checkout indisponível. Consulte a administração.'); }
 };
 
-// ============================================
-// 5. CHECK-IN E FREQUÊNCIA
-// ============================================
 const AlunoCheckinView = {
   studentId: null,
   bloqueado: false,
-
-  async inicializar() {
-    const container = document.getElementById('aluno-checkin-container');
-    if (!container) return;
-    container.innerHTML = '<div class="page-loading"><div class="spinner"></div><span>Carregando...</span></div>';
-    try {
-      // Busca painel para pegar studentId e status
-      const painelResp = await API.get('/aluno/painel');
-      this.studentId = painelResp.data.perfil.id;
-      this.bloqueado = painelResp.data.perfil.status === 'blocked';
-
-      const checkinsResp = await API.get('/aluno/checkins?limit=15');
-      this.renderizar(container, checkinsResp.data, painelResp.data);
-    } catch (error) {
-      container.innerHTML = '<div class="alert alert-error">Erro ao carregar check-ins.</div>';
-    }
+  posting: false,
+  inicializar() { return AlunoUI.load(this, 'aluno-checkin-container', 'Carregando suas presenças…', async current => {
+    const painel = (await API.get('/aluno/painel')).data;
+    if (!current()) return null;
+    const checkins = (await API.get('/aluno/checkins?limit=15')).data;
+    return { painel, checkins };
+  }, (container, data) => { this.studentId = data.painel.perfil.id; this.bloqueado = data.painel.perfil.status !== 'active'; this.renderizar(container, data.checkins); }); },
+  renderizar(container, dados) {
+    this.container = container;
+    container.innerHTML = AlunoUI.heading('Entrada na academia', 'Sua presença', 'Registre sua entrada ao chegar. Presença e sessão de treino são registros diferentes.') + (this.bloqueado ? AlunoUI.blocked('Matrícula indisponível para registrar presença. Consulte a administração.') : '') + `<section class="ff-student-start"><div><span class="ff-student-stat-label">Presenças confirmadas neste mês</span><strong class="ff-student-count">${AlunoUI.number(dados.totalMes)}</strong></div><button type="button" class="btn btn-primary" id="btn-aluno-checkin" data-action="checkin" ${this.bloqueado ? 'disabled' : ''}><i data-lucide="calendar-check" aria-hidden="true"></i>Registrar entrada de hoje</button><p id="checkin-feedback" class="ff-student-feedback" role="status" aria-live="polite"></p></section><section class="ff-student-section"><h3>Últimas 15 presenças e cancelamentos</h3>${dados.checkins?.length ? `<ul class="ff-student-records">${dados.checkins.map(c => `<li><span>${c.status === 'cancelled' ? 'Presença cancelada' : c.status === 'present' ? 'Presença registrada' : 'Situação não informada'}</span><time>${AlunoUI.date(c.data, undefined, true)}</time></li>`).join('')}</ul>` : AlunoUI.empty('Nenhuma presença registrada', 'Use o botão acima para registrar sua entrada de hoje.')}</section>`;
+    AlunoUI.bind(container, { checkin: () => this.fazerCheckin() });
   },
-
-  renderizar(container, checkinsData, painelData) {
-    const alertaHtml = this.bloqueado ? '<div class="aluno-banner-blocked"><i data-lucide="alert-triangle"></i><span class="banner-text">Matrícula bloqueada. Check-in indisponível até regularização.</span></div>' : '';
-    const btnDisabled = this.bloqueado ? 'disabled' : '';
-
-    const historicoHtml = (checkinsData.checkins || []).map(c => {
-      const data = new Date(c.data).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
-      const isCancelled = c.status === 'cancelled';
-      const icone = isCancelled ? 'cancel' : 'check';
-      const icon = isCancelled ? 'x-circle' : 'check-circle';
-      const titulo = isCancelled ? 'Cancelado' : 'Presente';
-      return `<div class="aluno-historico-item"><div class="aluno-historico-icone ${icone}"><i data-lucide="${icon}"></i></div><div class="aluno-historico-info"><div class="aluno-historico-titulo">${titulo}</div></div><div class="aluno-historico-data">${data}</div></div>`;
-    }).join('');
-
-    container.innerHTML = `
-      ${alertaHtml}
-      <div class="aluno-checkin-container">
-        <div style="text-align:center">
-          <div class="aluno-kpi-value" style="font-size:var(--font-size-4xl)">${checkinsData.totalMes || 0}</div>
-          <div class="aluno-kpi-label" style="font-size:var(--font-size-sm)">Check-ins este mês</div>
-        </div>
-        <button class="aluno-checkin-btn" id="btn-aluno-checkin" onclick="AlunoCheckinView.fazerCheckin()" ${btnDisabled}>
-          <i data-lucide="calendar-check"></i> Fazer Check-in
-        </button>
-        <div class="aluno-checkin-feedback" id="checkin-feedback"></div>
-      </div>
-      ${historicoHtml ? `<div class="aluno-section"><div class="aluno-section-title"><i data-lucide="history"></i> Histórico de Presença</div><div class="aluno-historico-lista">${historicoHtml}</div></div>` : ''}
-    `;
-    if (window.lucide) lucide.createIcons({ nodes: [container] });
-  },
-
   async fazerCheckin() {
-    if (this.bloqueado) { Toast.error('Check-in indisponível — matrícula bloqueada.'); return; }
-    const btn = document.getElementById('btn-aluno-checkin');
-    const feedback = document.getElementById('checkin-feedback');
-    if (!btn) return;
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner spinner-sm" style="border-top-color:white"></div> Registrando...';
-
+    if (this.posting || this.bloqueado || !this.container?.isConnected) return;
+    const container = this.container;
+    const userId = Auth.user?.id;
+    const generation = Auth.generation;
+    const current = AlunoUI.capture(this, container);
+    if (!current()) return;
+    const button = container.querySelector('#btn-aluno-checkin');
+    const feedback = container.querySelector('#checkin-feedback');
+    if (!button || !feedback) return;
+    this.posting = true;
+    button.disabled = true;
+    button.textContent = 'Registrando entrada…';
+    feedback.textContent = '';
     try {
-      await API.post('/checkins', { studentId: this.studentId });
-      btn.classList.add('success');
-      btn.innerHTML = '<i data-lucide="check"></i> Check-in realizado!';
-      feedback.className = 'aluno-checkin-feedback ok';
-      feedback.textContent = 'Presença registrada com sucesso!';
-      Toast.success('Check-in realizado!');
-      if (window.lucide) lucide.createIcons({ nodes: [btn] });
-      // Recarrega após 2s
-      setTimeout(() => this.inicializar(), 2000);
+      await API.post('/checkins', {});
+      if (!current()) return;
+      await this.inicializar();
+      if (document.getElementById(container.id) === container && Auth.user?.id === userId && Auth.generation === generation && container.isConnected && this.container === container) {
+        const updated = container.querySelector('#checkin-feedback');
+        if (updated) updated.textContent = 'Entrada de hoje registrada. Se já existia, a presença foi mantida sem duplicação.';
+      }
     } catch (error) {
-      btn.classList.add('error');
-      btn.innerHTML = '<i data-lucide="x"></i> Erro';
-      feedback.className = 'aluno-checkin-feedback fail';
-      feedback.textContent = error.message || 'Não foi possível registrar.';
-      if (window.lucide) lucide.createIcons({ nodes: [btn] });
-      setTimeout(() => {
-        btn.classList.remove('error');
-        btn.disabled = false;
-        btn.innerHTML = '<i data-lucide="calendar-check"></i> Fazer Check-in';
-        if (window.lucide) lucide.createIcons({ nodes: [btn] });
-      }, 3000);
-    }
+      if (!current()) return;
+      feedback.textContent = error.message || 'Não foi possível registrar sua entrada. Tente novamente.';
+      button.textContent = 'Tentar registrar entrada';
+      button.disabled = error.status === 409;
+    } finally { this.posting = false; }
   }
 };

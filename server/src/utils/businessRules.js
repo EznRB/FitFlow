@@ -50,6 +50,9 @@ class BusinessRules {
     if (student.user && !student.user.active) {
       throw new AppError('Este aluno está desativado do sistema.', 400);
     }
+    if (student.status === 'inactive') {
+      throw new AppError('Matrícula inativa. Regularize a matrícula antes de fazer check-in.', 403);
+    }
 
     // Regra de bloqueio financeiro também se aplica ao check-in físico
     if (student.status === 'blocked' || (student.planEndDate && isOverdue(student.planEndDate, 5))) {
@@ -58,7 +61,7 @@ class BusinessRules {
 
     if (checkinExistente) {
       const hora = checkinExistente.createdAt
-        ? new Date(checkinExistente.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        ? new Date(checkinExistente.createdAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
         : '';
       throw new AppError(`Este aluno já fez check-in hoje${hora ? ' às ' + hora : ''}. Apenas 1 check-in por dia é permitido.`, 409);
     }
@@ -78,8 +81,8 @@ class BusinessRules {
       throw new AppError('Usuário não autenticado.', 401);
     }
 
-    if (user.role !== 'admin') {
-      throw new AppError('Acesso negado. Apenas instrutores (admin) podem criar ou alterar a estrutura de um treino.', 403);
+    if (!['admin', 'instructor'].includes(user.role)) {
+      throw new AppError('Acesso negado. Apenas administradores e instrutores podem gerenciar fichas de treino.', 403);
     }
   }
 

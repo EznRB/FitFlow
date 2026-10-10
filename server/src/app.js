@@ -16,6 +16,9 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const env = require('./config/env');
+const { directives: contentSecurityDirectives } = require('./config/contentSecurityPolicy');
+const { createCsrfProtection } = require('./middleware/csrf');
+const { resolveAllowedOrigins } = require('./config/origins');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
 // Importação dos módulos de rotas (divisão de responsabilidades por recurso)
@@ -28,8 +31,10 @@ const pagamentosRoutes = require('./routes/pagamentos.routes');
 const checkinsRoutes = require('./routes/checkins.routes');
 const relatoriosRoutes = require('./routes/relatorios.routes');
 const alunoRoutes = require('./routes/aluno.routes');
+const { createIaRouter } = require('./routes/ia.routes');
 
 const app = express();
+const allowedOrigins = resolveAllowedOrigins(env.cors.origin);
 
 // ============================================================================
 // MIDDLEWARES GLOBAIS (Camadas de Pré-processamento)
@@ -40,7 +45,7 @@ const app = express();
  * Adiciona headers HTTP que protegem contra ataques comuns como XSS e Clickjacking.
  */
 app.use(helmet({
-  contentSecurityPolicy: false, // Desabilitado para permitir que o Express sirva o frontend localmente.
+  contentSecurityPolicy: { useDefaults: false, directives: contentSecurityDirectives },
   crossOriginEmbedderPolicy: false,
 }));
 
@@ -50,7 +55,7 @@ app.use(helmet({
  * requisições vindas do frontend que está em outra "origem".
  */
 app.use(cors({
-  origin: env.cors.origin, // Configurado dinamicamente via variáveis de ambiente (.env).
+  origin: allowedOrigins,
   credentials: true,      // Permite que o navegador envie cookies httpOnly (segurança extra).
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -71,29 +76,23 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/', limiter); // Aplica a regra para todos os endpoints que começam com /api/
+app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+app.use('/api/', limiter);
 
 /**
  * Login Rate Limiting (Mais restrito):
  * Proteção específica para a rota de login, evitando tentativas exaustivas de senhas.
  */
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10, // Apenas 10 tentativas a cada 15 minutos.
-  message: {
-    status: 'fail',
-    message: 'Muitas tentativas de login bloqueadas por segurança. Aguarde 15 minutos.',
-  },
-});
-app.use('/api/auth/login', loginLimiter);
+// O limite de login pertence ao router de autenticação, inclusive em testes isolados.
 
 /**
  * Body Parsing & Cookies:
  * Converte o corpo das requisições (JSON ou formulários) em objetos JavaScript (req.body).
  */
-app.use(express.json({ limit: '10mb' })); // Suporta JSON até 10MB.
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '256kb' }));
+app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 app.use(cookieParser()); // Analisa cookies enviados pelo cliente.
+app.use('/api', createCsrfProtection({ allowedOrigins }));
 
 // Logging: Mostra logs detalhados das requisições no console (apenas em desenvolvimento).
 if (env.isDev) {
@@ -121,18 +120,30 @@ app.use('/api/pagamentos', pagamentosRoutes); // Histórico Financeiro
 app.use('/api/checkins', checkinsRoutes); // Registro de Frequência
 app.use('/api/relatorios', relatoriosRoutes); // Agregadores de Dados
 app.use('/api/aluno', alunoRoutes);           // Área do Aluno (TASK 10)
+// IA educativa protegida; o provedor não recebe dados pessoais de alunos.
+app.use('/api/ia', createIaRouter());
+// Sessões executadas têm IDs idempotentes e pertencem ao aluno autenticado.
+app.use('/api/sessoes', require('./routes/sessoes.routes'));
+app.use('/api/nutricao', require('./routes/nutricao.routes').createNutricaoRouter());
+app.use('/api/checkout', require('./routes/checkout.routes').createCheckoutRouter());
 
 /**
  * Health Check:
  * Rota simples para verificar se o servidor está ativo e saudável.
  */
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'FitFlow Caraguá API está online e operando! 🏋️',
-    timestamp: new Date().toISOString(),
-    environment: env.nodeEnv,
-  });
+app.get('/api/health', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  let timer;
+  try {
+    const { prisma } = require('./config/prisma');
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Readiness timeout')), 3000); }),
+    ]);
+    res.json({ status: 'success', database: 'ready', timestamp: new Date().toISOString() });
+  } catch {
+    res.status(503).json({ status: 'error', database: 'unavailable', message: 'Banco de dados indisponível.' });
+  } finally { clearTimeout(timer); }
 });
 
 // ============================================================================

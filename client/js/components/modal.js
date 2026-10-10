@@ -17,6 +17,8 @@ const Modal = {
   bodyEl: null,
   footerEl: null,
   closeBtn: null,
+  previousFocus: null,
+  background: [],
 
   init() {
     this.overlay = document.getElementById('modal-overlay');
@@ -36,6 +38,13 @@ const Modal = {
     // Fechar com ESC
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.isOpen()) this.close();
+      if (e.key === 'Tab' && this.isOpen()) {
+        const focusable = [...this.overlay.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')]
+          .filter(node => !node.disabled && !node.hidden && node.getClientRects().length);
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
     });
   },
 
@@ -47,6 +56,12 @@ const Modal = {
    */
   open(title, bodyHTML, buttons = []) {
     if (!this.overlay) this.init();
+    if (!this.isOpen()) {
+      this.previousFocus = document.activeElement;
+      this.background = [...document.body.children].filter(node => node !== this.overlay && !node.contains(this.overlay))
+        .map(node => ({ node, inert: node.inert }));
+      this.background.forEach(({ node }) => { node.inert = true; });
+    }
 
     this.titleEl.textContent = title;
     this.bodyEl.innerHTML = bodyHTML;
@@ -55,6 +70,7 @@ const Modal = {
     this.footerEl.innerHTML = '';
     buttons.forEach((btn) => {
       const button = document.createElement('button');
+      button.type = 'button';
       button.className = `btn ${btn.class || 'btn-secondary'}`;
       button.textContent = btn.text;
       if (btn.action) button.addEventListener('click', btn.action);
@@ -68,10 +84,8 @@ const Modal = {
     document.body.style.overflow = 'hidden';
 
     // Foca no primeiro input se existir
-    setTimeout(() => {
-      const firstInput = this.bodyEl.querySelector('input, select, textarea');
-      if (firstInput) firstInput.focus();
-    }, 100);
+    const firstInput = this.bodyEl.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
+    (firstInput || this.closeBtn).focus();
   },
 
   /**
@@ -81,8 +95,13 @@ const Modal = {
     if (!this.overlay) return;
     this.overlay.style.display = 'none';
     document.body.style.overflow = '';
+    this.titleEl.textContent = '';
     this.bodyEl.innerHTML = '';
     this.footerEl.innerHTML = '';
+    this.background.forEach(({ node, inert }) => { node.inert = inert; });
+    this.background = [];
+    if (this.previousFocus?.isConnected) this.previousFocus.focus();
+    this.previousFocus = null;
   },
 
   /**

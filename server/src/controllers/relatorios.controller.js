@@ -9,79 +9,79 @@
 const { sendSuccess } = require('../utils/helpers');
 const { prisma } = require('../config/prisma');
 const checkinsRepository = require('../repositories/checkins.repository');
+const { brazilDate, addDays, dateKey, civilRange, brazilDayStartInstant } = require('../utils/civil-date');
 
-const relatoriosController = {
+function createRelatoriosController({ db = prisma, repository = checkinsRepository, now = () => new Date() } = {}) {
+return {
   /**
    * GET /api/relatorios/dashboard
    * KPIs principais do sistema. Agora com check-ins reais.
    */
   async dashboard(req, res, next) {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      const today = brazilDate(now());
+      const tomorrow = addDays(today, 1);
+      const firstOfMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+      const firstOfNextMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
+      const sevenDaysAgo = addDays(today, -6);
+      const newStudentsStart = brazilDayStartInstant(sevenDaysAgo);
+      const newStudentsEnd = brazilDayStartInstant(tomorrow);
 
       // Executa todas as queries em paralelo para performance
       const [totalAlunos, alunosAtivos, alunosInadimplentes, treinosAtivos, checkinsHoje, receitaMes, checkins7dias, recentesCheckins, recentesAlunos, pagamentos7dias, alunos7dias, recentesPagamentos] = await Promise.all([
-        prisma.student.count(),
-        prisma.student.count({ where: { status: 'active' } }),
-        prisma.student.count({ where: { status: 'blocked' } }),
-        prisma.workout.count({ where: { active: true } }),
+        db.student.count(),
+        db.student.count({ where: { status: 'active' } }),
+        db.student.count({ where: { status: 'blocked' } }),
+        db.workout.count({ where: { active: true } }),
         // Check-ins reais do dia (apenas status 'present')
-        checkinsRepository.countToday(),
+        repository.countToday(),
         // Receita do mês via pagamentos confirmados
-        prisma.payment.aggregate({
+        db.payment.aggregate({
           where: {
             status: 'paid',
-            paymentDate: { gte: firstOfMonth, lte: lastOfMonth },
+            paymentDate: { gte: firstOfMonth, lt: firstOfNextMonth },
           },
           _sum: { amount: true },
         }),
         // Tendencias: check-ins dos ultimos 7 dias
-        prisma.checkin.findMany({
+        db.checkin.findMany({
           where: {
             status: 'present',
-            checkinDate: { gte: sevenDaysAgo }
+            checkinDate: { gte: sevenDaysAgo, lt: tomorrow }
           },
           select: { checkinDate: true }
         }),
         // Atividades recentes: ultimos 5 checkins
-        prisma.checkin.findMany({
+        db.checkin.findMany({
           where: { status: 'present' },
           orderBy: { createdAt: 'desc' },
           take: 5,
           include: { student: { include: { user: true } } }
         }),
         // Atividades recentes: ultimas 5 matriculas
-        prisma.student.findMany({
+        db.student.findMany({
           orderBy: { createdAt: 'desc' },
           take: 5,
           include: { user: true }
         }),
         // Pagamentos dos ultimos 7 dias
-        prisma.payment.findMany({
+        db.payment.findMany({
           where: {
             status: 'paid',
-            paymentDate: { gte: sevenDaysAgo }
+            paymentDate: { gte: sevenDaysAgo, lt: tomorrow }
           },
           select: { paymentDate: true, amount: true }
         }),
         // Novos alunos dos ultimos 7 dias
-        prisma.student.findMany({
+        db.student.findMany({
           where: {
-            createdAt: { gte: sevenDaysAgo }
+            createdAt: { gte: newStudentsStart, lt: newStudentsEnd }
           },
           select: { createdAt: true }
         }),
         // Pagamentos recentes
-        prisma.payment.findMany({
+        db.payment.findMany({
+          where: { status: 'paid' },
           orderBy: { createdAt: 'desc' },
           take: 5,
           include: { student: { include: { user: true } } }
@@ -93,23 +93,19 @@ const relatoriosController = {
       const tendenciasMap = {};
       const receitaMap = {};
       const novosAlunosMap = {};
-      const labelsFormatados = [];
       
       for(let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        // Usa a data no formato YYYY-MM-DD como chave primária interna
-        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        const dayLabel = diasDaSemana[d.getDay()];
+        const d = addDays(today, -i);
+        const key = dateKey(d);
+        const dayLabel = diasDaSemana[d.getUTCDay()];
         tendenciasMap[key] = { label: dayLabel, count: 0 };
         receitaMap[key] = { label: dayLabel, amount: 0 };
         novosAlunosMap[key] = { label: dayLabel, count: 0 };
-        labelsFormatados.push(dayLabel);
       }
       
       checkins7dias.forEach(chk => {
         const d = new Date(chk.checkinDate);
-        const key = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+        const key = dateKey(d);
         if (tendenciasMap[key] !== undefined) {
            tendenciasMap[key].count++;
         }
@@ -117,7 +113,7 @@ const relatoriosController = {
 
       pagamentos7dias.forEach(pag => {
         const d = new Date(pag.paymentDate);
-        const key = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+        const key = dateKey(d);
         if (receitaMap[key] !== undefined) {
            receitaMap[key].amount += parseFloat(pag.amount);
         }
@@ -125,7 +121,7 @@ const relatoriosController = {
 
       alunos7dias.forEach(aluno => {
         const d = new Date(aluno.createdAt);
-        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const key = dateKey(brazilDate(d));
         if (novosAlunosMap[key] !== undefined) {
            novosAlunosMap[key].count++;
         }
@@ -155,6 +151,7 @@ const relatoriosController = {
          pagamentosAtv.push({
            tipo: 'pagamento',
            nome: pag.student?.user?.name || 'Aluno Desconhecido',
+           valor: Number(pag.amount),
            descricao: `Pagamento de R$ ${parseFloat(pag.amount).toFixed(2)}`,
            data: pag.createdAt
          });
@@ -188,7 +185,6 @@ const relatoriosController = {
         pagamentosRecentes: pagamentosAtv
       });
     } catch (error) {
-      console.error('RelatoriosController.dashboard [ERR]:', error);
       next(error);
     }
   },
@@ -199,7 +195,7 @@ const relatoriosController = {
    */
   async inadimplencia(req, res, next) {
     try {
-      const inadimplentes = await prisma.student.findMany({
+      const inadimplentes = await db.student.findMany({
         where: {
           OR: [
             { status: 'blocked' },
@@ -211,7 +207,7 @@ const relatoriosController = {
           ]
         },
         include: {
-          user: { select: { name: true, email: true, phone: true } },
+          user: { select: { name: true, email: true } },
           plan: { select: { name: true } },
           payments: {
             where: { status: 'overdue' },
@@ -226,7 +222,7 @@ const relatoriosController = {
           id: aluno.id,
           nome: aluno.user?.name,
           email: aluno.user?.email,
-          telefone: aluno.user?.phone,
+          telefone: aluno.phone,
           plano: aluno.plan?.name,
           status: aluno.status,
           totalAtraso,
@@ -250,17 +246,11 @@ const relatoriosController = {
    */
   async financeiro(req, res, next) {
     try {
-      let where = {};
-      
-      if (req.query.startDate && req.query.endDate) {
-        const start = new Date(req.query.startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(req.query.endDate);
-        end.setHours(23, 59, 59, 999);
-        where.paymentDate = { gte: start, lte: end };
-      }
+      const where = {};
+      const period = civilRange(req.query);
+      if (period) where.paymentDate = period;
 
-      const pagamentos = await prisma.payment.findMany({
+      const pagamentos = await db.payment.findMany({
         where,
         include: {
           student: { include: { user: { select: { name: true } } } },
@@ -311,23 +301,11 @@ const relatoriosController = {
    */
   async frequencia(req, res, next) {
     try {
-      let dateFilter = {};
-      
-      if (req.query.startDate && req.query.endDate) {
-        const start = new Date(req.query.startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(req.query.endDate);
-        end.setHours(23, 59, 59, 999);
-        dateFilter = { checkinDate: { gte: start, lte: end } };
-      } else {
-        // Padrão: últimos 30 dias se nenhuma data for fornecida
-        const d = new Date();
-        d.setDate(d.getDate() - 30);
-        dateFilter = { checkinDate: { gte: d } };
-      }
+      const today = brazilDate(now());
+      const dateFilter = { checkinDate: civilRange(req.query) || { gte: addDays(today, -29), lte: today } };
 
       // Ranking de frequência dos alunos no período
-      const ranking = await prisma.checkin.groupBy({
+      const ranking = await db.checkin.groupBy({
         by: ['studentId'],
         where: {
           status: 'present',
@@ -339,7 +317,7 @@ const relatoriosController = {
 
       // Enriquece com nomes dos alunos e plano
       const studentIds = ranking.map(r => r.studentId);
-      const alunos = await prisma.student.findMany({
+      const alunos = await db.student.findMany({
         where: { id: { in: studentIds } },
         include: { 
           user: { select: { name: true } },
@@ -377,29 +355,23 @@ const relatoriosController = {
    */
   async checkins(req, res, next) {
     try {
-      let where = { status: 'present' };
-      
-      if (req.query.startDate && req.query.endDate) {
-        const start = new Date(req.query.startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(req.query.endDate);
-        end.setHours(23, 59, 59, 999);
-        where.checkinDate = { gte: start, lte: end };
-      }
+      const where = { status: 'present' };
+      const period = civilRange(req.query);
+      if (period) where.checkinDate = period;
 
-      const checkins = await prisma.checkin.findMany({
+      const checkins = await db.checkin.findMany({
         where,
         include: {
           student: { include: { user: { select: { name: true } } } }
         },
-        orderBy: { checkinTime: 'desc' }
+        orderBy: { createdAt: 'desc' }
       });
 
       const items = checkins.map(c => ({
         id: c.id,
         aluno: c.student?.user?.name || `Aluno #${c.studentId}`,
         data: c.checkinDate,
-        hora: c.checkinTime,
+        hora: c.createdAt,
         status: c.status
       }));
 
@@ -415,7 +387,7 @@ const relatoriosController = {
    */
   async alunos(req, res, next) {
     try {
-      const alunos = await prisma.student.findMany({
+      const alunos = await db.student.findMany({
         include: {
           user: { select: { name: true, email: true, createdAt: true } },
           plan: { select: { name: true } }
@@ -452,4 +424,7 @@ const relatoriosController = {
   }
 };
 
-module.exports = relatoriosController;
+}
+
+module.exports = createRelatoriosController();
+module.exports.createRelatoriosController = createRelatoriosController;

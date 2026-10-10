@@ -11,32 +11,17 @@
  */
 
 const { prisma } = require('../config/prisma');
-
-/**
- * Retorna a data atual no fuso horário de São Paulo (UTC-3).
- * Importante: MySQL armazena checkinDate como DATE (sem hora),
- * então precisamos garantir que a data corresponda ao dia no Brasil.
- */
-function getBrazilToday() {
-  const now = new Date();
-  // Calcula o offset para America/Sao_Paulo (UTC-3, sem horário de verão atual)
-  const brDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  brDate.setHours(0, 0, 0, 0);
-  return brDate;
-}
-
-function getBrazilNow() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-}
+const { brazilDate, addDays, checkinFilters, civilRange, positiveInteger } = require('../utils/civil-date');
 
 class CheckinsRepository {
+  constructor({ db = prisma, now = () => new Date() } = {}) { this.db = db; this.now = now; }
   /**
    * Busca um check-in específico por ID.
    * Inclui dados completos do aluno para exibição.
    */
   async findById(id) {
-    return prisma.checkin.findUnique({
-      where: { id: parseInt(id) },
+    return this.db.checkin.findUnique({
+      where: { id: positiveInteger(id, 'ID do check-in', 2147483647) },
       include: {
         student: { include: { user: { select: { name: true, email: true } } } },
       },
@@ -50,36 +35,9 @@ class CheckinsRepository {
    * @param {object} filters - Filtros: studentId, startDate, endDate, incluirCancelados
    */
   async findAll(filters = {}) {
-    const where = {};
+    const where = checkinFilters(filters);
 
-    // Filtro por status: por padrão, só mostra presentes
-    if (filters.incluirCancelados) {
-      // Sem filtro de status — mostra tudo
-    } else {
-      where.status = 'present';
-    }
-
-    if (filters.studentId) where.studentId = parseInt(filters.studentId);
-
-    // Filtro por data específica
-    if (filters.date) {
-      const d = new Date(filters.date);
-      d.setHours(0, 0, 0, 0);
-      const nextDay = new Date(d);
-      nextDay.setDate(nextDay.getDate() + 1);
-      where.checkinDate = { gte: d, lt: nextDay };
-    }
-
-    // Filtro por período (startDate + endDate)
-    if (filters.startDate && filters.endDate) {
-      const start = new Date(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      where.checkinDate = { gte: start, lte: end };
-    }
-
-    return prisma.checkin.findMany({
+    return this.db.checkin.findMany({
       where,
       include: {
         student: { include: { user: { select: { name: true, email: true } } } },
@@ -94,36 +52,28 @@ class CheckinsRepository {
    * @param {object} filters - startDate, endDate, limit
    */
   async findByStudentId(studentId, filters = {}) {
-    const where = { studentId: parseInt(studentId) };
+    const where = { studentId: positiveInteger(studentId, 'ID do aluno', 2147483647) };
+    const period = civilRange(filters);
+    if (period) where.checkinDate = period;
+    const limit = filters.limit === undefined ? 60 : positiveInteger(filters.limit, 'Limite', 366);
 
-    if (filters.startDate && filters.endDate) {
-      const start = new Date(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-      where.checkinDate = { gte: start, lte: end };
-    }
-
-    return prisma.checkin.findMany({
+    return this.db.checkin.findMany({
       where,
       orderBy: { checkinDate: 'desc' },
-      take: filters.limit ? parseInt(filters.limit) : 60,
+      take: limit,
     });
   }
 
   /**
-   * Verifica se o aluno já fez check-in hoje (status = present).
-   * Ignora check-ins cancelados para permitir recheck-in após cancelamento.
+   * Verifica o registro diário, incluindo cancelados para preservar auditoria.
    */
   async hasCheckedInToday(studentId) {
-    const today = getBrazilToday();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = brazilDate(this.now());
+    const tomorrow = addDays(today, 1);
 
-    const checkin = await prisma.checkin.findFirst({
+    const checkin = await this.db.checkin.findFirst({
       where: {
-        studentId: parseInt(studentId),
-        status: 'present',
+        studentId: positiveInteger(studentId, 'ID do aluno', 2147483647),
         checkinDate: {
           gte: today,
           lt: tomorrow,
@@ -135,20 +85,22 @@ class CheckinsRepository {
 
   /**
    * Registra check-in do dia.
-   * A constraint UNIQUE(studentId, checkinDate) previne duplicatas no banco.
+   * A constraint UNIQUE(studentId, checkinDate) previne duplicatas no banco,
+   * inclusive após cancelamento, preservando o registro diário e sua auditoria.
    * O campo registeredBy rastreia quem efetuou o registro.
    */
   async create(studentId, registeredBy = null) {
-    const brNow = getBrazilNow();
-    const brToday = getBrazilToday();
+    const instant = this.now();
+    const brToday = brazilDate(instant);
 
     try {
-      return await prisma.checkin.create({
+      return await this.db.checkin.create({
         data: {
-          studentId: parseInt(studentId),
+          studentId: positiveInteger(studentId, 'ID do aluno', 2147483647),
           checkinDate: brToday,   // Data do Brasil (DATE sem hora)
-          checkinTime: brNow,     // Hora atual do Brasil
-          registeredBy: registeredBy ? parseInt(registeredBy) : null,
+          checkinTime: instant,   // TIME legado: componente UTC; createdAt mantém o instante completo
+          createdAt: instant,
+          registeredBy: registeredBy === null ? null : positiveInteger(registeredBy, 'ID do responsável', 2147483647),
           status: 'present',
         },
         include: {
@@ -171,29 +123,35 @@ class CheckinsRepository {
    * Esse é o fluxo administrativo controlado exigido pela regra de negócio.
    */
   async cancelCheckin(id, motivo, adminId) {
-    return prisma.checkin.update({
-      where: { id: parseInt(id) },
+    const checkinId = positiveInteger(id, 'ID do check-in', 2147483647);
+    // A condição faz a primeira transição vencer, mesmo quando dois serviços
+    // leram "present" simultaneamente. A auditoria confirmada não é regravada.
+    const result = await this.db.checkin.updateMany({
+      where: { id: checkinId, status: 'present' },
       data: {
         status: 'cancelled',
         cancelReason: motivo,
-        cancelledBy: parseInt(adminId),
+        cancelledBy: positiveInteger(adminId, 'ID do administrador', 2147483647),
         cancelledAt: new Date(),
       },
-      include: {
-        student: { include: { user: { select: { name: true } } } },
-      },
     });
+    if (result.count !== 1) {
+      const AppError = require('../utils/AppError');
+      const existing = await this.findById(checkinId);
+      if (!existing) throw new AppError('Check-in não encontrado.', 404);
+      throw new AppError('Este check-in já foi cancelado anteriormente. A auditoria original foi preservada.', 409);
+    }
+    return this.findById(checkinId);
   }
 
   /**
    * Conta check-ins de hoje (status = present) para dashboard.
    */
   async countToday() {
-    const today = getBrazilToday();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = brazilDate(this.now());
+    const tomorrow = addDays(today, 1);
 
-    return prisma.checkin.count({
+    return this.db.checkin.count({
       where: {
         status: 'present',
         checkinDate: {
@@ -208,13 +166,13 @@ class CheckinsRepository {
    * Retorna os check-ins de hoje com dados do aluno (para resumo).
    */
   async findToday() {
-    const today = getBrazilToday();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const today = brazilDate(this.now());
+    const tomorrow = addDays(today, 1);
 
-    return prisma.checkin.findMany({
+    return this.db.checkin.findMany({
       where: {
         checkinDate: { gte: today, lt: tomorrow },
+        status: 'present',
       },
       include: {
         student: { include: { user: { select: { name: true } } } },
@@ -228,14 +186,15 @@ class CheckinsRepository {
    * Conta apenas check-ins com status 'present'.
    */
   async frequencyByStudent(days = 30) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    const periodDays = positiveInteger(days, 'Quantidade de dias');
+    const today = brazilDate(this.now());
+    const startDate = addDays(today, 1 - periodDays);
 
-    return prisma.checkin.groupBy({
+    return this.db.checkin.groupBy({
       by: ['studentId'],
       where: {
         status: 'present',
-        checkinDate: { gte: startDate },
+        checkinDate: { gte: startDate, lte: today },
       },
       _count: { studentId: true },
       orderBy: { _count: { studentId: 'desc' } },
@@ -244,3 +203,5 @@ class CheckinsRepository {
 }
 
 module.exports = new CheckinsRepository();
+
+module.exports.createCheckinsRepository = options => new CheckinsRepository(options);

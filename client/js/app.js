@@ -15,12 +15,14 @@
 const App = {
   // Mantém rastreio da página que está sendo exibida no momento.
   currentPage: null,
+  sessionChecking: true,
 
   /**
    * Função de Inicialização (Entry Point):
    * É chamada assim que o documento HTML termina de carregar.
    */
   async init() {
+    this.setSessionChecking(true);
     // Inicializa os ícones do Lucide. O Lucide substitui as tags <i> por SVGs modernos.
     if (window.lucide) lucide.createIcons();
 
@@ -32,13 +34,23 @@ const App = {
     this.setupLoginForm();
 
     // Configura a ação do botão de logout no cabeçalho.
-    document.getElementById('btn-logout').addEventListener('click', () => {
-      Auth.logout();
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      if (typeof FitFlowPWA !== 'undefined' && !await FitFlowPWA.beforeLogout(Auth.user?.id)) return;
+      await Auth.logout();
     });
 
     // Escuta eventos de navegação customizados disparados por outros componentes (ex: sidebar).
     window.addEventListener('navigate', (e) => {
       this.navigateTo(e.detail.page);
+    });
+    window.addEventListener('progressao:legacy', () => {
+      if (Auth.user?.role !== 'student') return;
+      if (this.currentPage !== 'aluno-historico') return;
+      if (typeof ProgressaoView !== 'undefined') ProgressaoView.destroy();
+      const content = document.getElementById('page-content');
+      content.innerHTML = '<div class="legacy-history-header"><button type="button" class="btn btn-secondary" id="btn-session-progress">Voltar à evolução por sessões</button></div><div id="aluno-historico-container"></div>';
+      document.getElementById('btn-session-progress').onclick = () => ProgressaoView.render(content);
+      AlunoHistoricoView.inicializar();
     });
 
     // Quando o usuário desloga, forçamos o retorno imediato à tela de login.
@@ -49,17 +61,38 @@ const App = {
     // Exibe a data atual formatada de forma amigável no topo do sistema.
     this.updateTopbarDate();
 
-    /**
-     * LÓGICA DE PERSISTÊNCIA DE LOGIN (TASK 3):
-     * Verifica no localStorage ou via API se o usuário já possui um token válido.
-     * Se sim, pula o login e vai direto para o sistema protegido.
-     */
-    const isLoggedIn = await Auth.checkAuth();
+    // O formulário permanece bloqueado até o servidor verificar o cookie.
+    // Nenhum dado protegido é mostrado usando apenas o cache local.
+    let isLoggedIn = false;
+    try {
+      isLoggedIn = await Auth.checkAuth();
+      if (!isLoggedIn && Auth.sessionCheckError) {
+        const errorEl = document.getElementById('login-error');
+        errorEl.textContent = Auth.sessionCheckError;
+        errorEl.style.display = 'flex';
+      }
+    } catch {
+      const errorEl = document.getElementById('login-error');
+      errorEl.textContent = 'Não foi possível verificar sua sessão. Entre novamente para continuar.';
+      errorEl.style.display = 'flex';
+    } finally {
+      this.setSessionChecking(false);
+    }
     if (isLoggedIn) {
       this.showApp();
     } else {
       this.showLogin();
     }
+  },
+
+  setSessionChecking(pending) {
+    this.sessionChecking = pending;
+    const form = document.getElementById('login-form');
+    form.setAttribute('aria-busy', String(pending));
+    for (const id of ['login-email', 'login-password', 'btn-toggle-password', 'btn-login']) {
+      document.getElementById(id).disabled = pending;
+    }
+    document.getElementById('login-session-status').hidden = !pending;
   },
 
   /**
@@ -79,6 +112,7 @@ const App = {
     toggleBtn.addEventListener('click', () => {
       const isPassword = passwordInput.type === 'password';
       passwordInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.setAttribute('aria-label', isPassword ? 'Ocultar senha' : 'Mostrar senha');
       
       // Atualiza visualmente o ícone conforme o estado (olho aberto ou fechado).
       const icon = toggleBtn.querySelector('i') || toggleBtn.querySelector('svg');
@@ -94,9 +128,11 @@ const App = {
      */
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); // Impede o recarregamento padrão da página do HTML.
+      const btnLogin = document.getElementById('btn-login');
+      // Também bloqueia Enter e eventos de submit disparados durante a checagem.
+      if (this.sessionChecking || btnLogin.disabled) return;
       const email = document.getElementById('login-email').value.trim();
       const senha = document.getElementById('login-password').value;
-      const btnLogin = document.getElementById('btn-login');
 
       // Limpa alertas de erros anteriores.
       errorEl.style.display = 'none';
@@ -121,7 +157,7 @@ const App = {
       } finally {
         // Restaura o estado original do botão em qualquer cenário.
         btnLogin.disabled = false;
-        btnLogin.innerHTML = '<span>→] Entrar</span>';
+        btnLogin.innerHTML = '<span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i>';
         if (window.lucide) lucide.createIcons({ nodes: [btnLogin] });
       }
     });
@@ -133,6 +169,9 @@ const App = {
    * Manipulamos o estilo `display` para alternar entre elas instantaneamente.
    */
   showLogin() {
+    if (typeof Modal !== 'undefined' && typeof Modal.close === 'function') Modal.close();
+    if (typeof SessoesView !== 'undefined') SessoesView.destroy();
+    if (typeof ProgressaoView !== 'undefined') ProgressaoView.destroy();
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display = 'none';
   },
@@ -146,16 +185,17 @@ const App = {
     if (user) {
       document.getElementById('sidebar-user-name').textContent = user.name;
       document.getElementById('sidebar-user-role').textContent = 
-        user.role === 'admin' ? 'Administrador' : 'Aluno';
+        ({ admin: 'Administrador', instructor: 'Instrutor', student: 'Aluno' })[user.role] || '';
     }
 
     // Inicializa a navegação lateral (sidebar) com permissões baseadas no cargo (role).
-    Sidebar.init(user ? user.role : 'admin');
+    Sidebar.init(user ? user.role : 'student');
 
     // Determina a página inicial padrão dependendo do tipo de usuário.
     // Admins vão para o Dashboard, Alunos para o Painel do Aluno (TASK 10).
-    const defaultPage = user && user.role === 'student' ? 'aluno-painel' : 'dashboard';
+    const defaultPage = user?.role === 'student' ? 'aluno-painel' : user?.role === 'instructor' ? 'treinos' : 'dashboard';
     this.navigateTo(defaultPage);
+    if (typeof MercadoPagoCheckout !== 'undefined' && user?.role === 'student') MercadoPagoCheckout.verificarRetorno();
   },
 
   /**
@@ -163,6 +203,10 @@ const App = {
    * Muda o conteúdo central da tela sem trocar de URL/recarregar.
    */
   navigateTo(page) {
+    const menus = { admin: Sidebar.adminMenu, instructor: Sidebar.instructorMenu, student: Sidebar.alunoMenu };
+    if (!(menus[Auth.user?.role] || []).some(item => item.page === page)) return;
+    if (this.currentPage === 'sessoes' && page !== 'sessoes') SessoesView.destroy();
+    if (this.currentPage === 'aluno-historico' && page !== 'aluno-historico') ProgressaoView.destroy();
     this.currentPage = page;
     Sidebar.setActive(page); // Marca o item correspondente na sidebar como "ativo".
 
@@ -177,6 +221,9 @@ const App = {
       'checkins':           'Registro de Presença',
       'relatorios':         'Relatórios Gerenciais',
       'meu-treino':         'Meu Treino do Dia',
+      'nutricao':           'Nutrição e Macros',
+      'sessoes':            'Sessões e séries',
+      'evidencias':         'Fundamentos do Treinamento',
       // TASK 10 — Área do Aluno
       'aluno-painel':       'Meu Painel',
       'aluno-treino':       'Meu Treino',
@@ -189,124 +236,158 @@ const App = {
 
     // Chama a função que troca o HTML central da página.
     this.renderPage(page);
+    // Uma nova página começa pelo cabeçalho, incluindo navegação em telas pequenas.
+    const main = document.querySelector('.main-content');
+    if (main) main.scrollTop = 0;
+    window.scrollTo({ top: 0, behavior: 'instant' });
   },
 
   /**
-   * Renderização Dinâmica (Switch Case):
-   * Injeta o código HTML necessário para cada página selecionada.
-   * Atualmente em fase de construção com placeholders (prototipagem).
+   * Renderiza a estrutura da página e inicializa seu módulo de dados.
+   * Sessões, progressão e conteúdo educativo possuem renderizadores próprios.
    */
   renderPage(page) {
     const content = document.getElementById('page-content');
+    if (page === 'aluno-historico') {
+      if (typeof DashboardView !== 'undefined') DashboardView.destroyChart();
+      ProgressaoView.render(content);
+      return;
+    }
+    if (page === 'sessoes') {
+      if (typeof DashboardView !== 'undefined') DashboardView.destroyChart();
+      SessoesView.render(content);
+      return;
+    }
+
+    // Módulos educativos não dependem de indicadores gerenciais ou de prescrição por IA.
+    if (page === 'nutricao' || page === 'evidencias') {
+      if (typeof DashboardView !== 'undefined') DashboardView.destroyChart();
+      if (page === 'nutricao') NutricaoView.render(content);
+      else EvidenciasView.render(content);
+      return;
+    }
 
     // Mapeamento de HTML para cada "View".
-    const placeholders = {
+    const pageTemplates = {
       dashboard: `
-        <div class="dashboard-wrapper" style="display: flex; flex-direction: column; gap: 2rem; animation: fadeIn 0.4s ease-out;">
+        <div class="premium-dashboard">
           
-          <div class="dashboard-welcome">
-            <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Olá${Auth.user && Auth.user.name ? ', ' + Auth.user.name.split(' ')[0] : ''}! 👋</h2>
-            <p style="color: var(--text-muted); font-size: 1.1rem;">Bem-vindo ao FitFlow Caraguá. Aqui está o resumo atual da sua academia.</p>
+          <div class="dashboard-header">
+            <h2 class="dashboard-header-title">Dashboard</h2>
           </div>
           
-          <!-- Grid de KPIs -->
-          <div class="grid-3" style="gap: 1.5rem;">
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('alunos')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon blue"><i data-lucide="users"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-total-alunos">—</div>
-                <div class="kpi-label">Total de Alunos</div>
-              </div>
-            </div>
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('ativos')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon green"><i data-lucide="user-check"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-alunos-ativos">—</div>
-                <div class="kpi-label">Alunos Ativos</div>
-              </div>
-            </div>
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('inadimplentes')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon orange"><i data-lucide="user-minus"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-alunos-inadimplentes">—</div>
-                <div class="kpi-label">Alunos Inadimplentes</div>
-              </div>
-            </div>
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('checkins')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon yellow"><i data-lucide="calendar-check"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-checkins-hoje">—</div>
-                <div class="kpi-label">Check-ins Hoje</div>
-              </div>
-            </div>
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('treinos')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon purple"><i data-lucide="dumbbell"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-treinos-ativos">—</div>
-                <div class="kpi-label">Treinos Ativos</div>
-              </div>
-            </div>
-            <div class="kpi-card" onclick="DashboardView.openKpiChart('receita')" style="cursor: pointer; transition: transform 0.2s ease;">
-              <div class="kpi-icon red"><i data-lucide="trending-up"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-receita-estimada">—</div>
-                <div class="kpi-label">Receita Estimada</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Gráfico Principal e Atividades -->
-          <div class="dashboard-grid-2">
-            <div class="chart-container" style="min-height: 420px; display: flex; flex-direction: column;">
-              <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="line-chart" style="width: 20px; color: var(--primary-400)"></i>
-                Tendências Diárias de Presença
-              </h3>
-              <div id="chart-wrapper" style="flex: 1; position: relative; min-height: 300px; width: 100%; background: rgba(0,0,0,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                <canvas id="tendencias-chart"></canvas>
-                <div id="chart-fallback" style="display: none; color: var(--text-muted); text-align: center;">
-                  <i data-lucide="alert-circle" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
-                  <p>Dados de tendências indisponíveis no momento.</p>
+          <!-- KPI Grid -->
+          <div class="kpi-grid">
+            <!-- Alunos Ativos -->
+            <button type="button" class="premium-kpi-card" data-dashboard-page="alunos">
+              <div class="kpi-card-header">
+                <div class="kpi-icon-wrapper">
+                  <i data-lucide="users"></i>
                 </div>
               </div>
+              <div class="kpi-card-body">
+                <span class="kpi-card-label">Alunos Ativos</span>
+                <span class="kpi-card-value" id="kpi-alunos-ativos">—</span>
+              </div>
+            </button>
+
+            <!-- Receita efetivamente recebida no mês -->
+            <button type="button" class="premium-kpi-card" data-dashboard-page="pagamentos">
+              <div class="kpi-card-header">
+                <div class="kpi-icon-wrapper success">
+                  <i data-lucide="credit-card"></i>
+                </div>
+              </div>
+              <div class="kpi-card-body">
+                <span class="kpi-card-label">Recebido no mês</span>
+                <span class="kpi-card-value" id="kpi-receita-estimada">—</span>
+              </div>
+            </button>
+
+            <!-- Proporção de matrículas ativas no total atual -->
+            <div class="premium-kpi-card">
+              <div class="kpi-card-header">
+                <div class="kpi-icon-wrapper" style="background: rgba(59, 130, 246, 0.1); color: #60a5fa;">
+                  <i data-lucide="bar-chart-3"></i>
+                </div>
+              </div>
+              <div class="kpi-card-body">
+                <span class="kpi-card-label">Matrículas ativas (%)</span>
+                <span class="kpi-card-value" id="kpi-taxa-retencao">—</span>
+              </div>
             </div>
 
-            <div class="activities-container">
-              <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="clock" style="width: 20px; color: var(--primary-400)"></i>
-                Atividade Recente
-              </h3>
-              <ul class="activities-list" id="atividades-list">
-                <div style="text-align:center; padding: 2rem 0;"><div class="spinner"></div></div>
-              </ul>
-            </div>
+            <!-- Treinos Realizados (Check-ins Hoje) -->
+            <button type="button" class="premium-kpi-card" data-dashboard-page="checkins">
+              <div class="kpi-card-header">
+                <div class="kpi-icon-wrapper" style="background: rgba(245, 158, 11, 0.1); color: #fbbf24;">
+                  <i data-lucide="activity"></i>
+                </div>
+              </div>
+              <div class="kpi-card-body">
+                <span class="kpi-card-label">Check-ins Hoje</span>
+                <span class="kpi-card-value" id="kpi-checkins-hoje">—</span>
+              </div>
+            </button>
           </div>
 
-          <!-- Segunda Linha: Pagamentos -->
-          <div class="dashboard-grid-2">
-             <div class="activities-container" style="grid-column: 1 / -1;">
-                <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                  <i data-lucide="credit-card" style="width: 20px; color: var(--primary-400)"></i>
-                  Pagamentos Recentes
-                </h3>
-                <ul class="activities-list" id="pagamentos-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
-                  <div style="text-align:center; padding: 2rem 0;"><div class="spinner"></div></div>
-                </ul>
-             </div>
+          <!-- Layout Principal (Gráfico + Sidebar) -->
+          <div class="dashboard-layout-grid">
+
+            <!-- Gráfico de Crescimento -->
+            <div class="premium-chart-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h3>Frequência registrada</h3>
+                  <p>Check-ins válidos por dia · últimos 7 dias</p>
+                </div>
+              </div>
+              <div class="chart-content" style="flex: 1; min-height: 350px; position: relative;">
+                <canvas id="tendencias-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- Sidebar de Check-ins -->
+            <div class="premium-sidebar-card">
+              <div class="card-header" style="margin-bottom: var(--space-4);">
+                <div class="card-title-group">
+                  <h3>Atividade recente</h3>
+                  <p>Presenças e matrículas registradas</p>
+                </div>
+              </div>
+              <div class="sidebar-activity-list" id="atividades-list">
+                <div style="text-align:center; padding: 2rem 0;"><div class="spinner"></div></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Linha Inferior (Pagamentos Recentes) -->
+          <div class="premium-chart-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <h3>Pagamentos Recentes</h3>
+                  <p>Últimas transações confirmadas no sistema</p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm" data-dashboard-page="pagamentos">Ver todos</button>
+              </div>
+              <div class="pagamentos-grid" id="pagamentos-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                <div style="text-align:center; padding: 2rem 0;"><div class="spinner"></div></div>
+              </div>
           </div>
 
         </div>
       `,
       alunos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Gestão de Alunos</h2>
             <p style="color:var(--text-muted)">Cadastre, inative ou atualize o perfil dos clientes da academia.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center;">
-            <div class="form-group input-with-icon" style="margin:0; min-width: 250px;">
+          <div class="admin-page-actions">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-nome-aluno" placeholder="Buscar aluno..." />
+              <input type="search" id="filtro-nome-aluno" aria-label="Buscar aluno por nome" placeholder="Buscar aluno..." />
             </div>
             <button id="btn-novo-aluno" class="btn btn-primary">
               <i data-lucide="user-plus"></i>
@@ -315,7 +396,7 @@ const App = {
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Lista de alunos; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border)">
@@ -333,7 +414,7 @@ const App = {
         </div>
       `,
       planos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Planos de Academia</h2>
             <p style="color:var(--text-muted)">Crie ou atualize os planos de assinatura disponíveis para os alunos.</p>
@@ -344,7 +425,7 @@ const App = {
           </button>
         </div>
 
-        <div class="grid-3" id="planos-grid" style="gap: 1.5rem;">
+        <div class="grid-3 admin-card-grid" id="planos-grid" style="gap: 1.5rem;">
           <!-- Renderizado dinamicamente por PlanosView -->
         </div>
       `,
@@ -354,13 +435,13 @@ const App = {
        * Tabela com filtro por grupo muscular e CRUD completo.
        */
       exercicios: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Catálogo de Exercícios</h2>
             <p style="color:var(--text-muted)">Gerencie os exercícios disponíveis para montar fichas de treino.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center">
-            <select id="filtro-grupo-muscular" class="form-select" style="min-width:160px">
+          <div class="admin-page-actions">
+            <select id="filtro-grupo-muscular" class="form-select" aria-label="Filtrar por grupo muscular">
               <option value="">Todos os grupos</option>
             </select>
             <button id="btn-sync-wger" class="btn btn-outline-primary" style="cursor:pointer" title="Sincronizar exercícios via API">
@@ -374,7 +455,7 @@ const App = {
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Catálogo de exercícios; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color)">
@@ -398,19 +479,19 @@ const App = {
       treinos: `
         <!-- Visão 1: Grade de Alunos -->
         <div id="treinos-view-alunos">
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+          <div class="page-header admin-page-header">
             <div>
               <h2>Fichas de Treino</h2>
               <p style="color:var(--text-muted)">Selecione um aluno para gerenciar suas fichas de treino.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center">
-              <div class="form-group input-with-icon" style="margin:0; min-width: 250px;">
+            <div class="admin-page-actions">
+              <div class="form-group input-with-icon admin-search-field">
                 <i data-lucide="search" class="input-icon"></i>
-                <input type="text" id="filtro-busca-aluno" placeholder="Buscar aluno por nome..." oninput="TreinosView.filtrarAlunos(this.value)" />
+                <input type="search" id="filtro-busca-aluno" aria-label="Buscar aluno por nome" placeholder="Buscar aluno por nome..." />
               </div>
             </div>
           </div>
-          <div class="grid-3" id="treinos-alunos-grid" style="gap: 1.5rem;">
+          <div class="grid-3 admin-card-grid" id="treinos-alunos-grid" style="gap: 1.5rem;">
             <div style="text-align:center; padding: 2rem; grid-column: 1 / -1;">
               <div class="spinner"></div>
               <p style="color:var(--text-muted); margin-top:1rem;">Carregando alunos...</p>
@@ -420,15 +501,15 @@ const App = {
 
         <!-- Visão 2: Fichas do Aluno (Detalhes) -->
         <div id="treinos-view-fichas" style="display:none;">
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+          <div class="page-header admin-page-header">
             <div>
-              <button class="btn btn-ghost" onclick="TreinosView.voltarParaPerfis()" style="margin-bottom:0.5rem; padding: 0.25rem 0.5rem; display:flex; align-items:center; gap:0.5rem; color:var(--text-muted); cursor:pointer;">
+              <button type="button" class="btn btn-ghost" id="btn-voltar-perfis" style="margin-bottom:0.5rem; padding: 0.25rem 0.5rem; display:flex; align-items:center; gap:0.5rem; color:var(--text-muted); cursor:pointer;">
                 <i data-lucide="arrow-left" style="width:16px;height:16px"></i> Voltar
               </button>
               <h2 id="treinos-aluno-nome">Treinos do Aluno</h2>
               <p style="color:var(--text-muted)">Gerencie as fichas de treino deste aluno.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center">
+            <div class="admin-page-actions">
               <button id="btn-novo-treino" class="btn btn-primary" style="cursor:pointer">
                 <i data-lucide="clipboard-plus"></i>
                 <span>Novo Treino</span>
@@ -436,7 +517,7 @@ const App = {
             </div>
           </div>
 
-          <div class="card" style="overflow-x:auto;">
+          <div class="card admin-table-scroll" role="region" aria-label="Fichas de treino; deslize para ver todas as colunas" tabindex="0">
             <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -478,21 +559,21 @@ const App = {
        * painel de inadimplentes e resumo financeiro.
        */
       pagamentos: `
-        <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+        <div class="page-header admin-page-header">
           <div>
             <h2>Fluxo de Pagamentos</h2>
-            <p style="color:var(--text-muted)">Registre pagamentos, acompanhe vencimentos e controle a inadimplência dos alunos.</p>
+            <p style="color:var(--text-muted)">Registre recebimentos, acompanhe vencimentos e controle a inadimplência dos alunos.</p>
           </div>
-          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
-            <select id="filtro-status-pagamento" class="form-select" style="min-width:140px">
+          <div class="admin-page-actions">
+            <select id="filtro-status-pagamento" class="form-select" aria-label="Filtrar por status do pagamento">
               <option value="">Todos os status</option>
               <option value="paid">Pagos</option>
               <option value="pending">Pendentes</option>
               <option value="overdue">Vencidos</option>
             </select>
-            <div class="form-group input-with-icon" style="margin:0; min-width:200px;">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-aluno-pagamento" placeholder="Buscar aluno..." />
+              <input type="text" id="filtro-aluno-pagamento" aria-label="Filtrar pagamentos por aluno" placeholder="Buscar aluno..." />
             </div>
             <button id="btn-ver-inadimplentes" class="btn btn-danger" style="cursor:pointer">
               <i data-lucide="alert-triangle"></i>
@@ -500,12 +581,12 @@ const App = {
             </button>
             <button id="btn-novo-pagamento" class="btn btn-success" style="cursor:pointer">
               <i data-lucide="plus-circle"></i>
-              <span>Novo Pagamento</span>
+              <span>Registrar recebimento</span>
             </button>
           </div>
         </div>
 
-        <div class="card" style="overflow-x:auto;">
+        <div class="card admin-table-scroll" role="region" aria-label="Histórico de pagamentos; deslize para ver todas as colunas" tabindex="0">
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color)">
@@ -533,7 +614,7 @@ const App = {
       'aluno-checkin': `<div id="aluno-checkin-container"></div>`,
 
       // TASK 12 — Área de Relatórios
-      'relatorios': `<div id="relatorios-container"></div>`,
+      'relatorios': `<div id="relatorios-container" class="admin-report-page"></div>`,
 
       // Página genérica de "Em Construção" para funcionalidades futuras.
       default: `
@@ -556,14 +637,16 @@ const App = {
     if (page === 'checkins') {
       if (isAdmin) {
         // Data de hoje para filtros
-        const hoje = new Date().toISOString().split('T')[0];
+        const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+        const part = type => parts.find(value => value.type === type).value;
+        const hoje = `${part('year')}-${part('month')}-${part('day')}`;
         content.innerHTML = `
-          <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div class="page-header admin-page-header">
             <div>
               <h2>Registro de Presença</h2>
               <p style="color:var(--text-muted)">Registre check-ins, acompanhe frequência e gerencie a presença dos alunos.</p>
             </div>
-            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+            <div class="admin-page-actions">
               <button id="btn-ver-ranking" class="btn btn-primary" style="cursor:pointer">
                 <i data-lucide="trophy"></i>
                 <span>Ranking</span>
@@ -576,15 +659,15 @@ const App = {
           </div>
 
           <!-- KPIs do Dia -->
-          <div class="grid-4" style="margin-bottom:1.5rem;">
-            <div class="kpi-card" style="grid-column: span 2;">
+          <div class="admin-checkin-metrics">
+            <div class="kpi-card">
               <div class="kpi-icon green"><i data-lucide="calendar-check"></i></div>
               <div class="kpi-content">
                 <div class="kpi-value" id="kpi-checkins-total">—</div>
                 <div class="kpi-label">Check-ins Hoje</div>
               </div>
             </div>
-            <div class="kpi-card" style="grid-column: span 2;">
+            <div class="kpi-card">
               <div class="kpi-icon blue"><i data-lucide="clock"></i></div>
               <div class="kpi-content">
                 <div class="kpi-value" id="kpi-ultimo-checkin" style="font-size:0.95rem;">—</div>
@@ -594,18 +677,23 @@ const App = {
           </div>
 
           <!-- Filtros -->
-          <div style="display:flex; gap:0.75rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
-            <div class="form-group input-with-icon" style="margin:0; min-width:200px;">
+          <div class="admin-filter-bar">
+            <div class="form-group input-with-icon admin-search-field">
               <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-aluno-checkin" placeholder="Buscar aluno..." />
+              <input type="text" id="filtro-aluno-checkin" aria-label="Filtrar presença por aluno" placeholder="Buscar aluno..." />
             </div>
-            <input type="date" id="filtro-data-inicio" class="form-select" value="${hoje}" style="min-width:140px" title="Data início">
-            <span style="color:var(--text-muted)">até</span>
-            <input type="date" id="filtro-data-fim" class="form-select" value="${hoje}" style="min-width:140px" title="Data fim">
+            <div class="admin-date-range">
+              <label class="admin-date-field" for="filtro-data-inicio">Data inicial
+                <input type="date" id="filtro-data-inicio" class="form-select" value="${hoje}">
+              </label>
+              <label class="admin-date-field" for="filtro-data-fim">Data final
+                <input type="date" id="filtro-data-fim" class="form-select" value="${hoje}">
+              </label>
+            </div>
           </div>
 
           <!-- Tabela de Check-ins -->
-          <div class="card" style="overflow-x:auto;">
+          <div class="card admin-table-scroll" role="region" aria-label="Registros de presença; deslize para ver todas as colunas" tabindex="0">
             <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color)">
@@ -642,10 +730,13 @@ const App = {
       if (typeof DashboardView !== 'undefined') DashboardView.destroyChart();
       
       // Injeta o HTML no container principal.
-      content.innerHTML = placeholders[page] || placeholders.default;
+      content.innerHTML = pageTemplates[page] || pageTemplates.default;
     }
 
     if (page === 'dashboard' && typeof DashboardView !== 'undefined') {
+      content.querySelectorAll('[data-dashboard-page]').forEach(button => {
+        button.onclick = () => this.navigateTo(button.dataset.dashboardPage);
+      });
       DashboardView.inicializar();
     }
 
@@ -664,6 +755,8 @@ const App = {
     }
 
     if (page === 'treinos' && typeof TreinosView !== 'undefined') {
+      document.getElementById('filtro-busca-aluno').oninput = event => TreinosView.filtrarAlunos(event.target.value);
+      document.getElementById('btn-voltar-perfis').onclick = () => TreinosView.voltarParaPerfis();
       TreinosView.inicializar();
     }
 
@@ -757,22 +850,35 @@ const DashboardView = {
 
       if (totalEl) totalEl.textContent = stats.totalAlunos || 0;
       if (ativosEl) ativosEl.textContent = stats.alunosAtivos || 0;
-      if (inadimplentesEl) inadimplentesEl.textContent = stats.alunosInadimplentes || 0;
       if (checkinsEl) checkinsEl.textContent = stats.checkinsHoje || 0;
-      if (treinosEl) treinosEl.textContent = stats.treinosAtivos || 0;
       if (receitaEl) {
         receitaEl.textContent = new Intl.NumberFormat('pt-BR', {
           style: 'currency',
-          currency: 'BRL'
+          currency: 'BRL',
+          maximumFractionDigits: 1,
+          notation: 'compact'
         }).format(stats.receitaEstimada || 0);
       }
+
+      // Proporção atual de matrículas ativas; não representa retenção longitudinal.
+      const taxaRetencaoEl = document.getElementById('kpi-taxa-retencao');
+      if (taxaRetencaoEl) {
+        const taxa = stats.totalAlunos > 0 ? Math.round((stats.alunosAtivos / stats.totalAlunos) * 100) : 0;
+        taxaRetencaoEl.textContent = `${taxa}%`;
+      }
+
       if (stats.tendencias) {
-        // Pequeno atraso para garantir que o DOM esteja estável
         setTimeout(() => this.renderChart(stats.tendencias), 100);
       }
       this.renderAtividades(stats.atividades, stats.pagamentosRecentes);
     } catch (error) {
       console.warn('DashboardView.inicializar() [ERR]:', error.message);
+      const content = document.getElementById('page-content');
+      if (App.currentPage === 'dashboard' && content) {
+        content.innerHTML = '<section class="card" role="alert"><h3>Não foi possível carregar o painel</h3><p id="dashboard-error"></p><button class="btn btn-primary" id="dashboard-retry" type="button">Tentar novamente</button></section>';
+        content.querySelector('#dashboard-error').textContent = error.message;
+        content.querySelector('#dashboard-retry').onclick = () => App.navigateTo('dashboard');
+      }
     }
   },
 
@@ -801,6 +907,11 @@ const DashboardView = {
     // Limpa instância anterior para evitar loops de redimensionamento
     this.destroyChart();
 
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(249, 115, 22, 0.3)');
+    gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
+
     const cleanLabels = tendencias.labels || [];
     const cleanData = (tendencias.data || []).map(v => Number(v) || 0);
 
@@ -811,156 +922,52 @@ const DashboardView = {
         datasets: [{
           label: 'Check-ins',
           data: cleanData,
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: '#fb923c', // primary-400
+          borderWidth: 3,
+          backgroundColor: gradient,
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: '#3b82f6',
+          pointBackgroundColor: '#fb923c',
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHitRadius: 20
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: 10 },
         plugins: {
           legend: { display: false },
           tooltip: {
             mode: 'index',
             intersect: false,
-            backgroundColor: '#1f2937',
+            backgroundColor: '#111827',
             titleColor: '#fff',
             bodyColor: '#9ca3af',
             borderColor: '#374151',
             borderWidth: 1,
             padding: 12,
-            displayColors: false
+            displayColors: false,
+            callbacks: {
+              label: (context) => ` ${context.parsed.y} check-ins`
+            }
           }
         },
         scales: {
           y: {
             beginAtZero: true,
-            min: 0,
-            suggestedMax: Math.max(...cleanData, 5) + 1,
-            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-            ticks: { color: '#9ca3af', font: { size: 11 }, precision: 0 }
+            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+            ticks: { color: '#6b7280', font: { size: 11 }, precision: 0, padding: 10 }
           },
           x: {
             grid: { display: false },
-            ticks: { 
-              color: '#9ca3af',
-              font: { size: 10, weight: 'bold' }
-            }
+            ticks: { color: '#6b7280', font: { size: 11 }, padding: 10 }
           }
         }
       }
     });
-  },
-
-  /**
-   * Drill-down: Abre modal com gráfico detalhado do KPI clicado.
-   */
-  openKpiChart(type) {
-    if (!this.currentStats) return;
-
-    let title = 'Detalhes do Indicador';
-    let label = '';
-    let data = [];
-    let labels = this.currentStats.historico?.labels || [];
-    let color = '#3b82f6';
-
-    switch (type) {
-      case 'alunos':
-        title = 'Crescimento de Alunos';
-        label = 'Novos Alunos';
-        data = this.currentStats.historico?.alunos || [];
-        color = '#3b82f6';
-        break;
-      case 'ativos':
-        title = 'Alunos Ativos (Histórico)';
-        label = 'Ativos';
-        data = this.currentStats.historico?.alunos || [];
-        color = '#10b981';
-        break;
-      case 'inadimplentes':
-        title = 'Evolução de Inadimplência';
-        label = 'Bloqueados';
-        data = labels.map(() => this.currentStats.alunosInadimplentes);
-        color = '#f59e0b';
-        break;
-      case 'checkins':
-        title = 'Tendência de Frequência';
-        label = 'Check-ins';
-        data = this.currentStats.historico?.checkins || [];
-        color = '#eab308';
-        break;
-      case 'treinos':
-        title = 'Engajamento em Treinos';
-        label = 'Fichas Ativas';
-        data = labels.map(() => this.currentStats.treinosAtivos);
-        color = '#8b5cf6';
-        break;
-      case 'receita':
-        title = 'Fluxo de Receita (Estimado)';
-        label = 'Receita (R$)';
-        data = this.currentStats.historico?.receita || [];
-        color = '#ef4444';
-        break;
-    }
-
-    const bodyHTML = `
-      <div style="height: 350px; width: 100%; position: relative;">
-        <canvas id="modal-kpi-chart"></canvas>
-      </div>
-      <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-surface); border-radius: 8px;">
-        <p style="margin:0; color: var(--text-secondary); font-size: 0.9rem;">
-          Exibindo dados agregados dos últimos 7 dias. Para relatórios detalhados, acesse a página de <strong>Relatórios Gerenciais</strong>.
-        </p>
-      </div>
-    `;
-
-    Modal.open(title, bodyHTML, [
-      { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() }
-    ]);
-
-    // Inicializa o gráfico após o modal abrir
-    setTimeout(() => {
-      const canvas = document.getElementById('modal-kpi-chart');
-      if (!canvas || typeof Chart === 'undefined') return;
-      
-      new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: label,
-            data: data,
-            backgroundColor: color + '80',
-            borderColor: color,
-            borderWidth: 2,
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { 
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: '#1f2937',
-              padding: 10
-            }
-          },
-          scales: {
-            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { grid: { display: false } }
-          }
-        }
-      });
-    }, 150);
   },
 
   renderAtividades(atividades, pagamentos) {
@@ -968,27 +975,31 @@ const DashboardView = {
     if (list) {
       list.innerHTML = '';
       if (!atividades || atividades.length === 0) {
-        list.innerHTML = '<li style="color:var(--text-muted); text-align:center; margin-top:2rem;">Nenhuma atividade recente</li>';
+        list.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Nenhum acesso recente</div>';
       } else {
         atividades.forEach(ativ => {
-          const isCheckin = ativ.tipo === 'checkin';
-          const avatarColor = isCheckin ? 'green' : 'blue';
-          const initial = ativ.nome ? ativ.nome.charAt(0).toUpperCase() : '?';
-          
+          const initials = ativ.nome ? ativ.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
           const diff = Math.floor((new Date() - new Date(ativ.data)) / 60000);
-          let timeStr = diff < 1 ? 'Agora mesmo' : diff < 60 ? `${diff}m atrás` : `${Math.floor(diff/60)}h atrás`;
+          let timeStr = diff < 1 ? 'Agora' : diff < 60 ? `${diff} min` : `${Math.floor(diff/60)}h atrás`;
 
-          const li = document.createElement('li');
-          li.className = 'activity-item';
-          li.innerHTML = `
-            <div class="activity-avatar ${avatarColor}">${initial}</div>
-            <div class="activity-details">
-              <div class="activity-name">${ativ.nome}</div>
-              <div class="activity-action">${ativ.descricao}</div>
+          const isBlocked = ativ.descricao && ativ.descricao.toLowerCase().includes('inativo');
+          const statusClass = isBlocked ? 'bloqueado' : 'liberado';
+          const statusText = ativ.tipo === 'checkin' ? 'Presença' : 'Matrícula';
+
+          const div = document.createElement('div');
+          div.className = 'activity-item';
+          div.innerHTML = `
+            <div class="activity-avatar">${FitFlowSecurity.escapeHtml(initials)}</div>
+            <div class="activity-info">
+              <span class="student-name">${FitFlowSecurity.escapeHtml(ativ.nome)}</span>
+              <span class="plan-name">${FitFlowSecurity.escapeHtml(ativ.descricao || 'Registro de atividade')}</span>
             </div>
-            <div class="activity-time">${timeStr}</div>
+            <div class="activity-status-group">
+              <span class="status-badge ${statusClass}">${statusText}</span>
+              <span class="activity-time">${timeStr}</span>
+            </div>
           `;
-          list.appendChild(li);
+          list.appendChild(div);
         });
       }
     }
@@ -997,25 +1008,27 @@ const DashboardView = {
     if (payList) {
       payList.innerHTML = '';
       if (!pagamentos || pagamentos.length === 0) {
-        payList.innerHTML = '<li style="color:var(--text-muted); text-align:center; margin-top:2rem;">Nenhum pagamento recente</li>';
+        payList.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem; grid-column: 1/-1;">Nenhum pagamento recente</div>';
       } else {
         pagamentos.forEach(pag => {
-          const initial = pag.nome ? pag.nome.charAt(0).toUpperCase() : '?';
-          
-          const diff = Math.floor((new Date() - new Date(pag.data)) / 60000);
-          let timeStr = diff < 1 ? 'Agora mesmo' : diff < 60 ? `${diff}m atrás` : `${Math.floor(diff/60)}h atrás`;
+          const initials = pag.nome ? pag.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '??';
+          const valor = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(pag.valor ?? 0);
 
-          const li = document.createElement('li');
-          li.className = 'activity-item';
-          li.innerHTML = `
-            <div class="activity-avatar green">${initial}</div>
-            <div class="activity-details">
-              <div class="activity-name">${pag.nome}</div>
-              <div class="activity-action">${pag.descricao}</div>
+          const div = document.createElement('div');
+          div.className = 'activity-item';
+          div.style.background = 'rgba(34, 197, 94, 0.05)';
+          div.innerHTML = `
+            <div class="activity-avatar" style="color: var(--accent-400); border-color: rgba(34, 197, 94, 0.2);">${FitFlowSecurity.escapeHtml(initials)}</div>
+            <div class="activity-info">
+              <span class="student-name">${FitFlowSecurity.escapeHtml(pag.nome)}</span>
+              <span class="plan-name">${FitFlowSecurity.escapeHtml(pag.descricao || 'Mensalidade')}</span>
             </div>
-            <div class="activity-time">${timeStr}</div>
+            <div class="activity-status-group">
+              <span class="student-name" style="color: var(--accent-400); font-size: 0.9rem;">+ ${valor}</span>
+              <span class="activity-time">Confirmado</span>
+            </div>
           `;
-          payList.appendChild(li);
+          payList.appendChild(div);
         });
       }
     }

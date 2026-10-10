@@ -4,19 +4,24 @@
   "description": "Backend do sistema FitFlow Caraguá — Gestão de Academias",
   "main": "src/server.js",
   "scripts": {
+    "test": "node --test tests/*.test.cjs",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "db:migrate": "npx prisma migrate dev",
-    "db:generate": "npx prisma generate",
-    "db:seed": "npx prisma db seed",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "prisma db seed",
     "db:reset": "npx prisma migrate reset",
     "db:studio": "npx prisma studio",
-    "db:mock": "node scripts/seed-mock.js",
-    "db:cleanup": "node scripts/cleanup-mock.js",
-    "vercel-build": "npx prisma generate"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
+    "vercel-build": "npx prisma generate",
+    "dev:local": "node scripts/with-local-env.cjs node src/server.js",
+    "db:local:init": "node scripts/local-db.cjs init",
+    "db:local:start": "node scripts/local-db.cjs start",
+    "db:local:stop": "node scripts/local-db.cjs stop",
+    "db:local:migrate": "node scripts/with-local-env.cjs node node_modules/prisma/build/index.js migrate deploy",
+    "db:local:seed": "node scripts/with-local-env.cjs node prisma/seed.js",
+    "db:deploy": "prisma migrate deploy",
+    "auth:bootstrap": "node scripts/bootstrap-admin.cjs",
+    "browser:vendor": "node scripts/copy-browser-vendors.cjs"
   },
   "keywords": [
     "gym",
@@ -27,8 +32,9 @@
   "author": "FitFlow Caraguá",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^2.4.3",
+    "chart.js": "4.5.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -37,11 +43,22 @@
     "express-validator": "^7.2.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide": "1.52.0",
     "morgan": "^1.10.0",
-    "mysql2": "^3.11.0"
+    "sortablejs": "1.15.7"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4",
-    "prisma": "^6.4.1"
+    "prisma": "6.19.3"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "overrides": {
+    "express": {
+      "qs": "6.16.0"
+    },
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.2"
+    }
   }
 }

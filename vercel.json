@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "fitflow-caragua",
+  "regions": ["gru1"],
   "builds": [
     {
       "src": "server/src/app.js",
@@ -12,6 +12,15 @@
     }
   ],
   "routes": [
+    {
+      "src": "/(.*)",
+      "headers": {
+        "Content-Security-Policy": "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+      },
+      "continue": true
+    },
     {
       "src": "/api/(.*)",
       "dest": "server/src/app.js"

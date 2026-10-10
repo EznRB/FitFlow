@@ -1,306 +1,144 @@
-/**
- * ============================================
- * FitFlow Caraguá — Service de Treinos
- * ============================================
- * Lógica de negócios para gestão de fichas de treino.
- * 
- * Responsabilidades:
- * - Validar dados de entrada (nome, aluno, exercícios)
- * - Garantir permissões (somente admin cria/edita)
- * - Orquestrar criação atômica de treino + exercícios
- * - Gerenciar histórico (soft delete, append-only logs)
- * 
- * Regras de negócio importantes:
- * 1. Somente admin/instructor pode criar e editar treinos
- * 2. Aluno pode apenas visualizar treinos e registrar cargas
- * 3. Histórico de treinos nunca é apagado (soft delete)
- * 4. Histórico de cargas é append-only (sem update/delete)
- */
-
-const treinosRepo = require('../repositories/treinos.repository');
-const AppError = require('../utils/AppError');
+'use strict';
+const repository = require('../repositories/treinos.repository');
 const { prisma } = require('../config/prisma');
+const AppError = require('../utils/AppError');
 const businessRules = require('../utils/businessRules');
 
-class TreinosService {
-
-  // ============================================
-  // OPERAÇÕES DE ADMIN (INSTRUTOR)
-  // ============================================
-
-  /**
-   * Lista todos os treinos com filtros opcionais.
-   * Acesso exclusivo do admin.
-   * @param {object} filters - { studentId, active }
-   * @returns {Promise<Array>} Lista de treinos
-   */
-  async listar(filters = {}) {
-    return treinosRepo.findAll(filters);
+// These are storage limits, not exercise recommendations.
+function numeric(value, label, min, max, integer = false) {
+  if (!['number', 'string'].includes(typeof value) || !/^\d+(?:\.\d+)?$/.test(String(value).trim())) {
+    throw new AppError(`${label}: informe um número válido.`, 400);
   }
-
-  /**
-   * Busca um treino específico por ID.
-   * Inclui exercícios e dados completos.
-   * @param {number} id - ID do treino
-   * @returns {Promise<object>} Treino encontrado
-   * @throws {AppError} 404 se não encontrar
-   */
-  async buscarPorId(id) {
-    const treino = await treinosRepo.findById(id);
-    if (!treino) {
-      throw new AppError('Treino não encontrado.', 404);
-    }
-    return treino;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < min || n > max || (integer && !Number.isInteger(n))) throw new AppError(`${label} fora do intervalo permitido.`, 400);
+  return n;
+}
+function id(value, label = 'ID') {
+  if (typeof value === 'string' && !/^[1-9]\d*$/.test(value)) throw new AppError(`${label} inválido.`, 400);
+  return numeric(value, label, 1, 2147483647, true);
+}
+function body(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AppError('Dados de treino inválidos.', 400);
+  return value;
+}
+function text(value, label, max, required = false) {
+  if (!required && (value === undefined || value === null || value === '')) return null;
+  if (typeof value !== 'string' || value.trim().length > max || (required && !value.trim())) {
+    throw new AppError(`${label}: use texto${required ? ' obrigatório' : ''} com até ${max} caracteres.`, 400);
   }
-
-  /**
-   * Cria um novo treino com exercícios para um aluno.
-   * 
-   * Fluxo:
-   * 1. Valida campos obrigatórios (nome, aluno, exercícios)
-   * 2. Verifica se o aluno existe
-   * 3. Cria treino + exercícios em transação atômica
-   * 
-   * @param {object} data - { name, description, notes, studentId, exercises[] }
-   * @param {number} instructorId - ID do usuário instrutor que está criando
-   * @returns {Promise<object>} Treino criado
-   */
-  async criar(data, instructorId) {
-    // Validações de entrada
-    this.validarDadosTreino(data);
-
-    // Verifica se o aluno existe
-    const aluno = await prisma.student.findUnique({
-      where: { id: parseInt(data.studentId) },
-    });
-    if (!aluno) {
-      throw new AppError('Aluno não encontrado.', 404);
-    }
-
-    // Prepara dados do treino
-    const workoutData = {
-      name: data.name.trim(),
-      description: data.description || null,
-      notes: data.notes || null,
-      studentId: data.studentId,
-      instructorId,
-    };
-
-    // Valida e prepara exercícios
-    const exercises = this.prepararExercicios(data.exercises);
-
-    // Cria em transação atômica (treino + exercícios)
-    return treinosRepo.createWithExercises(workoutData, exercises);
-  }
-
-  /**
-   * Atualiza um treino existente.
-   * Se houver histórico de cargas, preserva os exercícios.
-   * 
-   * @param {number} id - ID do treino
-   * @param {object} data - Dados atualizados
-   * @param {number} instructorId - ID do instrutor
-   * @returns {Promise<object>} Treino atualizado
-   */
-  async atualizar(id, data, instructorId) {
-    // Verifica se o treino existe
-    const treino = await this.buscarPorId(id);
-
-    // Validações de entrada
-    this.validarDadosTreino(data);
-
-    const workoutData = {
-      name: data.name.trim(),
-      description: data.description || null,
-      notes: data.notes || null,
-    };
-
-    const exercises = this.prepararExercicios(data.exercises);
-
-    const resultado = await treinosRepo.updateWithExercises(id, workoutData, exercises);
-
-    return resultado;
-  }
-
-  /**
-   * Desativa um treino (soft delete).
-   * Preserva todos os dados para histórico.
-   * @param {number} id - ID do treino
-   * @returns {Promise<object>} Treino desativado
-   */
-  async desativar(id) {
-    await this.buscarPorId(id); // Garante que existe
-    return treinosRepo.deactivate(id);
-  }
-
-  // ============================================
-  // OPERAÇÕES DO ALUNO
-  // ============================================
-
-  /**
-   * Retorna os treinos ativos do aluno logado.
-   * O aluno vê apenas SEUS treinos ativos.
-   * @param {number} userId - ID do usuário logado 
-   * @returns {Promise<Array>} Treinos ativos do aluno
-   */
-  async buscarMeusTreinos(userId) {
-    // Busca o registro de aluno vinculado ao userId
-    const aluno = await prisma.student.findUnique({
-      where: { userId: parseInt(userId) },
-    });
-
-    if (!aluno) {
-      throw new AppError('Perfil de aluno não encontrado.', 404);
-    }
-
-    // REGRA DE NEGÓCIO CENTRAL: Bloqueia a visualização se inadimplente > 5 dias
-    businessRules.validateWorkoutView(aluno);
-
-    return treinosRepo.findByStudentId(aluno.id);
-  }
-
-  /**
-   * Retorna o histórico completo de treinos do aluno (ativos + inativos).
-   * Permite ver fichas antigas para comparação de evolução.
-   * @param {number} userId - ID do usuário logado
-   * @returns {Promise<Array>} Todos os treinos do aluno
-   */
-  async buscarHistoricoTreinos(userId) {
-    const aluno = await prisma.student.findUnique({
-      where: { userId: parseInt(userId) },
-    });
-
-    if (!aluno) {
-      throw new AppError('Perfil de aluno não encontrado.', 404);
-    }
-
-    // REGRA DE NEGÓCIO CENTRAL: Bloqueia a visualização se inadimplente > 5 dias
-    businessRules.validateWorkoutView(aluno);
-
-    return treinosRepo.findHistoryByStudentId(aluno.id);
-  }
-
-  /**
-   * Registra a carga executada pelo aluno em um exercício.
-   * Operação append-only: cria novo registro sempre.
-   * 
-   * Validações:
-   * - Exercício deve existir
-   * - Exercício deve pertencer a um treino do aluno
-   * - Carga deve ser um valor positivo
-   * 
-   * @param {object} data - { exerciseId, weight, repsCompleted, notes }
-   * @param {number} userId - ID do usuário aluno logado
-   * @returns {Promise<object>} Registro de carga criado
-   */
-  async registrarCarga(data, userId) {
-    // Busca o aluno pelo userId
-    const aluno = await prisma.student.findUnique({
-      where: { userId: parseInt(userId) },
-    });
-
-    if (!aluno) {
-      throw new AppError('Perfil de aluno não encontrado.', 404);
-    }
-
-    // Valida dados de carga
-    if (!data.exerciseId) {
-      throw new AppError('ID do exercício é obrigatório.', 400);
-    }
-    if (!data.weight || parseFloat(data.weight) <= 0) {
-      throw new AppError('A carga deve ser um valor positivo.', 400);
-    }
-
-    // Verifica se o exercício pertence a um treino do aluno
-    const exercicio = await prisma.exercise.findUnique({
-      where: { id: parseInt(data.exerciseId) },
-      include: { workout: { select: { studentId: true, active: true } } },
-    });
-
-    if (!exercicio) {
-      throw new AppError('Exercício não encontrado.', 404);
-    }
-
-    if (exercicio.workout.studentId !== aluno.id) {
-      throw new AppError('Este exercício não pertence ao seu treino.', 403);
-    }
-
-    // Cria o registro de carga (append-only)
-    return treinosRepo.createWorkoutLog({
-      studentId: aluno.id,
-      exerciseId: data.exerciseId,
-      weight: data.weight,
-      repsCompleted: data.repsCompleted || null,
-      notes: data.notes || null,
-    });
-  }
-
-  /**
-   * Consulta o histórico de cargas do aluno.
-   * Pode filtrar por exercício específico.
-   * @param {number} userId - ID do usuário aluno
-   * @param {number|null} exerciseId - Filtro por exercício (opcional)
-   * @returns {Promise<Array>} Histórico de cargas
-   */
-  async listarHistoricoCarga(userId, exerciseId = null) {
-    const aluno = await prisma.student.findUnique({
-      where: { userId: parseInt(userId) },
-    });
-
-    if (!aluno) {
-      throw new AppError('Perfil de aluno não encontrado.', 404);
-    }
-
-    return treinosRepo.findWorkoutLogs(aluno.id, exerciseId);
-  }
-
-  // ============================================
-  // VALIDAÇÕES INTERNAS
-  // ============================================
-
-  /**
-   * Valida os dados obrigatórios de um treino.
-   * @param {object} data - Dados do treino
-   * @throws {AppError} Se dados inválidos
-   */
-  validarDadosTreino(data) {
-    if (!data.name || typeof data.name !== 'string' || data.name.trim() === '') {
-      throw new AppError('O nome do treino é obrigatório.', 400);
-    }
-
-    if (!data.studentId) {
-      throw new AppError('O aluno é obrigatório para criar um treino.', 400);
-    }
-
-    if (!data.exercises || !Array.isArray(data.exercises) || data.exercises.length === 0) {
-      throw new AppError('O treino deve conter pelo menos 1 exercício.', 400);
-    }
-  }
-
-  /**
-   * Prepara e valida a lista de exercícios para inserção.
-   * Garante que cada exercício tem nome e índice de ordem.
-   * @param {Array} exercises - Lista de exercícios crus
-   * @returns {Array} Exercícios validados e formatados
-   */
-  prepararExercicios(exercises) {
-    return exercises.map((ex, index) => {
-      if (!ex.name || ex.name.trim() === '') {
-        throw new AppError(`O exercício na posição ${index + 1} deve ter um nome.`, 400);
-      }
-
-      return {
-        name: ex.name.trim(),
-        muscleGroup: ex.muscleGroup || null,
-        sets: parseInt(ex.sets) || 3,
-        reps: String(ex.reps || '12'),
-        restSeconds: parseInt(ex.restSeconds) || 60,
-        suggestedLoad: ex.suggestedLoad || null,
-        notes: ex.notes || null,
-        orderIndex: index + 1,
-      };
-    });
-  }
+  return value.trim() || null;
+}
+function repetitions(value) {
+  if (!['number', 'string'].includes(typeof value)) throw new AppError('Informe repetições ou uma faixa de repetições.', 400);
+  const match = String(value).trim().match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
+  if (!match) throw new AppError('Use repetições inteiras ou uma faixa, como 8–12.', 400);
+  const low = numeric(match[1], 'Repetições', 1, 1000, true);
+  const high = match[2] ? numeric(match[2], 'Repetições', low, 1000, true) : null;
+  return high === null ? String(low) : `${low}-${high}`;
+}
+function exercises(value) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 100) throw new AppError('Informe entre 1 e 100 exercícios.', 400);
+  return value.map((raw, index) => {
+    const ex = body(raw);
+    return { name: text(ex.name, `Nome do exercício ${index + 1}`, 100, true),
+      muscleGroup: text(ex.muscleGroup, 'Grupo muscular', 50),
+      sets: numeric(ex.sets, 'Séries', 1, 100, true), reps: repetitions(ex.reps),
+      restSeconds: numeric(ex.restSeconds, 'Descanso em segundos', 0, 3600, true),
+      suggestedLoad: text(ex.suggestedLoad, 'Carga sugerida', 50), notes: text(ex.notes, 'Observações', 10000),
+      orderIndex: index + 1 };
+  });
+}
+function workoutData(value) {
+  const data = body(value);
+  return { name: text(data.name, 'Nome da ficha', 100, true), description: text(data.description, 'Descrição', 10000),
+    notes: text(data.notes, 'Observações', 10000) };
 }
 
-module.exports = new TreinosService();
+function createTreinosService({ repo = repository, db = prisma, rules = businessRules } = {}) {
+  function manager(user) {
+    rules.validateInstructorAccess(user);
+    // Defense in depth: ownership never depends only on the route middleware.
+    if (!user || !['admin', 'instructor'].includes(user.role)) throw new AppError('Acesso à gestão de fichas negado.', 403);
+    return { id: id(user.id, 'Usuário'), role: user.role };
+  }
+  function scope(user) { return user.role === 'instructor' ? { instructorId: user.id } : {}; }
+  async function owned(workoutId, user) {
+    const workout = await repo.findById(id(workoutId));
+    if (!workout) throw new AppError('Treino não encontrado.', 404);
+    if (user.role === 'instructor' && workout.instructorId !== user.id) throw new AppError('Esta ficha pertence a outro instrutor.', 403);
+    return workout;
+  }
+  async function student(userId, checkAccess = false) {
+    const record = await db.student.findUnique({ where: { userId: id(userId, 'Usuário') },
+      select: { id: true, status: true, planEndDate: true, user: { select: { active: true } } } });
+    if (!record) throw new AppError('Perfil de aluno não encontrado.', 404);
+    if (checkAccess) {
+      if (record.user?.active === false || record.status === 'inactive') throw new AppError('Matrícula inativa.', 403);
+      rules.validateWorkoutView(record);
+    }
+    return record;
+  }
+  return {
+    async listar(filters = {}, actor) {
+      const user = manager(actor); body(filters);
+      const safe = { ...scope(user) };
+      if (filters.studentId !== undefined) safe.studentId = id(filters.studentId, 'Aluno');
+      if (filters.active !== undefined) {
+        if (typeof filters.active !== 'boolean') throw new AppError('Use active=true ou active=false.', 400);
+        safe.active = filters.active;
+      }
+      return repo.findAll(safe);
+    },
+    async buscarPorId(workoutId, actor) { return owned(workoutId, manager(actor)); },
+    async listarAlunosElegiveis(actor) {
+      manager(actor);
+      const students = await db.student.findMany({ where: { status: 'active', user: { active: true } },
+        select: { id: true, user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } });
+      return students.map(record => ({ id: record.id, name: record.user.name }));
+    },
+    async listarCatalogo(actor) {
+      manager(actor);
+      return db.catalogoExercicio.findMany({ where: { ativo: true }, orderBy: [{ grupo_muscular: 'asc' }, { nome: 'asc' }],
+        select: { id: true, nome: true, grupo_muscular: true, source: true, externalId: true, locale: true, curated: true, sourceMetadata: true } });
+    },
+    async criar(input, actor) {
+      const user = manager(actor); const data = body(input);
+      const fields = workoutData(data); const plan = exercises(data.exercises); const studentId = id(data.studentId, 'Aluno');
+      const record = await db.student.findUnique({ where: { id: studentId }, select: { id: true, status: true, user: { select: { active: true } } } });
+      if (!record) throw new AppError('Aluno não encontrado.', 404);
+      if (record.status !== 'active' || record.user?.active !== true) throw new AppError('Selecione um aluno com matrícula ativa.', 400);
+      return repo.createWithExercises({ ...fields, studentId, instructorId: user.id }, plan);
+    },
+    async atualizar(workoutId, input, actor) {
+      const user = manager(actor); const current = await owned(workoutId, user); const data = body(input);
+      if (!current.active) throw new AppError('Ficha arquivada: crie uma nova ficha para preservar o histórico.', 409);
+      if (data.studentId !== undefined && id(data.studentId, 'Aluno') !== current.studentId) throw new AppError('Uma ficha não pode ser transferida para outro aluno.', 400);
+      return repo.updateWithExercises(current.id, workoutData(data), exercises(data.exercises), scope(user));
+    },
+    async desativar(workoutId, actor) {
+      const user = manager(actor); const current = await owned(workoutId, user);
+      return repo.deactivate(current.id, scope(user));
+    },
+    async buscarMeusTreinos(userId) { return repo.findByStudentId((await student(userId, true)).id); },
+    async buscarHistoricoTreinos(userId) { return repo.findHistoryByStudentId((await student(userId, true)).id); },
+    async registrarCarga(input, userId) {
+      const data = body(input);
+      const exerciseId = id(data.exerciseId, 'Exercício');
+      const weight = numeric(data.weight, 'Carga em kg', 0, 9999.99);
+      if (Math.abs(weight * 100 - Math.round(weight * 100)) > 1e-7) throw new AppError('A carga aceita até duas casas decimais.', 400);
+      const repsCompleted = data.repsCompleted == null || data.repsCompleted === '' ? null : numeric(data.repsCompleted, 'Repetições', 1, 1000, true);
+      const notes = text(data.notes, 'Observações', 10000);
+      const owner = await student(userId, true);
+      const exercise = await db.exercise.findUnique({ where: { id: exerciseId }, include: { workout: { select: { studentId: true, active: true } } } });
+      if (!exercise) throw new AppError('Exercício não encontrado.', 404);
+      if (exercise.workout.studentId !== owner.id) throw new AppError('Este exercício não pertence ao seu treino.', 403);
+      if (!exercise.workout.active) throw new AppError('Esta ficha está arquivada.', 409);
+      return repo.createWorkoutLog({ studentId: owner.id, exerciseId, weight, repsCompleted, notes });
+    },
+    async listarHistoricoCarga(userId, exerciseId = null) {
+      const filter = exerciseId === null ? null : id(exerciseId, 'Exercício');
+      return repo.findWorkoutLogs((await student(userId)).id, filter);
+    },
+  };
+}
+module.exports = { ...createTreinosService(), createTreinosService };

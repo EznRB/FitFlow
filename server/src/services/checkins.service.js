@@ -16,8 +16,10 @@ const checkinsRepository = require('../repositories/checkins.repository');
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const businessRules = require('../utils/businessRules');
+const { positiveInteger, checkinFilters, civilRange } = require('../utils/civil-date');
 
 class CheckinsService {
+  constructor({ db = prisma, repository = checkinsRepository } = {}) { this.db = db; this.repository = repository; }
   /**
    * REGRA PRINCIPAL — Registrar check-in do dia.
    * 
@@ -33,23 +35,26 @@ class CheckinsService {
    * @throws {AppError} 409 se duplicado, 404 se aluno não existe, 400 se bloqueado
    */
   async registrar(studentId, registeredBy = null) {
-    if (!studentId) throw new AppError('ID do aluno é obrigatório.', 400);
+    if (!((typeof studentId === 'number' && Number.isSafeInteger(studentId) && studentId > 0) ||
+      (typeof studentId === 'string' && /^[1-9]\d*$/.test(studentId) && Number.isSafeInteger(Number(studentId))))) {
+      throw new AppError('ID do aluno inválido.', 400);
+    }
 
     // 1. Busca o aluno para validar existência e status
-    const aluno = await prisma.student.findUnique({
+    const aluno = await this.db.student.findUnique({
       where: { id: parseInt(studentId) },
       include: { user: { select: { name: true, active: true } } },
     });
 
-    // 2. Verifica se já existe check-in no dia (somente status 'present')
-    const checkinExistente = await checkinsRepository.hasCheckedInToday(studentId);
+    // 2. O registro diário continua ocupado após cancelamento, com sua auditoria.
+    const checkinExistente = await this.repository.hasCheckedInToday(studentId);
 
     // DELEGA PARA A CAMADA CENTRAL DE REGRAS DE NEGÓCIO
     // Valida duplicidade, existência e bloqueio
     businessRules.validateCheckIn(aluno, checkinExistente);
 
     // 3. Registra o check-in
-    const checkin = await checkinsRepository.create(studentId, registeredBy);
+    const checkin = await this.repository.create(studentId, registeredBy);
     return checkin;
   }
 
@@ -60,7 +65,8 @@ class CheckinsService {
    * @param {object} filters - { studentId, date, startDate, endDate, incluirCancelados }
    */
   async listar(filters = {}) {
-    return checkinsRepository.findAll(filters);
+    checkinFilters(filters);
+    return this.repository.findAll(filters);
   }
 
   /**
@@ -68,14 +74,16 @@ class CheckinsService {
    * Verifica se o aluno existe antes de buscar.
    */
   async buscarPorAluno(alunoId, filters = {}) {
-    if (!alunoId) throw new AppError('ID do aluno é obrigatório.', 400);
+    const studentId = positiveInteger(alunoId, 'ID do aluno', 2147483647);
+    civilRange(filters);
+    if (filters.limit !== undefined) positiveInteger(filters.limit, 'Limite', 366);
 
-    const aluno = await prisma.student.findUnique({
-      where: { id: parseInt(alunoId) },
+    const aluno = await this.db.student.findUnique({
+      where: { id: studentId },
     });
     if (!aluno) throw new AppError('Aluno não encontrado.', 404);
 
-    return checkinsRepository.findByStudentId(alunoId, filters);
+    return this.repository.findByStudentId(studentId, filters);
   }
 
   /**
@@ -84,8 +92,8 @@ class CheckinsService {
    */
   async resumoHoje() {
     const [total, checkins] = await Promise.all([
-      checkinsRepository.countToday(),
-      checkinsRepository.findToday(),
+      this.repository.countToday(),
+      this.repository.findToday(),
     ]);
 
     return {
@@ -95,7 +103,7 @@ class CheckinsService {
         alunoNome: c.student?.user?.name || '—',
         studentId: c.studentId,
         horario: c.createdAt
-          ? new Date(c.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          ? new Date(c.createdAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })
           : '—',
         status: c.status,
       })),
@@ -107,11 +115,11 @@ class CheckinsService {
    * Retorna studentId + contagem, enriquecido com nomes.
    */
   async frequenciaPorAluno(days = 30) {
-    const ranking = await checkinsRepository.frequencyByStudent(days);
+    const ranking = await this.repository.frequencyByStudent(positiveInteger(days, 'Quantidade de dias'));
 
     // Enriquece com dados do aluno
     const studentIds = ranking.map(r => r.studentId);
-    const alunos = await prisma.student.findMany({
+    const alunos = await this.db.student.findMany({
       where: { id: { in: studentIds } },
       include: { user: { select: { name: true } } },
     });
@@ -147,7 +155,7 @@ class CheckinsService {
     // a regra bloqueará. Aqui, apenas validamos as permissões gerais se necessário.
     
     // 1. Verifica se o check-in existe
-    const checkin = await checkinsRepository.findById(checkinId);
+    const checkin = await this.repository.findById(checkinId);
     if (!checkin) throw new AppError('Check-in não encontrado.', 404);
 
     // 2. Verifica se já está cancelado
@@ -156,7 +164,7 @@ class CheckinsService {
     }
 
     // 3. Cancela com rastreabilidade
-    return checkinsRepository.cancelCheckin(checkinId, motivo.trim(), adminId);
+    return this.repository.cancelCheckin(checkinId, motivo.trim(), adminId);
   }
 
   /**
@@ -170,3 +178,4 @@ class CheckinsService {
 }
 
 module.exports = new CheckinsService();
+module.exports.createCheckinsService = options => new CheckinsService(options);

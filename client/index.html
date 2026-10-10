@@ -13,8 +13,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons (CDN) -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- Lucide Icons, versão local com licença em vendor/ -->
+  <script src="/vendor/lucide.js"></script>
 
   <!-- CSS -->
   <link rel="stylesheet" href="/css/variables.css">
@@ -22,98 +22,83 @@
   <link rel="stylesheet" href="/css/components.css">
   <link rel="stylesheet" href="/css/layout.css">
   <link rel="stylesheet" href="/css/pages.css">
+  <!-- Novas telas preservam os tokens e corrigem o construtor em telas pequenas. -->
+  <link rel="stylesheet" href="/css/science.css">
   <link rel="stylesheet" href="/css/aluno.css">
+  <link rel="stylesheet" href="/css/aluno-refined.css">
+  <link rel="stylesheet" href="/css/dashboard-redesign.css">
+  <!-- Regras compartilhadas de acabamento mantêm a marca e a legibilidade. -->
+  <link rel="stylesheet" href="/css/professional.css">
+  <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="/css/sessoes.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/css/pwa.css">
+  <link rel="stylesheet" href="/css/planejamento-ciencia.css">
+  <link rel="stylesheet" href="/css/progressao.css">
 </head>
 <body>
   <!-- ============================================ -->
   <!-- TELA DE LOGIN -->
   <!-- ============================================ -->
   <div id="login-screen" class="login-screen">
-    <div class="login-container">
-      <!-- Lado esquerdo — branding -->
-      <div class="login-branding">
-        <div class="login-branding-content">
-          <div class="login-logo-container">
-            <i data-lucide="dumbbell" class="login-logo-icon"></i>
-            <div class="login-logo-text">
-              <h1>FITFLOW</h1>
-              <span class="login-logo-subtitle">Caraguá</span>
-            </div>
-          </div>
-          <p class="login-tagline">Sistema inteligente de gestão para<br>sua academia.</p>
-          <div class="login-features">
-            <div class="login-feature">
-              <i data-lucide="users"></i>
-              <span>Gestão de Alunos</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="settings"></i>
-              <span>Treinos Personalizados</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="circle-dollar-sign"></i>
-              <span>Controle Financeiro</span>
-            </div>
-            <div class="login-feature">
-              <i data-lucide="file-text"></i>
-              <span>Relatórios Completos</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <header class="login-header">
+      <a class="login-brand" href="https://fitflow-lp.vercel.app/" aria-label="FitFlow Caraguá — conhecer o projeto">
+        <i data-lucide="dumbbell" aria-hidden="true"></i>
+        <span>FitFlow<span class="login-brand-location">Caraguá</span></span>
+      </a>
+      <a class="login-back-link" href="https://fitflow-lp.vercel.app/">Voltar ao projeto <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+    </header>
 
-      <!-- Lado direito — formulário -->
+    <main class="login-shell">
+      <section class="login-editorial" aria-labelledby="login-editorial-title">
+        <img class="login-editorial-image" src="/img/login-gym.webp" alt="" width="1254" height="1254" fetchpriority="high">
+        <div class="login-editorial-top"><span>Treino. Ciência. Constância.</span><span class="login-image-credit">Imagem ilustrativa</span></div>
+        <div class="login-editorial-copy">
+          <p class="login-editorial-kicker">FitFlow Caraguá / Desde o primeiro treino</p>
+          <h2 id="login-editorial-title">Seu próximo passo.<br><em>Série por série.</em></h2>
+          <p>Organize sua rotina, registre cada treino<br>e acompanhe o caminho que você está construindo.</p>
+          <ul class="login-editorial-features" aria-label="Recursos do FitFlow">
+            <li><span>01</span> Treinos</li><li><span>02</span> Progressão</li><li><span>03</span> Nutrição</li>
+          </ul>
+        </div>
+      </section>
       <div class="login-form-wrapper">
-        <div class="login-date" id="current-date">
-          terça-feira, 21 de abril de 2026
-        </div>
-        
-        <form id="login-form" class="login-form" autocomplete="on">
-          <h2>BEM-VINDO DE VOLTA</h2>
-          <p class="login-form-subtitle">Faça login para acessar o sistema</p>
+        <form id="login-form" class="login-form" autocomplete="on" aria-busy="true" aria-describedby="login-session-status">
+          <div class="login-intro">
+            <p class="login-eyebrow"><i data-lucide="log-in" aria-hidden="true"></i> Acesse seu FitFlow</p>
+            <h1>Bem-vindo de volta.</h1>
+            <p class="login-form-subtitle">Entre com a conta cadastrada pela sua academia.</p>
+          </div>
+          <p id="login-session-status" class="login-session-status" role="status" aria-live="polite">Verificando sua sessão...</p>
 
-          <div class="form-group input-with-icon">
-            <i data-lucide="mail" class="input-icon"></i>
-            <input 
-              type="email" 
-              id="login-email" 
-              name="email"
-              placeholder="seu@email.com" 
-              required 
-              autocomplete="email"
-            >
+          <div class="login-field">
+            <label class="login-field-label" for="login-email">E-mail</label>
+            <input type="email" id="login-email" name="email" placeholder="seu@email.com" required autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" disabled>
+          </div>
+          <div class="login-field">
+            <label class="login-field-label" for="login-password">Senha</label>
+            <div class="login-password-control">
+              <input type="password" id="login-password" name="password" placeholder="Digite sua senha" required autocomplete="current-password" disabled>
+              <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha" aria-controls="login-password" disabled><i data-lucide="eye" aria-hidden="true"></i></button>
+            </div>
           </div>
 
-          <div class="form-group input-with-icon">
-            <i data-lucide="lock" class="input-icon"></i>
-            <input 
-              type="password" 
-              id="login-password" 
-              name="senha"
-              placeholder="••••••••" 
-              required 
-              minlength="6"
-              autocomplete="current-password"
-            >
-            <button type="button" class="btn-toggle-password" id="btn-toggle-password" aria-label="Mostrar senha">
-              <i data-lucide="eye-off"></i>
-            </button>
-          </div>
-
-          <div id="login-error" class="alert alert-error" style="display: none;"></div>
-
-          <button type="submit" class="btn btn-primary btn-full btn-login-glow" id="btn-login">
-            <span>→] Entrar</span>
-          </button>
-          
-          <a href="#" class="forgot-password-link">Esqueceu a senha?</a>
+          <div id="login-error" class="alert alert-error" style="display: none;" role="alert"></div>
+          <button type="submit" class="btn btn-primary btn-full login-submit" id="btn-login" disabled><span>Entrar na conta</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+          <details class="login-support">
+            <summary>Precisa de ajuda para entrar?</summary>
+            <p>Para cadastrar ou recuperar seu acesso, fale com a administração da sua academia.</p>
+          </details>
         </form>
 
-        <p class="login-footer">
-          FitFlow Caraguá © 2026 — Caraguatatuba, SP
-        </p>
+        <div class="login-public-access">
+          <p>Conheça os recursos abertos do FitFlow.</p>
+          <a class="login-lab-link" href="/laboratorio.html">Nutrição e fundamentos <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+        </div>
       </div>
-    </div>
+    </main>
+    <footer class="login-footer"><span>FitFlow Caraguá</span><span>Caraguatatuba, SP · © 2026</span></footer>
   </div>
 
   <!-- ============================================ -->
@@ -190,7 +175,7 @@
   <!-- MODAL GENÉRICO -->
   <!-- ============================================ -->
   <div id="modal-overlay" class="modal-overlay" style="display: none;">
-    <div class="modal" id="modal">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-header">
         <h3 id="modal-title">Título</h3>
         <button class="btn-icon modal-close" id="btn-modal-close" aria-label="Fechar modal">
@@ -209,9 +194,11 @@
   <!-- ============================================ -->
   <!-- SCRIPTS -->
   <!-- ============================================ -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="/vendor/chart.js"></script>
+  <script src="/vendor/sortable.js"></script>
   <script src="/js/api.js"></script>
+  <!-- Saída de texto livre é escapada antes de entrar em templates de HTML. -->
+  <script src="/js/security.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/components/toast.js"></script>
   <script src="/js/components/modal.js"></script>
@@ -224,7 +211,17 @@
   <script src="/js/pagamentos.js"></script>
   <script src="/js/checkins.js"></script>
   <script src="/js/aluno-painel.js"></script>
+  <script src="/js/mercado-pago-checkout.js"></script>
   <script src="/js/relatorios.js"></script>
+  <!-- Métodos científicos são carregados antes da navegação principal. -->
+  <script src="/js/science.js"></script>
+  <script src="/js/planejamento-ciencia.js"></script>
+  <script src="/js/evidencias.js"></script>
+  <script src="/js/nutricao.js"></script>
+  <script src="/js/training-store.js"></script>
+  <script src="/js/sessoes.js"></script>
+  <script src="/js/progressao.js"></script>
+  <script src="/js/pwa.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

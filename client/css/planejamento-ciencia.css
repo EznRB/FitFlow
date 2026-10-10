@@ -1,0 +1,44 @@
+.planning-panel { margin-bottom: 1rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-surface); }
+.planning-panel summary { cursor: pointer; font-weight: 600; color: var(--primary-400); }
+.planning-panel p, .planning-panel li { font-size: var(--font-size-sm); line-height: 1.5; color: var(--text-secondary); }
+.planning-panel label { display: flex; flex-direction: column; gap: .4rem; font-size: var(--font-size-sm); }
+.planning-context { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.planning-context input, .planning-context select { width: 100%; min-width: 0; box-sizing: border-box; padding: .55rem; background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: inherit; }
+.planning-equipment { display: flex; flex-wrap: wrap; gap: .6rem 1rem; border: 1px solid var(--border-color); padding: .8rem; margin: 1rem 0; }
+.planning-equipment label { flex-direction: row; align-items: center; }
+.planning-equipment input { accent-color: var(--primary-500); }
+.planning-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.planning-option { padding: .85rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-elevated); }
+.planning-option h4 { font-family: var(--font-heading); font-size: var(--font-size-base); margin: 0 0 .5rem; color: var(--text-primary); }
+.planning-sequence { display: flex; flex-direction: column; gap: .35rem; padding: 0; list-style: none; }
+.planning-sequence li { display: flex; align-items: center; gap: .5rem; }
+.planning-sequence span { display: inline-flex; justify-content: center; align-items: center; width: 1.5rem; height: 1.5rem; flex-shrink: 0; border-radius: 50%; background: var(--bg-surface); color: var(--primary-400); }
+.planning-scope { color: var(--text-muted) !important; }
+.planning-volume, .planning-evidence, .planning-selection { margin-top: .9rem; padding-top: .8rem; border-top: 1px solid var(--border-color); }
+.planning-panel a { color: var(--primary-400); text-decoration: underline; }
+.planning-panel button { margin-bottom: .4rem; }
+.workout-builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 1rem; }
+#modal:has(.workout-builder) { max-width: 1100px; width: min(96vw, 1100px); }
+.workout-catalog { max-height: 65vh; overflow-y: auto; }
+.workout-catalog-list { max-height: 48vh; overflow-y: auto; }
+.workout-catalog-count { color: var(--text-muted); font-size: var(--font-size-xs); margin: .75rem 0; }
+.workout-catalog-pages { display: flex; gap: .5rem; justify-content: space-between; padding: .5rem 0; }
+.workout-catalog-item { border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: .7rem; margin-bottom: .5rem; background: var(--bg-surface); }
+.workout-catalog-item p, .workout-catalog-item summary, .workout-history-note { color: var(--text-muted); font-size: var(--font-size-xs); }
+.workout-catalog-item button { width: 100%; text-align: left; }
+.workout-edit-form { display: flex; flex-direction: column; gap: .75rem; }
+.workout-exercise-editor { border: 1px solid var(--border-color); border-left: 3px solid var(--primary-500); padding: .75rem; margin-bottom: .75rem; border-radius: var(--radius-md); }
+.workout-exercise-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .75rem; }
+.workout-exercise-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.workout-exercise-fields label { font-size: var(--font-size-xs); color: var(--text-muted); }
+.workout-exercise-fields input { margin-top: .3rem; min-width: 0; }
+.workout-exercise-fields .full-width { grid-column: 1 / -1; }
+.workout-builder input, .workout-builder textarea, .workout-builder select { width: 100%; box-sizing: border-box; }
+.workout-builder .grip-handle { cursor: grab; }
+@media (max-width: 720px) {
+  .planning-options, .workout-builder { grid-template-columns: 1fr; }
+  .workout-catalog, .workout-catalog-list { max-height: 240px; }
+}
+@media (max-width: 460px) {
+  .planning-context, .workout-exercise-fields { grid-template-columns: 1fr; }
+}

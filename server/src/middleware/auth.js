@@ -10,12 +10,16 @@
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
+const { prisma } = require('../config/prisma');
 
 /**
  * Middleware que verifica se o usuário está autenticado.
  * Extrai o token do cookie httpOnly ou do header Authorization.
  */
-function authenticate(req, res, next) {
+function createAuthenticate({ findUser = id => prisma.user.findUnique({
+  where: { id }, select: { id: true, name: true, email: true, role: true, active: true },
+}), secret = env.jwt.secret } = {}) {
+return async function authenticate(req, res, next) {
   try {
     let token = null;
 
@@ -33,14 +37,23 @@ function authenticate(req, res, next) {
     }
 
     // Verifica e decodifica o token
-    const decoded = jwt.verify(token, env.jwt.secret);
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    if (!Number.isSafeInteger(decoded.id) || decoded.id <= 0) throw new AppError('Token inválido. Faça login novamente.', 401);
+    let user;
+    try {
+      user = await findUser(decoded.id);
+    } catch (error) {
+      // Falha de infraestrutura não invalida o cookie nem deve provocar logout.
+      throw new AppError('Serviço de autenticação temporariamente indisponível.', 503);
+    }
+    if (!user || user.active !== true) throw new AppError('Sessão inválida ou conta desativada. Faça login novamente.', 401);
 
     // Anexa os dados do usuário ao request
     req.user = {
-      id: decoded.id,
-      name: decoded.name,
-      email: decoded.email,
-      role: decoded.role,
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
     };
 
     next();
@@ -51,12 +64,14 @@ function authenticate(req, res, next) {
     if (error.name === 'TokenExpiredError') {
       return next(new AppError('Sessão expirada. Faça login novamente.', 401));
     }
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === 'JsonWebTokenError' || error.name === 'NotBeforeError') {
       return next(new AppError('Token inválido. Faça login novamente.', 401));
     }
     return next(new AppError('Erro na autenticação.', 401));
   }
+};
 }
+const authenticate = createAuthenticate();
 
 /**
  * Middleware factory que restringe acesso por role.
@@ -79,4 +94,4 @@ function authorize(...roles) {
   };
 }
 
-module.exports = { authenticate, authorize };
+module.exports = { authenticate, authorize, createAuthenticate };

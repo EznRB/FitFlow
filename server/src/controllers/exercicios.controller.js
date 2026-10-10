@@ -17,6 +17,7 @@
 const { sendSuccess } = require('../utils/helpers');
 const exerciciosService = require('../services/exercicios.service');
 const wgerService = require('../services/wger.service');
+const AppError = require('../utils/AppError');
 
 const exerciciosController = {
 
@@ -36,6 +37,7 @@ const exerciciosController = {
 
       // Permite ver inativos (ex: ?ativo=false)
       if (req.query.ativo !== undefined) {
+        if (!['true', 'false'].includes(req.query.ativo)) throw new AppError('Use ativo=true ou ativo=false.', 400);
         filtros.ativo = req.query.ativo === 'true';
       }
 
@@ -121,11 +123,15 @@ const exerciciosController = {
    */
   async sincronizarAPI(req, res, next) {
     try {
-      // Pega o limite do query, ou usa 50
-      const limit = parseInt(req.query.limit) || 100;
+      const rawLimit = req.query.limit ?? '100';
+      if (typeof rawLimit !== 'string' || !/^\d+$/.test(rawLimit)) throw new AppError('Tamanho de página inválido.', 400);
+      const limit = Number(rawLimit);
       const resultado = await wgerService.sincronizar(limit);
       
-      sendSuccess(res, 200, `Sincronização concluída. Inseridos: ${resultado.inseridos}, Ignorados (já existem): ${resultado.ignorados}`, resultado);
+      const mensagem = resultado.completa
+        ? `Sincronização concluída: ${resultado.inseridos} inseridos, ${resultado.atualizados} atualizados e ${resultado.ignorados} ignorados.`
+        : resultado.aviso;
+      sendSuccess(res, 200, mensagem, resultado);
     } catch (error) {
       next(error);
     }

@@ -7,11 +7,13 @@
 
 const { sendSuccess } = require('../utils/helpers');
 const planosService = require('../services/planos.service');
+const AppError = require('../utils/AppError');
 
 const planosController = {
   /** GET /api/planos */
   async listar(req, res, next) {
     try {
+      if (req.query.ativo !== undefined && !['true', 'false'].includes(req.query.ativo)) throw new AppError('Use ativo=true ou ativo=false.', 400);
       const apenasAtivos = req.query.ativo === 'true';
       const planos = await planosService.listar(apenasAtivos);
       sendSuccess(res, 200, 'Planos listados com sucesso', planos);

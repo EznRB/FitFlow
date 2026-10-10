@@ -1,0 +1,42 @@
+.sessions-page { display: grid; gap: 1.25rem; max-width: 1120px; margin: 0 auto; }
+.sessions-page h2, .sessions-page h3, .sessions-page h4 { margin: 0 0 .6rem; }
+.sessions-page p { color: var(--text-secondary, #abb6c5); line-height: 1.6; }
+.sessions-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.sessions-header .btn { min-height: 44px; }
+.sessions-eyebrow { letter-spacing: .1em; font-size: .72rem; font-weight: 700; color: var(--primary-400, #fb923c) !important; }
+.sessions-panel { padding: 1.5rem; background: var(--bg-surface, #111827); border: 1px solid var(--border-color, #1f2937); border-radius: var(--radius-md, 8px); }
+.sessions-sync { padding: .85rem 1rem; margin: 0; border-radius: var(--radius-md, 8px); border: 1px solid var(--border-color, #1f2937); }
+.sessions-query { margin: 0; font-size: 14px; }
+.sessions-sync[data-state="saved"] { border-color: #2c785c; }
+.sessions-sync[data-state="pending"] { border-color: #936d29; }
+.sessions-sync[data-state="blocked"], .sessions-message { border-color: #b55a5a; color: #fca5a5 !important; }
+.sessions-message { padding: .75rem; border: 1px solid; border-radius: .5rem; }
+.sessions-workouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; }
+.sessions-workout { padding: 1rem; text-align: left; display: grid; gap: .65rem; color: var(--text-primary, #f9fafb); background: var(--bg-base, #0a0f1a); border: 1px solid var(--border-subtle, #374151); border-radius: var(--radius-sm, 6px); cursor: pointer; }
+.sessions-workout span { color: var(--text-secondary, #abb6c5); font-size: .86rem; }
+.sessions-set-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+.sessions-set-form label { display: grid; align-content: start; gap: .5rem; font-size: .88rem; }
+.sessions-set-form input, .sessions-set-form select, .sessions-set-form textarea { box-sizing: border-box; width: 100%; min-height: 46px; padding: .7rem; border: 1px solid var(--border-subtle, #374151); border-radius: var(--radius-md, 8px); background: var(--bg-base, #0a0f1a); color: var(--text-primary, #f9fafb); font: 400 16px var(--font-family, sans-serif); }
+.sessions-set-form small { color: var(--text-secondary, #abb6c5); line-height: 1.4; }
+.sessions-exercise-field, .sessions-note-field, .sessions-prescription { grid-column: 1 / -1; }
+.sessions-prescription { margin: 0; padding: .6rem .8rem; border-left: 3px solid var(--primary-500, #f97316); }
+.sessions-set-form .btn { min-height: 46px; align-self: start; }
+.sessions-form-feedback { grid-column: span 3; margin: 0; }
+.sessions-records { list-style: none; padding: 0; margin: .75rem 0 0; }
+.sessions-records li { display: flex; align-items: start; justify-content: space-between; gap: 1rem; padding: .9rem 0; border-top: 1px solid var(--border-color, #334155); }
+.sessions-records li div { display: grid; gap: .3rem; min-width: 0; }
+.sessions-records span, .sessions-set-state { color: var(--text-secondary, #abb6c5); font-size: .84rem; }
+.sessions-records p { margin: .2rem 0; overflow-wrap: anywhere; }
+.sessions-set-state { flex-shrink: 0; }
+.sessions-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.sessions-metrics div { display: grid; gap: .4rem; }
+.sessions-metrics strong { font-size: 1.4rem; }
+.sessions-metrics span { color: var(--text-secondary, #abb6c5); font-size: .84rem; }
+.sessions-muscles { padding-left: 1.4rem; line-height: 1.8; }
+.sessions-history { border-top: 1px solid var(--border-color, #334155); padding: 1rem 0; }
+.sessions-history summary { display: grid; gap: .5rem; cursor: pointer; min-height: 44px; }
+.sessions-history summary span { color: var(--text-secondary, #abb6c5); font-size: .86rem; }
+.sessions-evidence { padding: 1rem; font-size: .85rem; }
+.sessions-evidence a { color: var(--primary-400, #fb923c); }
+.sessions-page :is(button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--primary-400, #fb923c); outline-offset: 3px; }
+@media (max-width: 600px) { .sessions-panel { padding: 1rem; } .sessions-set-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sessions-form-feedback { grid-column: 1 / -1; } .sessions-set-form .btn { grid-column: 1 / -1; } .sessions-metrics { grid-template-columns: 1fr; } .sessions-records li { flex-direction: column; gap: .4rem; } .sessions-workouts { grid-template-columns: 1fr; } }

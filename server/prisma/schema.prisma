@@ -32,6 +32,7 @@ model User {
   // Relacionamentos
   student          Student?
   createdWorkouts  Workout[]  @relation("InstructorWorkouts")
+  nutritionScenario NutritionScenario?
 
   @@index([email])
   @@index([role])
@@ -61,6 +62,7 @@ model Plan {
   // Relacionamentos
   students Student[]
   payments Payment[]
+  paymentIntents PaymentIntent[]
 
   @@map("plans")
 }
@@ -89,6 +91,8 @@ model Student {
   user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   plan        Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
   workouts    Workout[]
+  workoutSessions WorkoutSession[]
+  paymentIntents PaymentIntent[]
   workoutLogs WorkoutLog[]
   payments    Payment[]
   checkins    Checkin[]
@@ -126,6 +130,7 @@ model Workout {
   student    Student    @relation(fields: [studentId], references: [id], onDelete: Restrict)
   instructor User       @relation("InstructorWorkouts", fields: [instructorId], references: [id], onDelete: Restrict)
   exercises  Exercise[]
+  sessions   WorkoutSession[]
 
   @@index([studentId])
   @@index([instructorId])
@@ -189,6 +194,8 @@ model WorkoutLog {
 // ============================================
 // Registro financeiro. Preservado para relatórios.
 model Payment {
+  manualRequestId   String? @unique @map("manual_request_id") @db.Char(36)
+  manualRequestHash String? @map("manual_request_hash") @db.Char(64)
   id            Int           @id @default(autoincrement())
   studentId     Int           @map("student_id")
   planId        Int?          @map("plan_id")
@@ -205,6 +212,7 @@ model Payment {
   // Relacionamentos
   student Student @relation(fields: [studentId], references: [id], onDelete: Restrict)
   plan    Plan?   @relation(fields: [planId], references: [id], onDelete: SetNull)
+  intent  PaymentIntent?
 
   @@index([studentId])
   @@index([status])
@@ -267,7 +275,100 @@ model CatalogoExercicio {
   criado_em      DateTime @default(now())
   atualizado_em  DateTime @updatedAt
 
+  // Identidade externa e atribuição ficam separadas da curadoria local.
+  source         String   @default("local") @db.VarChar(20)
+  externalId     String?  @map("external_id") @db.VarChar(50)
+  locale         String   @default("pt") @db.VarChar(10)
+  curated        Boolean  @default(true)
+  sourceMetadata Json?    @map("source_metadata")
+
+  @@unique([source, externalId])
+
   @@index([grupo_muscular])
   @@index([ativo])
   @@map("exercicios")
+}
+
+// Sessões e séries executadas preservam os snapshots da ficha e IDs de sincronização.
+model WorkoutSession {
+  id                String    @id @db.Char(36)
+  studentId         Int       @map("student_id")
+  workoutId         Int       @map("workout_id")
+  status            String    @default("active") @db.VarChar(20)
+  planSnapshot      Json      @map("plan_snapshot")
+  startRequest      Json      @map("start_request")
+  completionRequest Json?     @map("completion_request")
+  clientStartedAt   DateTime  @map("client_started_at")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  completedAt       DateTime? @map("completed_at")
+  student           Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  workout           Workout   @relation(fields: [workoutId], references: [id], onDelete: Restrict)
+  sets              WorkoutSet[]
+  @@index([studentId, startedAt])
+  @@index([workoutId])
+  @@map("workout_sessions")
+}
+model WorkoutSet {
+  id           String   @id @db.Char(36)
+  sessionId    String   @map("session_id") @db.Char(36)
+  exerciseId   Int      @map("exercise_id")
+  exerciseName String   @map("exercise_name") @db.VarChar(100)
+  muscleGroup  String?  @map("muscle_group") @db.VarChar(50)
+  weightKg     Decimal  @map("weight_kg") @db.Decimal(8, 2)
+  reps         Int
+  rir          Float?
+  kind         String   @db.VarChar(20)
+  notes        String?  @db.Text
+  performedAt  DateTime @map("performed_at")
+  payload      Json
+  createdAt    DateTime @default(now()) @map("created_at")
+  session      WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  @@index([sessionId, performedAt])
+  @@index([performedAt])
+  @@map("workout_sets")
+}
+
+// Parâmetros educativos salvos somente por ação explícita do próprio usuário.
+model NutritionScenario {
+  userId         Int      @id @map("user_id")
+  inputs         Json
+  formulaVersion String   @map("formula_version") @db.VarChar(50)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("nutrition_scenarios")
+}
+
+// Contadores compartilhados; a chave não guarda a identidade em texto puro.
+model RateLimitBucket {
+  key          String   @id @db.Char(64)
+  hits         Int
+  windowEndsAt DateTime @map("window_ends_at") @db.DateTime(3)
+  @@index([windowEndsAt])
+  @@map("rate_limit_buckets")
+}
+
+// Intenção sandbox é conciliada no servidor antes de registrar pagamento.
+model PaymentIntent {
+  id                String    @id @db.VarChar(36)
+  studentId         Int       @map("student_id")
+  planId            Int       @map("plan_id")
+  amount            Decimal   @db.Decimal(10, 2)
+  durationDays      Int       @map("duration_days")
+  currency          String    @default("BRL") @db.VarChar(3)
+  state             String    @default("created") @db.VarChar(24)
+  idempotencyKey    String    @map("idempotency_key") @db.VarChar(64)
+  preferenceId      String?   @unique @map("preference_id") @db.VarChar(100)
+  checkoutUrl       String?   @map("checkout_url") @db.Text
+  providerPaymentId String?   @unique @map("provider_payment_id") @db.VarChar(100)
+  paymentId         Int?      @unique @map("payment_id")
+  lastProviderStatus String?  @map("last_provider_status") @db.VarChar(40)
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  settledAt         DateTime? @map("settled_at")
+  student           Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  plan              Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payment           Payment?  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  @@unique([studentId, idempotencyKey])
+  @@index([studentId, state])
+  @@map("payment_intents")
 }

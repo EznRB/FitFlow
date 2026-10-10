@@ -2,8 +2,8 @@
 node_modules/
 
 # Variáveis de ambiente
-.env
-*.env.local
+.env*
+!**/.env.example
 
 # Logs
 logs/
@@ -42,3 +42,14 @@ server_out.txt
 .gemini/
 tmp/
 server/tmp/
+# Banco nativo e credenciais locais de teste não pertencem ao código publicado.
+.local-db/
+server/.env.development.local
+server/.demo-credentials.local.json
+server/.demo-credentials.remote.local.json
+**/.bootstrap-admin.local.json
+server/generated/
+server/.env.remote.local
+.local-db-postgresql/
+server/.env.postgresql.local
+.vercel/

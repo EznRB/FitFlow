@@ -1,0 +1,84 @@
+/* Área do aluno: hierarquia editorial e controles nativos, sem efeitos de gamificação. */
+.ff-student { max-width: 1120px; margin-inline: auto; color: var(--text-primary); }
+.ff-student button { font-family: inherit; }
+.ff-student-heading { margin-bottom: 28px; max-width: 720px; }
+.ff-student-eyebrow { display: block; color: var(--primary-400); font-size: 12px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
+.ff-student-heading h2 { margin: 0 0 10px; font-family: var(--font-heading); font-size: clamp(30px, 4vw, 42px); font-weight: 650; line-height: 1.06; }
+.ff-student-heading p, .ff-student-section p, .ff-student-start p { color: var(--text-secondary); font-size: 15px; line-height: 1.6; margin: 8px 0 0; }
+.ff-student-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 24px 0; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; }
+.ff-student-stat { display: flex; flex-direction: column; gap: 12px; border: 0; border-right: 1px solid var(--border-subtle); padding: 22px; text-align: left; color: var(--text-primary); background: var(--bg-surface); cursor: pointer; }
+.ff-student-stat:last-child { border-right: 0; }
+.ff-student-stat:hover { background: var(--bg-elevated); }
+.ff-student-stat-label { color: var(--text-secondary); font-size: 14px; }
+.ff-student-stat strong { font-family: var(--font-heading); font-size: 34px; font-weight: 650; }
+.ff-student-stat-link { display: flex; align-items: center; gap: 6px; color: var(--primary-400); font-size: 13px; font-weight: 600; }
+.ff-student-stat-link svg { width: 16px; height: 16px; }
+.ff-student-start { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; padding: 26px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--primary-500); border-radius: 8px; margin-bottom: 24px; }
+.ff-student-start > div { flex: 1 1 320px; }
+.ff-student-start h3, .ff-student-section h3 { margin: 0; font-family: var(--font-heading); font-weight: 650; font-size: 24px; }
+.ff-student-start .btn { flex-shrink: 0; min-height: 44px; }
+.ff-student-columns { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; }
+.ff-student-section { min-width: 0; padding: 24px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-surface); margin-bottom: 24px; }
+.ff-student-section h4 { margin: 22px 0 8px; font-size: 19px; font-weight: 600; }
+.ff-student-section .btn { margin-top: 20px; min-height: 44px; }
+.ff-student-detail { color: var(--text-secondary); font-size: 13px; margin-top: 12px; line-height: 1.5; }
+.ff-student-records { list-style: none; padding: 0; margin: 18px 0 0; }
+.ff-student-records li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 15px 0; border-top: 1px solid var(--border-color); font-size: 14px; }
+.ff-student-records time { color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ff-student-empty { padding: 24px 0; }
+.ff-student-empty h3 { font-family: inherit; font-size: 16px; margin: 0 0 6px; }
+.ff-student-empty p { max-width: 560px; color: var(--text-secondary); line-height: 1.6; font-size: 14px; margin: 0; }
+.ff-student-notice { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border: 1px solid var(--border-subtle); background: var(--bg-surface); border-radius: 6px; color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 12px; }
+.ff-student-notice svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; color: var(--primary-400); }
+.ff-student-notice-error { border-color: var(--error); }
+.ff-student .aluno-banner-blocked { background: var(--error-bg); color: var(--text-primary); border: 1px solid var(--error); border-radius: 6px; box-shadow: none; animation: none; }
+.ff-student .aluno-banner-blocked svg { animation: none; color: var(--error); }
+.ff-student-toolbar { margin: 0 0 24px; }
+.ff-student .aluno-treino-card { box-shadow: none; border: 1px solid var(--border-subtle); border-radius: 8px; animation: none; margin-bottom: 24px; }
+.ff-student .aluno-treino-header { background: var(--bg-surface); padding: 24px; border-bottom: 1px solid var(--border-color); }
+.ff-student .aluno-treino-header h3 { font-family: var(--font-heading); font-size: 25px; }
+.ff-student .aluno-treino-header p { max-width: 660px; color: var(--text-secondary); line-height: 1.5; font-size: 14px; margin-top: 6px; }
+.ff-student .treino-meta { color: var(--text-secondary); line-height: 1.6; font-size: 13px; }
+.ff-student .aluno-treino-body { padding: 0 24px; }
+.ff-student .aluno-exercicio { padding: 24px 0; border-bottom: 1px solid var(--border-color); background: transparent; border-radius: 0; margin: 0; }
+.ff-student .aluno-exercicio:last-child { border-bottom: 0; }
+.ff-student .aluno-exercicio-top { gap: 16px; }
+.ff-student .aluno-exercicio-nome { min-width: 0; }
+.ff-student .aluno-exercicio-nome h4 { font-size: 18px; margin: 0; font-weight: 600; }
+.ff-student .aluno-exercicio-numero { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); border-radius: 4px; }
+.ff-student-small { font-size: 13px; min-height: 44px; white-space: nowrap; }
+.ff-student-prescription { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 20px 0 8px; }
+.ff-student-prescription dt { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 6px; }
+.ff-student-prescription dd { font-size: 16px; margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.ff-student .aluno-exercicio-notas { font-size: 14px; padding: 0; background: transparent; color: var(--text-secondary); margin: 14px 0 0; line-height: 1.5; }
+.ff-student-load-form { display: grid; gap: 18px; }
+.ff-student-load-form p, .ff-student-load-form small { color: var(--text-secondary); line-height: 1.6; }
+.ff-student-section-top { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ff-student-status { padding: 6px 10px; border: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-primary); border-radius: 4px; }
+.ff-student-payment-action { border-top: 1px solid var(--border-color); margin-top: 24px; padding-top: 18px; }
+.ff-student-payment-action p { max-width: 720px; font-size: 13px; }
+.ff-student-payments li > div { display: flex; flex-direction: column; gap: 6px; }
+.ff-student-payments li > div:last-child { text-align: right; }
+.ff-student-payments strong { font-size: 17px; font-weight: 600; }
+.ff-student-payments span { color: var(--text-secondary); font-size: 13px; }
+.ff-student-count { display: block; font-family: var(--font-heading); font-size: 44px; margin-top: 8px; }
+.ff-student-feedback { width: 100%; margin: 0; font-size: 14px; line-height: 1.5; }
+.ff-student-error { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 28px; }
+.ff-student-error h3 { font-size: 20px; margin-bottom: 10px; }
+.ff-student-error p { color: var(--text-secondary); margin-bottom: 18px; line-height: 1.5; }
+.ff-student button:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
+@media (max-width: 700px) {
+  .ff-student-columns { grid-template-columns: 1fr; gap: 0; }
+  .ff-student-stats { grid-template-columns: 1fr; }
+  .ff-student-stat { border-right: 0; border-bottom: 1px solid var(--border-subtle); padding: 20px; }
+  .ff-student-stat:last-child { border-bottom: 0; }
+  .ff-student-start, .ff-student-section, .ff-student .aluno-treino-header { padding: 20px; }
+  .ff-student-start > div { flex-basis: 100%; }
+  .ff-student-start .btn { width: 100%; }
+  .ff-student-prescription { grid-template-columns: 1fr; gap: 16px; }
+  .ff-student .aluno-exercicio-top { flex-direction: column; align-items: flex-start; }
+  .ff-student .aluno-treino-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .ff-student .aluno-treino-body { padding-inline: 20px; }
+  .ff-student .aluno-exercicio-nome { flex-wrap: nowrap; }
+  .ff-student .aluno-exercicio-nome h4 { overflow-wrap: anywhere; }
+}

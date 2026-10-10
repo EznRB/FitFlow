@@ -16,6 +16,17 @@
 
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
+const { plainText, httpsUrl } = require('./wger.service');
+
+function catalogId(value) {
+  if ((typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) &&
+    (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1)) {
+    throw new AppError('ID de exercício inválido.', 400);
+  }
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id > 2147483647) throw new AppError('ID de exercício inválido.', 400);
+  return id;
+}
 
 class ExerciciosService {
 
@@ -30,11 +41,15 @@ class ExerciciosService {
 
     // Filtro por grupo muscular (ex: "Peito", "Costas")
     if (filtros.grupoMuscular) {
+      if (typeof filtros.grupoMuscular !== 'string' || filtros.grupoMuscular.length > 50) {
+        throw new AppError('Grupo muscular inválido.', 400);
+      }
       where.grupo_muscular = filtros.grupoMuscular;
     }
 
     // Filtro por status ativo (por padrão, mostra apenas ativos)
     if (filtros.ativo !== undefined) {
+      if (typeof filtros.ativo !== 'boolean') throw new AppError('Status ativo inválido.', 400);
       where.ativo = filtros.ativo;
     } else {
       where.ativo = true;
@@ -57,7 +72,7 @@ class ExerciciosService {
    */
   async buscarPorId(id) {
     const exercicio = await prisma.catalogoExercicio.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: catalogId(id) }
     });
 
     if (!exercicio) {
@@ -74,15 +89,15 @@ class ExerciciosService {
    * @returns {Promise<object>} Exercício criado
    */
   async criar(data) {
-    this.validarDados(data);
+    const validated = this.validarDados(data);
 
     return await prisma.catalogoExercicio.create({
       data: {
-        nome: data.nome.trim(),
-        grupo_muscular: data.grupo_muscular.trim(),
-        instrucoes: data.instrucoes || null,
-        imagem_url: data.imagem_url || null,
-        ativo: true
+        ...validated,
+        ativo: true,
+        source: 'local',
+        curated: true,
+        locale: 'pt'
       }
     });
   }
@@ -96,15 +111,13 @@ class ExerciciosService {
    */
   async atualizar(id, data) {
     await this.buscarPorId(id); // Garante que existe
-    this.validarDados(data);
+    const validated = this.validarDados(data);
 
     return await prisma.catalogoExercicio.update({
-      where: { id: parseInt(id) },
+      where: { id: catalogId(id) },
       data: {
-        nome: data.nome.trim(),
-        grupo_muscular: data.grupo_muscular.trim(),
-        instrucoes: data.instrucoes || null,
-        imagem_url: data.imagem_url || null
+        ...validated,
+        curated: true
       }
     });
   }
@@ -119,7 +132,7 @@ class ExerciciosService {
     await this.buscarPorId(id); // Garante que existe
 
     await prisma.catalogoExercicio.update({
-      where: { id: parseInt(id) },
+      where: { id: catalogId(id) },
       data: { ativo: false }
     });
   }
@@ -146,13 +159,23 @@ class ExerciciosService {
    * @param {object} data - Dados a validar
    */
   validarDados(data) {
-    if (!data.nome || typeof data.nome !== 'string' || data.nome.trim() === '') {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de exercício inválidos.', 400);
+    if (typeof data.nome !== 'string' || !plainText(data.nome, 101) || data.nome.trim().length > 100) {
       throw new AppError('O nome do exercício é obrigatório.', 400);
     }
 
-    if (!data.grupo_muscular || typeof data.grupo_muscular !== 'string' || data.grupo_muscular.trim() === '') {
+    if (typeof data.grupo_muscular !== 'string' || !plainText(data.grupo_muscular, 51) || data.grupo_muscular.trim().length > 50) {
       throw new AppError('O grupo muscular é obrigatório.', 400);
     }
+    if (data.instrucoes != null && (typeof data.instrucoes !== 'string' || data.instrucoes.length > 10000)) {
+      throw new AppError('As instruções devem ser um texto com até 10.000 caracteres.', 400);
+    }
+    const imagem = data.imagem_url == null || data.imagem_url === '' ? null : httpsUrl(data.imagem_url, 255);
+    if (data.imagem_url != null && data.imagem_url !== '' && !imagem) {
+      throw new AppError('A imagem deve usar uma URL HTTPS com até 255 caracteres.', 400);
+    }
+    return { nome: plainText(data.nome, 100), grupo_muscular: plainText(data.grupo_muscular, 50),
+      instrucoes: plainText(data.instrucoes) || null, imagem_url: imagem };
   }
 }
 

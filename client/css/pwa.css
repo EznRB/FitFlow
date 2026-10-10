@@ -1,0 +1,24 @@
+.pwa-controls { display: grid; gap: .5rem; margin-top: .75rem; }
+.pwa-button { display: inline-flex; justify-content: center; align-items: center; gap: .5rem; min-height: 44px; padding: .65rem 1rem; border: 1px solid #475569; border-radius: .65rem; background: #1f2937; color: #f9fafb; font: inherit; text-decoration: none; cursor: pointer; text-align: center; }
+.pwa-button[hidden] { display: none; }
+.pwa-button-primary { background: #ea580c; border-color: #ea580c; color: white; }
+.pwa-button-danger { background: #7f1d1d; border-color: #ef4444; color: white; }
+.pwa-button:focus-visible { outline: 3px solid #fb923c; outline-offset: 3px; }
+.pwa-status { margin: 0; color: #cbd5e1; font-size: .8rem; line-height: 1.5; overflow-wrap: anywhere; }
+.pwa-status:empty { display: none; }
+.pwa-dialog { box-sizing: border-box; width: min(540px, calc(100vw - 2rem)); border: 1px solid #475569; border-radius: 1rem; padding: 1.5rem; background: #111827; color: #f9fafb; font-family: system-ui, sans-serif; }
+.pwa-dialog::backdrop { background: rgb(0 0 0 / .7); }
+.pwa-dialog h2 { margin: 0 0 1rem; font-size: 1.25rem; }
+.pwa-dialog p { color: #cbd5e1; line-height: 1.6; }
+.pwa-dialog-actions { display: grid; gap: .65rem; margin-top: 1.5rem; }
+.pwa-offline-body { margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom)); box-sizing: border-box; background: #0a0f1a; color: #f9fafb; font-family: system-ui, sans-serif; }
+.pwa-offline-card { max-width: 560px; width: 100%; box-sizing: border-box; padding: 2rem; border-radius: 1.5rem; border: 1px solid #334155; background: #111827; }
+.pwa-offline-logo { border-radius: 1.1rem; }
+.pwa-eyebrow { color: #fb923c !important; letter-spacing: .12em; font-size: .75rem; font-weight: 750; }
+.pwa-offline-card h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); line-height: 1.2; letter-spacing: -.04em; }
+.pwa-offline-card p { line-height: 1.65; color: #cbd5e1; }
+.pwa-offline-note { margin: 1.5rem 0; padding: 1rem; background: #1f2937; border-radius: 1rem; }
+.pwa-offline-note h2 { font-size: 1rem; margin: 0 0 .75rem; }
+.pwa-offline-note p { margin: .5rem 0; font-size: .9rem; }
+.pwa-offline-privacy { font-size: .8rem; }
+@media (max-width: 420px) { .pwa-offline-card { padding: 1.3rem; } .pwa-offline-card > .pwa-button { display: flex; width: 100%; box-sizing: border-box; } }

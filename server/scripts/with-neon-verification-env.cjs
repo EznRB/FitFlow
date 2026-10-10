@@ -1,0 +1,16 @@
+'use strict';
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const { randomBytes } = require('node:crypto');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env.remote.verify.local'), override: true });
+const { assertPostgresqlTestTarget } = require('../tests/helpers/postgresql-target.cjs');
+process.env.NODE_ENV = 'test';
+process.env.NEON_VERIFICATION_MANAGED = 'fitflow-neon-verification-v1';
+delete process.env.LOCAL_DB_MANAGED;
+process.env.JWT_SECRET = randomBytes(48).toString('hex');
+process.env.CORS_ORIGIN = 'http://127.0.0.1:3109';
+assertPostgresqlTestTarget();
+const [command, ...args] = process.argv.slice(2);
+if (!command) throw new Error('Informe o comando de verificação.');
+const result = spawnSync(command, args, { cwd: path.resolve(__dirname, '..'), env: process.env, windowsHide: true, stdio: 'inherit' });
+process.exitCode = result.status ?? 1;
