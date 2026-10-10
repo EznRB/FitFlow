@@ -101,6 +101,16 @@ Na landing: `npm run build` e `npm audit`; `lint` verifica tipos, sem representa
 
 ## Pendências obrigatórias
 
+### Publicação automática pelo GitHub
+
+A atualização documental `7cf0d2b` passou na [CI Build & Verify](https://github.com/EznRB/FitFlow/actions/runs/38056127829). O Preview automático `dpl_6KnPCQX1PFFUQ7G1FB7NcWcCdNy8` falhou **antes do build**, com `git_info_fail`: a Vercel não recuperou as informações do GitHub. A vinculação do projeto aponta ao repositório correto e a conexão de login GitHub existe; a causa específica ainda não foi comprovada. A instalação GitHub da Vercel apresenta atualização de permissões solicitada, cuja inspeção exige verificação de identidade por e-mail do titular. Nenhuma permissão foi ampliada.
+
+Um Preview separado, enviado pelo CLI a partir do checkout `7cf0d2b`, ficou **READY**: `dpl_9Liep4Va8vcpmVznhe2f7wmyUZ8t`, `https://fit-flow-9cwftu56a-eznrbs-projects.vercel.app`. Build PostgreSQL aprovado e `/api/health` retornou `database: ready` pelo acesso autorizado `vercel curl`; proteção do Preview preservada. Essa publicação manual não resolve nem torna verde o status Git automático. Production continua na revisão `f9ac83d` descrita acima.
+
+O titular precisa concluir a verificação e conferir o acesso da integração ao repositório, seguindo a [orientação oficial de acesso Git](https://vercel.com/docs/errors/error-list#lost-git-repository-access). Depois, validar um novo deployment disparado pelo Git antes do merge.
+
+### Etapas restantes
+
 1. **Mercado Pago sandbox:** criar/configurar conta, contas de teste, token, segredo de webhook e URL HTTPS. Gate de cartão: aprovado `APRO`, rejeitado e pendente `CONT`; Pix: QR/pendente **sem renovação**. O sandbox não simula liquidação Pix; conciliação `approved` de Pix permanece coberta por doubles. Segredos ficam no backend. [Roteiro e documentação oficial](PAGAMENTOS_SANDBOX.md).
 2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
