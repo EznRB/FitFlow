@@ -6,10 +6,10 @@ A meta completa está ativa. O login publicado foi recuperado com Neon; aplicati
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app) | `143c228`, branch `codex/science-ux-foundation`, deployment `dpl_BAi6pBwSvwfkWUene9i7VKrTCU3f`, READY pelo CLI e alias canônico confirmado. URL exata: `https://fit-flow-k2etnpg11-eznrbs-projects.vercel.app`. `/api/health` HTTP 200, banco ready e API no-store. api.js/sessoes.js/app.js com hashes iguais ao checkout. Navegador: login real de aluno, atualização sem novos registros e histórico persistido, captura 33. |
+| [FitFlow](https://fit-flow-indol.vercel.app) | `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, READY pelo CLI com alias canônico. URL exata: `https://fit-flow-5j7ntzyzj-eznrbs-projects.vercel.app`. Saúde HTTP 200, banco ready, API no-store e hashes de api.js/sessoes.js/app.js/sessoes.css iguais ao checkout. Sessão demonstrativa restaurada, estados de consulta observados durante atualização e botão liberado ao concluir; histórico de 160 kg·reps preservado, captura 34. Sem gravação nova. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-[CI GitHub da revisão atual 143c228](https://github.com/EznRB/FitFlow/actions/runs/38057480596): sucesso. Suíte integral local **316/316**, zero falhas e ignorados; revisão independente focada 12/12 e gate privado atual em 297 arquivos. Prazo por requisição de treino e consultas, sem migration ou dependência nova. Preview automático Git dessa revisão falhou antes do build; Production pelo CLI aprovada.
+[CI GitHub da revisão atual 2d74840](https://github.com/EznRB/FitFlow/actions/runs/38058786911): sucesso. Suíte integral local **328/328**, zero falhas e ignorados; testes focados de consultas 12/12 e revisão independente aprovada. Gate privado atual em 296 arquivos. Estados de consulta, acabamento visual de sessões e remoção de três propostas Prisma obsoletas já implementadas nos schemas ativos; sem migration ou dependência nova. Preview automático Git aprovado; Production pelo CLI READY.
 
 Revisão de gestão/login `3adf5c1`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38054589595), 304/304, revisão independente focada 29/29 e backend focado 48/48. Os subconjuntos não são contagens adicionais à suíte. Login editorial, correção de contraste, corridas de alunos, edição parcial e cancelamento atômico de presença não exigiram nova migration.
 
@@ -32,6 +32,12 @@ Gate HTTPS de gestão/nutrição/presença/renovação e idempotência manual fo
 Operações idempotentes start/série/conclusão e consultas de atualização usam prazo de 15 segundos incluindo corpo. O transporte pode ignorar o cancelamento sem prender indefinidamente a fila; resultado não confirmado preserva UUID e registro. Respostas tardias não confirmam fila nem provocam logout. O servidor pode ter gravado antes do timeout; reenvio conserva a intenção e o UUID. Várias operações e etapas podem somar mais de 15 segundos; suspensão do navegador pode atrasar timers.
 
 Sete novos testes controlados integram a suíte 316/316. Revisão independente 12/12 aprovada, sem somar subconjuntos ao total. No navegador publicado, login, atualização e histórico anterior de 20 kg × 8, RIR 2 e 160 kg·reps aprovados, captura 33. Esse gate não simula transporte parado nem substitui telefone físico. [Roteiro físico M01–M14](VALIDACAO_MOBILE.md), execução ainda NÃO FEITO.
+
+### Consultas e acabamento de sessões — 2d74840
+
+Carregamento, falha/offline e ausência confirmada têm mensagens próprias; o cache permanece disponível enquanto o servidor é consultado. O botão mostra Atualizando… somente durante a operação corrente. Respostas de leituras iniciais antigas não sobrescrevem uma atualização mais recente. O formulário preserva texto digitado e UUID; falha inicial de armazenamento permite tentar novamente. Cores usam os tokens laranja/navy ativos, painéis têm raio de 8 pixels e inputs de 16 pixels.
+
+Doze novos testes controlados cobrem consultas parciais, armazenamento, identidade, navegação e concorrência da atualização; integram o total 328/328. Revisão independente aprovada. Navegador publicado confirmou mensagens durante a consulta, cache visível e término normal, captura 34. Os testes de timing não são evidência de reconexão física.
 
 ## Evidências obtidas
 
@@ -76,7 +82,7 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. A revisão atual `143c228` passou em 316/316, conforme registrado acima.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. A revisão atual `2d74840` passou em 328/328, conforme registrado acima.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
@@ -111,11 +117,13 @@ Na landing: `npm run build` e `npm audit`; `lint` verifica tipos, sem representa
 
 A atualização documental `7cf0d2b` passou na [CI Build & Verify](https://github.com/EznRB/FitFlow/actions/runs/38056127829). O Preview automático `dpl_6KnPCQX1PFFUQ7G1FB7NcWcCdNy8` falhou **antes do build**, com `git_info_fail`: a Vercel não recuperou as informações do GitHub. A vinculação do projeto aponta ao repositório correto e a conexão de login GitHub existe; a causa específica ainda não foi comprovada. A instalação GitHub da Vercel apresenta atualização de permissões solicitada, cuja inspeção exige verificação de identidade por e-mail do titular. Nenhuma permissão foi ampliada.
 
-Um Preview separado, enviado pelo CLI a partir do checkout `7cf0d2b`, ficou **READY**: `dpl_9Liep4Va8vcpmVznhe2f7wmyUZ8t`, `https://fit-flow-9cwftu56a-eznrbs-projects.vercel.app`. Build PostgreSQL aprovado e `/api/health` retornou `database: ready` pelo acesso autorizado `vercel curl`; proteção do Preview preservada. Essa publicação manual não resolve nem torna verde o status Git automático. Production continua na revisão `f9ac83d` descrita acima.
+Um Preview separado, enviado pelo CLI a partir do checkout `7cf0d2b`, ficou **READY**: `dpl_9Liep4Va8vcpmVznhe2f7wmyUZ8t`, `https://fit-flow-9cwftu56a-eznrbs-projects.vercel.app`. Build PostgreSQL aprovado e `/api/health` retornou `database: ready` pelo acesso autorizado `vercel curl`; proteção do Preview preservada. Essa publicação manual não resolve nem torna verde o status Git automático. Naquele gate, Production continuava na revisão `f9ac83d`; a revisão atual está na tabela de implantação.
 
 O novo commit `89ba731` foi publicado **automaticamente pelo GitHub** em READY: `dpl_8xdgivRXVBJ6TvXC3J688xX69QNP`, `https://fit-flow-beg7ud4mp-eznrbs-projects.vercel.app`. A API confirmou `source: git` e o SHA correto; [CI Build & Verify](https://github.com/EznRB/FitFlow/actions/runs/38056482679) e status Vercel aprovados. `/api/health` confirmou banco pronto pelo acesso autorizado. A recuperação foi observada sem alterar permissões, proteção ou contas; não há bloqueio atual dessa integração. A causa específica da falha anterior permanece desconhecida. Se voltar a ocorrer, seguir a [orientação oficial de acesso Git](https://vercel.com/docs/errors/error-list#lost-git-repository-access), com verificação do titular quando exigida.
 
 A recuperação Git acima foi temporária: `143c228` voltou a falhar antes do build (`git_info_fail`), em `dpl_4UHk4jkPh6zFAEp9CxSvDYNvHNNL`. CI [38057480596](https://github.com/EznRB/FitFlow/actions/runs/38057480596) aprovada e Production pelo CLI READY `dpl_BAi6pBwSvwfkWUene9i7VKrTCU3f`, com banco pronto. A causa da intermitência ainda não foi comprovada; nenhuma permissão, proteção ou conta alterada.
+
+Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e status do Preview automático `dpl_DPziThguHve7YEQKuEXXhmgVa3So` estão aprovados. Production `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, READY pelo CLI com alias canônico. URL exata: `https://fit-flow-5j7ntzyzj-eznrbs-projects.vercel.app`. Não há bloqueio atual observado na integração Git; a causa das falhas históricas permanece desconhecida.
 
 ### Etapas restantes
 
@@ -160,5 +168,7 @@ A recuperação Git acima foi temporária: `143c228` voltou a falhar antes do bu
 - `evidence/32-indicadores-revisados-vercel.png`: glossário publicado em `f9ac83d`, identificado como texto revisado do FitFlow, não gerado por IA; definições do produto separadas do contexto científico.
 
 - `evidence/33-sessoes-prazo-vercel.png`: histórico normal em `143c228` após login e Sincronizar; série anterior 20 kg × 8, RIR 2 e 160 kg·reps preservada. Não comprova transporte parado, reconexão física nem gravação nova.
+
+- `evidence/34-sessoes-consultas-vercel.png`: revisão `2d74840`, fichas/histórico consultados no servidor, botão disponível e registro anterior de 160 kg·reps preservado. Sem gravação nova; não comprova telefone físico nem os timings controlados dos testes.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.
