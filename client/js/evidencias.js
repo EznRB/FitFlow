@@ -41,7 +41,9 @@ const EvidenciasView = {
         return;
       }
       button.disabled = false;
-      status.textContent = 'Envia apenas o tema e resumos das referências ao Gemini. Nenhum dado pessoal é enviado.';
+      const provider = response.data.provider === 'groq' ? 'Groq'
+        : response.data.provider === 'gemini' ? 'Gemini' : 'serviço de IA configurado';
+      status.textContent = `Envia apenas o tema e resumos das referências ao ${provider}. Nenhum dado pessoal é enviado.`;
     } catch {
       if (container.isConnected) status.textContent = 'IA exige sessão e serviço disponível. Você pode consultar as referências sem IA.';
       return;

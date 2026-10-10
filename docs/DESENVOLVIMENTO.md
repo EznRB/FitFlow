@@ -156,7 +156,7 @@ Seu constructor Prisma recebe a URL privada guardada explicitamente, sem usar a 
 
 ## Integrações opcionais
 
-Sem `GEMINI_API_KEY`, a IA informa indisponibilidade e fórmulas/fontes continuam acessíveis. O modelo padrão é `gemini-3.5-flash-lite`; a chave fica exclusivamente no servidor. Antes da geração real, configure quotas e limites de gasto no provedor.
+Foi escolhido GPT-OSS 120B via Groq Free. Sem chave e confirmação explícita do plano Free, a IA informa indisponibilidade e fórmulas/fontes continuam acessíveis. A chave fica exclusivamente no servidor; não há fallback automático para serviço pago. Gemini permanece como alternativa explícita. [Configuração, fontes e verificação real](IA_GRATUITA.md).
 
 Checkout depende dos campos Mercado Pago de `server/.env.example`, conta de teste e webhook HTTPS. O modo implementado é sandbox. Testes com provedor simulado não substituem confirmação canônica de um pagamento real de teste.
 
