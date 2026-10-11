@@ -46,9 +46,8 @@ const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
     const finalEnd = addDays(originalEnd, 90);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), finalEnd.toISOString());
     const originalHash = repeats[0].manualRequestHash;
-    await first.atualizar(repeats[0].id, { amount: '13.21', notes: 'Correção sintética' });
     const retried = await second.registrar(payload, actor);
-    assert.equal(retried.id, repeats[0].id); assert.equal(Number(retried.amount), 13.21);
+    assert.equal(retried.id, repeats[0].id); assert.equal(Number(retried.amount), Number(payload.amount));
     assert.equal(retried.manualRequestHash, originalHash);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), finalEnd.toISOString());
     await status(first.registrar({ ...payload, amount: '15.00' }, actor), 409);
@@ -81,7 +80,7 @@ const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), beforeRollback.toISOString());
     await first.registrar(rollbackInput, actor);
     assert.equal(await db.payment.count({ where: { manualRequestId: rollbackInput.idempotencyKey } }), 1);
-    console.log('PASS manual payment native: UUID dedup entre dois clientes, intenções distintas acumuladas, conflito ator/payload, replay após edição, corrida entre alunos, rollback e lookup privado.');
+    console.log('PASS manual payment native: UUID dedup entre dois clientes, intenções distintas acumuladas, conflito ator/payload, replay original preservado, corrida entre alunos, rollback e lookup privado.');
   } finally {
     try {
       await db.payment.deleteMany({ where: { studentId: { in: students.map(row => row.id) } } });

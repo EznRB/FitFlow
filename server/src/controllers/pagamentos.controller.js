@@ -89,22 +89,6 @@ const pagamentosController = {
   },
 
   /**
-   * PUT /api/pagamentos/:id
-   * Atualiza dados de um pagamento existente (correção).
-   * ⚠️ Nunca deleta — preserva histórico financeiro.
-   */
-  async atualizar(req, res, next) {
-    try {
-      if (!req.params.id) throw new AppError('ID do pagamento não fornecido.', 400);
-
-      const pagamento = await pagamentosService.atualizar(req.params.id, req.body);
-      sendSuccess(res, 200, 'Pagamento atualizado com sucesso.', publicPayment(pagamento));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  /**
    * POST /api/pagamentos/verificar-inadimplencia
    * Dispara a verificação de inadimplência manualmente.
    * Bloqueia alunos com atraso > 5 dias e marca pagamentos como "overdue".

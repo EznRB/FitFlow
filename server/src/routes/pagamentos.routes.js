@@ -13,7 +13,7 @@
  * GET    /api/pagamentos/:id                 — Buscar por ID
  * POST   /api/pagamentos                     — Registrar pagamento
  * POST   /api/pagamentos/verificar-inadimplencia — Executar verificação
- * PUT    /api/pagamentos/:id                 — Atualizar pagamento
+ * PUT/PATCH/DELETE /api/pagamentos/:id       — Não permitidos; registro preservado
  */
 
 const express = require('express');
@@ -37,6 +37,10 @@ router.get('/aluno/:alunoId', pagamentosController.buscarPorAluno);
 router.get('/', pagamentosController.listar);
 router.get('/:id', pagamentosController.buscarPorId);
 router.post('/', pagamentosController.registrar);
-router.put('/:id', pagamentosController.atualizar);
+router.all('/:id', (req, res, next) => {
+  if (!['PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  res.set('Allow', 'GET').status(405).json({ status: 'fail',
+    message: 'Recebimentos financeiros são preservados; alteração ou exclusão direta não é permitida. Correções e estornos exigem um fluxo auditado próprio.' });
+});
 
 module.exports = router;

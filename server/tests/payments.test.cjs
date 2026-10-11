@@ -44,7 +44,6 @@ test('rejeita coerções, valores não finitos, IDs parciais e calendários inv�
   const base = { studentId: 11, amount: 150, paymentDate: '2026-10-08', idempotencyKey: randomUUID() };
   for (const data of [null, [], { ...base, studentId: '11x' }, { ...base, amount: true }, { ...base, paymentDate: '2026-02-30' }, { ...base, planId: {} }]) await assert.rejects(service.registrar(data, 7), error => error.statusCode === 400);
   assert.equal(db.payments.length, 0); assert.equal(db.locks, 0);
-  for (const data of [null, [], { status: 'approved' }, { amount: '20oops' }, { dueDate: '2026-02-30' }, { paymentMethod: '<script>' }]) await assert.rejects(service.atualizar(1, data), error => error.statusCode === 400);
 });
 
 test('consulta antiga de inadimplência não bloqueia aluno que renovou enquanto aguardava lock', async () => {
@@ -56,11 +55,4 @@ test('consulta antiga de inadimplência não bloqueia aluno que renovou enquanto
   assert.equal(result.alunosBloqueados, 0);
   assert.equal(db.student.status, 'active');
   assert.equal(db.locks, 1);
-});
-test('pagamento conciliado do provedor não pode ser editado manualmente', async () => {
-  const db = ledgerDB(); const service = createPagamentosService({ db });
-  await service.registrar({ studentId: 11, amount: 150, idempotencyKey: randomUUID() }, 7);
-  db.paymentIntent = { findFirst: async () => ({ id: 'owned-intent', paymentId: 1 }) };
-  await assert.rejects(service.atualizar(1, { amount: 1 }), error => error.statusCode === 409);
-  assert.equal(db.payments[0].amount, 150);
 });

@@ -17,9 +17,11 @@ const ManualPaymentPending = {
   key: actor => `fitflow_manual_payment_v1:${actor}`,
   identity() {
     if (typeof Auth === 'undefined' || Auth.user?.role !== 'admin' || !Number.isSafeInteger(Auth.user.id)) throw new Error('Entre com uma conta de administrador.');
-    return { actor: Auth.user.id, generation: Auth.generation };
+    return { actor: Auth.user.id, generation: Auth.generation,
+      epoch: typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
   },
-  current(identity) { return typeof Auth !== 'undefined' && Auth.user?.id === identity.actor && Auth.user.role === 'admin' && Auth.generation === identity.generation; },
+  current(identity) { return typeof Auth !== 'undefined' && Auth.user?.id === identity.actor && Auth.user.role === 'admin' && Auth.generation === identity.generation
+    && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === identity.epoch && Auth.getSessionEpoch() === identity.epoch)); },
   read(actor) {
     const raw = localStorage.getItem(this.key(actor));
     if (!raw) return null;
@@ -64,7 +66,7 @@ if (typeof window.addEventListener === 'function') window.addEventListener('auth
   // Permanecem para reconciliação quando o mesmo responsável entrar novamente.
   PagamentosView._paymentSubmission = null;
   PagamentosView._lastConfirmedRequest = null;
-  PagamentosView._paymentModalGeneration = (PagamentosView._paymentModalGeneration || 0) + 1;
+  PagamentosView.invalidar();
 });
 
 const PagamentosView = {
@@ -72,28 +74,77 @@ const PagamentosView = {
   alunos: [],
   planos: [],
   filtroAtual: { status: '', studentId: '' },
+  generation: 0,
+  listSequence: 0,
+  studentSequence: 0,
+  planSequence: 0,
+  invalidar() {
+    this.generation++; this.listSequence++; this.studentSequence++; this.planSequence++;
+    this._paymentModalGeneration = (this._paymentModalGeneration || 0) + 1;
+    this.dados = []; this.alunos = []; this.planos = [];
+    this.filtroAtual = { status: '', studentId: '' }; this.autocompleteInput = null;
+    this._paymentSubmission = null;
+  },
+  contexto() {
+    const user = typeof Auth === 'undefined' ? null : Auth.user;
+    return { generation: this.generation, table: document.getElementById('pagamentos-table-body'),
+      userId: user?.id, role: user?.role, authGeneration: typeof Auth === 'undefined' ? null : Auth.generation,
+      epoch: typeof Auth !== 'undefined' && typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
+  },
+  atual(context) {
+    return context && context.generation === this.generation && context.table && context.table.isConnected !== false
+      && document.getElementById('pagamentos-table-body') === context.table
+      && (typeof App === 'undefined' || App.currentPage === 'pagamentos')
+      && (typeof Auth === 'undefined' || (Auth.user?.id === context.userId && context.role === 'admin' && Auth.user?.role === context.role
+        && Auth.generation === context.authGeneration
+        && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === context.epoch && Auth.getSessionEpoch() === context.epoch))));
+  },
+  contextoModal() {
+    const body = document.getElementById('modal-body');
+    return { ...this.contexto(), sequence: this._paymentModalGeneration = (this._paymentModalGeneration || 0) + 1,
+      modalBody: body, modalChild: body?.firstElementChild ?? null,
+      modalOpen: typeof Modal.isOpen === 'function' ? !!Modal.isOpen() : null };
+  },
+  modalAtual(context) {
+    return this.atual(context) && context.sequence === this._paymentModalGeneration
+      && document.getElementById('modal-body') === context.modalBody
+      && (context.modalBody?.firstElementChild ?? null) === context.modalChild
+      && (context.modalOpen === null || !!Modal.isOpen() === context.modalOpen);
+  },
+  vincularModal(context) {
+    context.modalChild = context.modalBody?.firstElementChild ?? null;
+    context.modalOpen = typeof Modal.isOpen === 'function' ? !!Modal.isOpen() : null;
+  },
 
   /**
    * Ponto de entrada: carrega dados e configura eventos.
    */
   async inicializar() {
+    this.invalidar();
+    const context = this.contexto();
+    if (!this.atual(context)) return;
     await Promise.all([
       this.carregarLista(),
       this.carregarAlunos(),
       this.carregarPlanos(),
     ]);
-    this.configurarEventos();
+    if (this.atual(context)) this.configurarEventos(context);
   },
 
   /**
    * Busca a lista de alunos para os selects do formulário e filtros.
    */
   async carregarAlunos() {
+    const context = this.contexto(), sequence = ++this.studentSequence;
+    if (!this.atual(context)) return;
     try {
       const resp = await API.get('/alunos');
+      if (sequence !== this.studentSequence || !this.atual(context)) return;
       this.alunos = resp.data || [];
-      this.popularFiltroAluno();
+      this.popularFiltroAluno(context);
     } catch (e) {
+      if (sequence !== this.studentSequence || !this.atual(context)) return;
+      this.alunos = [];
       console.warn('PagamentosView: erro ao carregar alunos', e.message);
     }
   },
@@ -102,10 +153,15 @@ const PagamentosView = {
    * Busca a lista de planos ativos para o select do formulário.
    */
   async carregarPlanos() {
+    const context = this.contexto(), sequence = ++this.planSequence;
+    if (!this.atual(context)) return;
     try {
       const resp = await API.get('/planos');
+      if (sequence !== this.planSequence || !this.atual(context)) return;
       this.planos = (resp.data || []).filter(p => p.active);
     } catch (e) {
+      if (sequence !== this.planSequence || !this.atual(context)) return;
+      this.planos = [];
       console.warn('PagamentosView: erro ao carregar planos', e.message);
     }
   },
@@ -113,13 +169,20 @@ const PagamentosView = {
   /**
    * Inicializa o Autocomplete para filtro de aluno na tabela.
    */
-  popularFiltroAluno() {
+  popularFiltroAluno(context = this.contexto()) {
+    if (!this.atual(context)) return;
+    const input = document.getElementById('filtro-aluno-pagamento');
+    if (!input) return;
     if (typeof Autocomplete !== 'undefined') {
-      const autocompleteData = this.alunos.map(a => ({
+      const next = this.alunos.map(a => ({
         id: a.id,
         label: a.user ? a.user.name : `Aluno #${a.id}`
       }));
+      if (this.autocompleteInput === input) { this.autocompleteData.splice(0, this.autocompleteData.length, ...next); return; }
+      this.autocompleteInput = input;
+      const autocompleteData = this.autocompleteData = next;
       Autocomplete.init('filtro-aluno-pagamento', autocompleteData, (selected) => {
+        if (!this.atual(context) || input.isConnected === false || document.getElementById('filtro-aluno-pagamento') !== input) return;
         this.filtroAtual.studentId = selected ? selected.id : '';
         this.carregarLista();
       });
@@ -130,9 +193,12 @@ const PagamentosView = {
    * Carrega a lista principal de pagamentos com os filtros atuais.
    */
   async carregarLista() {
-    const tbody = document.getElementById('pagamentos-table-body');
-    if (!tbody) return;
+    const context = this.contexto(), sequence = ++this.listSequence;
+    if (!this.atual(context)) return;
+    const tbody = context.table;
+    const current = () => sequence === this.listSequence && this.atual(context);
     tbody.onclick = event => {
+      if (!current()) return;
       const button = event.target?.closest?.('button[data-payment-details]');
       if (!button || !tbody.contains(button) || !/^[1-9]\d*$/.test(button.dataset.paymentDetails || '')) return;
       const id = Number(button.dataset.paymentDetails);
@@ -152,6 +218,7 @@ const PagamentosView = {
       const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
 
       const resp = await API.get(`/pagamentos${query}`);
+      if (!current()) return;
       this.dados = resp.data || [];
 
       if (this.dados.length === 0) {
@@ -196,6 +263,7 @@ const PagamentosView = {
       if (window.lucide) lucide.createIcons({ nodes: [tbody] });
 
     } catch (error) {
+      if (!current()) return;
       Toast.error('Erro ao carregar pagamentos: ' + error.message);
       tbody.innerHTML = `<tr><td colspan="7" style="color:var(--error); text-align:center; padding:2rem;">
         Erro ao carregar dados financeiros.
@@ -206,17 +274,18 @@ const PagamentosView = {
   /**
    * Configura os eventos de clique nos botões da página.
    */
-  configurarEventos() {
+  configurarEventos(context = this.contexto()) {
     const btnNovo = document.getElementById('btn-novo-pagamento');
-    if (btnNovo) btnNovo.onclick = () => this.abrirModalRegistro();
+    if (btnNovo) btnNovo.onclick = () => { if (this.atual(context)) return this.abrirModalRegistro(); };
 
     const btnInadimplentes = document.getElementById('btn-ver-inadimplentes');
-    if (btnInadimplentes) btnInadimplentes.onclick = () => this.abrirModalInadimplentes();
+    if (btnInadimplentes) btnInadimplentes.onclick = () => { if (this.atual(context)) return this.abrirModalInadimplentes(); };
 
     // Filtro de status
     const filtroStatus = document.getElementById('filtro-status-pagamento');
     if (filtroStatus) {
       filtroStatus.onchange = () => {
+        if (!this.atual(context)) return;
         this.filtroAtual.status = filtroStatus.value;
         this.carregarLista();
       };
@@ -229,6 +298,8 @@ const PagamentosView = {
    * Abre o modal para registrar um novo pagamento.
    */
   async abrirModalRegistro() {
+    const context = this.contextoModal();
+    if (!this.modalAtual(context)) return;
     let identity;
     let pending;
     try {
@@ -238,14 +309,14 @@ const PagamentosView = {
         // Só uma nova abertura deliberada após confirmação desta conta inicia
         // outra intenção. O recibo opaco continua disponível para abas atrasadas.
         await ManualPaymentPending.withLock(identity.actor, () => {
-          if (ManualPaymentPending.current(identity)) ManualPaymentPending.clear(identity.actor, pending.id);
+          if (ManualPaymentPending.current(identity) && this.modalAtual(context)) ManualPaymentPending.clear(identity.actor, pending.id);
         });
-        if (!ManualPaymentPending.current(identity)) return;
+        if (!ManualPaymentPending.current(identity) || !this.modalAtual(context)) return;
         pending = ManualPaymentPending.read(identity.actor);
         this._lastConfirmedRequest = null;
       }
-    } catch (error) { Toast.error(error.message); return; }
-    this._paymentModalGeneration = (this._paymentModalGeneration || 0) + 1;
+    } catch (error) { if (this.modalAtual(context)) Toast.error(error.message); return; }
+    if (!this.modalAtual(context)) return;
     // Gera opções de alunos
     const opcoesAlunos = this.alunos.map(a => {
       const nome = FitFlowSecurity.escapeHtml(a.user ? a.user.name : `Aluno #${a.id}`);
@@ -315,16 +386,20 @@ const PagamentosView = {
     `;
 
     Modal.open('Registrar pagamento recebido', bodyHTML, [
-      { text: 'Cancelar', class: 'btn-secondary', action: () => { this._paymentModalGeneration++; Modal.close(); } },
-      ...(pending ? [{ text: 'Verificar envio anterior', class: 'btn-secondary', action: () => this.verificarEnvioAnterior() }] : []),
-      { text: 'Registrar recebimento', class: 'btn-success', action: () => this.submeterPagamento() },
+      { text: 'Cancelar', class: 'btn-secondary', action: () => { if (this.modalAtual(context)) { this._paymentModalGeneration++; Modal.close(); } } },
+      ...(pending ? [{ text: 'Verificar envio anterior', class: 'btn-secondary', action: () => { if (this.modalAtual(context)) return this.verificarEnvioAnterior(); } }] : []),
+      { text: 'Registrar recebimento', class: 'btn-success', action: () => { if (this.modalAtual(context)) return this.submeterPagamento(); } },
     ]);
+    this.vincularModal(context);
+    const form = document.getElementById('form-pagamento');
 
     // Ao selecionar aluno, preenche o valor com o preço do plano atual
     setTimeout(() => {
+      if (!this.modalAtual(context) || document.getElementById('form-pagamento') !== form) return;
       const selectAluno = document.getElementById('input-pgto-aluno');
       if (selectAluno) {
         selectAluno.onchange = () => {
+          if (!this.modalAtual(context) || document.getElementById('form-pagamento') !== form) return;
           const alunoSelecionado = this.alunos.find(a => a.id === parseInt(selectAluno.value));
           if (alunoSelecionado?.plan?.price) {
             const valorInput = document.getElementById('input-pgto-valor');
@@ -352,9 +427,11 @@ const PagamentosView = {
   },
 
   async verificarEnvioAnterior() {
+    const context = this.contexto();
+    if (!this.atual(context)) return;
     let identity;
     const generation = this._paymentModalGeneration, form = document.getElementById('form-pagamento');
-    const current = () => identity && ManualPaymentPending.current(identity) && generation === this._paymentModalGeneration
+    const current = () => this.atual(context) && identity && ManualPaymentPending.current(identity) && generation === this._paymentModalGeneration
       && document.getElementById('form-pagamento') === form;
     try {
       identity = ManualPaymentPending.identity();
@@ -378,6 +455,8 @@ const PagamentosView = {
    * Submete o formulário de registro de pagamento.
    */
   async submeterPagamento() {
+    const context = this.contexto();
+    if (!this.atual(context)) return;
     if (this._paymentSubmission) return;
     let identity;
     try { identity = ManualPaymentPending.identity(); } catch (error) { Toast.error(error.message); return; }
@@ -410,7 +489,7 @@ const PagamentosView = {
 
     const token = {}, generation = this._paymentModalGeneration;
     const form = document.getElementById('form-pagamento');
-    const current = () => ManualPaymentPending.current(identity) && generation === this._paymentModalGeneration
+    const current = () => this.atual(context) && ManualPaymentPending.current(identity) && generation === this._paymentModalGeneration
       && document.getElementById('form-pagamento') === form;
     this._paymentSubmission = token;
     let pending;
@@ -489,8 +568,11 @@ const PagamentosView = {
    * Exibe detalhes de um pagamento em um modal.
    */
   async verDetalhes(id) {
+    const context = this.contextoModal();
+    if (!this.modalAtual(context)) return;
     try {
       const resp = await API.get(`/pagamentos/${id}`);
+      if (!this.modalAtual(context)) return;
       const p = resp.data;
 
       const nomeAluno = FitFlowSecurity.escapeHtml(p.student?.user?.name || '—');
@@ -540,9 +622,11 @@ const PagamentosView = {
       `;
 
       Modal.open('Detalhes do Pagamento', bodyHTML, [
-        { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
+        { text: 'Fechar', class: 'btn-secondary', action: () => { if (this.modalAtual(context)) Modal.close(); } },
       ]);
+      this.vincularModal(context);
     } catch (error) {
+      if (!this.modalAtual(context)) return;
       Toast.error('Erro ao carregar detalhes: ' + error.message);
     }
   },
@@ -551,12 +635,16 @@ const PagamentosView = {
    * Abre o painel de inadimplentes em um modal dedicado.
    */
   async abrirModalInadimplentes() {
+    const context = this.contextoModal();
+    if (!this.modalAtual(context)) return;
     try {
       // Primeiro dispara a verificação automática
       await API.post('/pagamentos/verificar-inadimplencia');
+      if (!this.modalAtual(context)) return;
 
       // Depois busca a lista atualizada
       const resp = await API.get('/pagamentos/inadimplentes');
+      if (!this.modalAtual(context)) return;
       const lista = resp.data || [];
 
       let bodyHTML;
@@ -580,7 +668,7 @@ const PagamentosView = {
               const email = FitFlowSecurity.escapeHtml(aluno.user?.email || '');
               const planoNome = FitFlowSecurity.escapeHtml(aluno.plan?.name || 'Sem plano');
               const vencimento = aluno.planEndDate ? this.formatarData(aluno.planEndDate) : '—';
-              const diasAtraso = aluno.planEndDate ? this.calcularDiasAtraso(aluno.planEndDate) : 0;
+              const diasAtraso = this.calcularDiasAtraso(aluno.planEndDate);
               const ultimoPgto = aluno.payments?.[0];
               const ultimoPgtoData = ultimoPgto ? this.formatarData(ultimoPgto.paymentDate) : 'Nunca';
               const statusBadge = aluno.status === 'blocked'
@@ -599,7 +687,7 @@ const PagamentosView = {
                   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.5rem; font-size:0.8rem; color:var(--text-secondary);">
                     <div>Plano: <strong>${planoNome}</strong></div>
                     <div>Venceu em: <strong style="color:var(--error)">${vencimento}</strong></div>
-                    <div>Atraso: <strong style="color:var(--error)">${diasAtraso} dias</strong></div>
+                    <div>Atraso: <strong style="color:var(--error)">${diasAtraso === null ? 'Não informado' : `${diasAtraso} dias`}</strong></div>
                   </div>
                   <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem;">
                     Último pagamento: ${ultimoPgtoData}
@@ -618,10 +706,12 @@ const PagamentosView = {
       }
 
       Modal.open('Alunos Inadimplentes', bodyHTML, [
-        { text: 'Fechar', class: 'btn-secondary', action: () => Modal.close() },
+        { text: 'Fechar', class: 'btn-secondary', action: () => { if (this.modalAtual(context)) Modal.close(); } },
       ]);
+      this.vincularModal(context);
       const actionsHost = document.getElementById('modal-body');
       if (actionsHost) actionsHost.onclick = event => {
+        if (!this.modalAtual(context)) return;
         const button = event.target?.closest?.('button[data-payment-student]');
         if (!button || !actionsHost.contains(button) || !/^[1-9]\d*$/.test(button.dataset.paymentStudent || '')) return;
         const id = Number(button.dataset.paymentStudent);
@@ -630,11 +720,13 @@ const PagamentosView = {
 
       // Recria ícones Lucide no modal
       setTimeout(() => {
+        if (!this.modalAtual(context)) return;
         const modalBody = document.getElementById('modal-body');
         if (modalBody && window.lucide) lucide.createIcons({ nodes: [modalBody] });
       }, 50);
 
     } catch (error) {
+      if (!this.modalAtual(context)) return;
       Toast.error('Erro ao verificar inadimplência: ' + error.message);
     }
   },
@@ -643,11 +735,18 @@ const PagamentosView = {
    * Atalho: abre modal de registro com aluno pré-selecionado (usado no painel de inadimplentes).
    */
   registrarPagamentoRapido(studentId) {
+    const context = this.contextoModal();
+    if (!this.atual(context)) return;
     Modal.close();
+    this.vincularModal(context);
     setTimeout(async () => {
+      if (!this.modalAtual(context)) return;
       await this.abrirModalRegistro();
+      if (!this.atual(context)) return;
+      const form = document.getElementById('form-pagamento'), generation = this._paymentModalGeneration;
       // Pré-seleciona o aluno após o modal abrir
       setTimeout(() => {
+        if (!this.atual(context) || generation !== this._paymentModalGeneration || document.getElementById('form-pagamento') !== form) return;
         const selectAluno = document.getElementById('input-pgto-aluno');
         if (selectAluno) {
           selectAluno.value = studentId;
@@ -673,11 +772,14 @@ const PagamentosView = {
   /**
    * Calcula dias de atraso a partir de uma data de vencimento.
    */
-  calcularDiasAtraso(dateStr) {
-    const venc = new Date(dateStr);
-    const agora = new Date();
-    const diff = Math.floor((agora - venc) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? diff : 0;
+  calcularDiasAtraso(dateStr, now = new Date()) {
+    if (typeof dateStr !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T00:00:00(?:\.000)?Z)?$/.test(dateStr)) return null;
+    const civil = dateStr.slice(0, 10), venc = new Date(`${civil}T00:00:00.000Z`);
+    if (!Number.isFinite(venc.getTime()) || venc.toISOString().slice(0, 10) !== civil || !Number.isFinite(now.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    const today = new Date(`${values.year}-${values.month}-${values.day}T00:00:00.000Z`);
+    return Math.max(0, Math.round((today - venc) / 86400000));
   },
 
   /**
@@ -707,3 +809,6 @@ const PagamentosView = {
     return Object.hasOwn(map, metodo) ? map[metodo] : FitFlowSecurity.escapeHtml(metodo || '—');
   },
 };
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('navigate', event => { if (event.detail?.page !== 'pagamentos') PagamentosView.invalidar(); });
+}

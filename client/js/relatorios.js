@@ -1,6 +1,22 @@
 const RelatoriosView = {
   container: null,
   requestVersion: 0,
+  generation: 0,
+  invalidar() { this.generation++; this.requestVersion++; this.container = null; },
+  contexto() {
+    const user = typeof Auth === 'undefined' ? null : Auth.user;
+    return { generation: this.generation, container: document.getElementById('relatorios-container'),
+      userId: user?.id, role: user?.role, authGeneration: typeof Auth === 'undefined' ? null : Auth.generation,
+      epoch: typeof Auth !== 'undefined' && typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
+  },
+  atual(context) {
+    return context && context.generation === this.generation && context.container && context.container.isConnected !== false
+      && document.getElementById('relatorios-container') === context.container
+      && (typeof App === 'undefined' || App.currentPage === 'relatorios')
+      && (typeof Auth === 'undefined' || (Auth.user?.id === context.userId && context.role === 'admin' && Auth.user?.role === context.role
+        && Auth.generation === context.authGeneration
+        && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === context.epoch && Auth.getSessionEpoch() === context.epoch))));
+  },
   escape(value) { return FitFlowSecurity.escapeHtml(value ?? '—'); },
   number(value) {
     if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+(?:\.\d+)?$/.test(value))) return null;
@@ -34,10 +50,13 @@ const RelatoriosView = {
     return entry ? `<span class="badge badge-${entry[0]}">${entry[1]}</span>` : `<span class="badge">${this.escape(status)}</span>`;
   },
   async inicializar() {
+    this.invalidar();
     this.container = document.getElementById('relatorios-container');
     if (!this.container) return;
+    const context = this.contexto();
+    if (!this.atual(context)) return;
     this.renderizarEstrutura();
-    this.bindEvents();
+    this.bindEvents(context);
     await this.carregarRelatorio('inadimplencia');
   },
   renderizarEstrutura() {
@@ -74,10 +93,10 @@ const RelatoriosView = {
       </div>
       <style>@media print{.no-print,.sidebar,.topbar{display:none!important}.main-content{margin-left:0!important;padding:0!important}.card{box-shadow:none!important;border:none!important}#relatorios-container{color:#000}}</style>`;
   },
-  bindEvents() {
-    document.getElementById('btn-gerar-relatorio').onclick = () => this.carregarRelatorio(document.getElementById('filtro-tipo-relatorio').value);
-    document.getElementById('filtro-tipo-relatorio').onchange = event => this.carregarRelatorio(event.target.value);
-    document.getElementById('btn-imprimir-relatorio').onclick = () => window.print();
+  bindEvents(context = this.contexto()) {
+    document.getElementById('btn-gerar-relatorio').onclick = () => { if (this.atual(context)) return this.carregarRelatorio(document.getElementById('filtro-tipo-relatorio').value); };
+    document.getElementById('filtro-tipo-relatorio').onchange = event => { if (this.atual(context)) return this.carregarRelatorio(event.target.value); };
+    document.getElementById('btn-imprimir-relatorio').onclick = () => { if (this.atual(context)) window.print(); };
   },
   state(name) {
     for (const id of ['loading', 'empty', 'content', 'error']) document.getElementById('relatorio-' + id).style.display = id === name ? 'block' : 'none';
@@ -101,6 +120,8 @@ const RelatoriosView = {
     this.mostrarTabela();
   },
   async carregarRelatorio(type) {
+    const context = this.contexto();
+    if (!this.atual(context)) return;
     const version = ++this.requestVersion;
     const methods = { inadimplencia: 'carregarInadimplencia', frequencia: 'carregarFrequencia', checkins: 'carregarCheckins', pagamentos: 'carregarPagamentos', alunos: 'carregarAlunos' };
     if (!Object.hasOwn(methods, type)) return;
@@ -112,39 +133,48 @@ const RelatoriosView = {
     try {
       if (dated && (!this.validDate(start.value) || !this.validDate(end.value) || start.value > end.value)) throw new Error('Informe um período válido; a data inicial deve anteceder ou coincidir com a final.');
       const query = dated ? '?' + new URLSearchParams({ startDate: start.value, endDate: end.value }) : '';
-      await this[methods[type]](query, version);
+      await this[methods[type]](query, version, context);
     } catch (error) {
-      if (version !== this.requestVersion) return;
+      if (version !== this.requestVersion || !this.atual(context)) return;
       this.state('error');
       document.getElementById('relatorio-error').textContent = error.message || 'Não foi possível carregar o relatório. Tente atualizar.';
     }
   },
-  async carregarInadimplencia(query = '', version = this.requestVersion) {
+  async carregarInadimplencia(query = '', version = this.requestVersion, context = this.contexto()) {
+    if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/inadimplencia');
-    if (version !== this.requestVersion) return;
+    if (version !== this.requestVersion || !this.atual(context)) return;
     if (!Array.isArray(data)) throw new Error('Formato inesperado do relatório.');
     const amounts = data.map(row => this.number(row.totalAtraso));
     const total = amounts.some(value => value === null) ? null : amounts.reduce((sum, value) => sum + value, 0);
     this.table('Inadimplência atual', [['Aluno', r => r.nome], ['E-mail', r => r.email], ['Plano', r => r.plano || 'Sem plano'], ['Situação', r => r.status, 'badge'], ['Registros vencidos', r => this.count(r.mensalidadesAtrasadas)], ['Total devido', r => this.formatMoney(r.totalAtraso)]], data, [['Alunos com atraso', data.length], ['Total devido', this.formatMoney(total)]]);
   },
-  async carregarFrequencia(query = '', version = this.requestVersion) {
+  async carregarFrequencia(query = '', version = this.requestVersion, context = this.contexto()) {
+    if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/frequencia' + query);
-    if (version !== this.requestVersion) return;
+    if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Presenças por aluno no período', [['Aluno', r => r.nome], ['Plano', r => r.plano || 'Sem plano'], ['Situação', r => r.statusAluno, 'badge'], ['Presenças', r => this.count(r.totalCheckins)]], data);
   },
-  async carregarCheckins(query = '', version = this.requestVersion) {
+  async carregarCheckins(query = '', version = this.requestVersion, context = this.contexto()) {
+    if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/checkins' + query);
-    if (version !== this.requestVersion) return;
+    if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Check-ins no período', [['Data', r => this.formatDate(r.data)], ['Horário (São Paulo)', r => this.formatTime(r.hora)], ['Aluno', r => r.aluno], ['Situação', r => r.status, 'badge']], data?.items, [['Registros no período', this.count(data?.total)]]);
   },
-  async carregarPagamentos(query = '', version = this.requestVersion) {
+  async carregarPagamentos(query = '', version = this.requestVersion, context = this.contexto()) {
+    if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/financeiro' + query);
-    if (version !== this.requestVersion) return;
+    if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Registros financeiros no período', [['Data do pagamento', r => this.formatDate(r.dataPagamento)], ['Aluno', r => r.aluno], ['Plano', r => r.plano], ['Situação', r => r.status, 'badge'], ['Valor', r => this.formatMoney(r.valor)]], data?.items, [['Receita confirmada', this.formatMoney(data?.resumo?.totalReceita)], ['Pendentes', this.formatMoney(data?.resumo?.totalPendente)], ['Vencidos', this.formatMoney(data?.resumo?.totalVencido)]]);
   },
-  async carregarAlunos(query = '', version = this.requestVersion) {
+  async carregarAlunos(query = '', version = this.requestVersion, context = this.contexto()) {
+    if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/alunos');
-    if (version !== this.requestVersion) return;
+    if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Situação atual dos alunos', [['Matrícula', r => this.formatDate(r.dataMatricula, false)], ['Aluno', r => r.nome], ['E-mail', r => r.email], ['Plano', r => r.plano], ['Situação', r => r.status, 'badge']], data?.items, [['Ativos', this.count(data?.resumo?.ativos)], ['Bloqueados', this.count(data?.resumo?.bloqueados)], ['Inativos', this.count(data?.resumo?.inativos)]]);
   }
 };
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('auth:logout', () => RelatoriosView.invalidar());
+  window.addEventListener('navigate', event => { if (event.detail?.page !== 'relatorios') RelatoriosView.invalidar(); });
+}

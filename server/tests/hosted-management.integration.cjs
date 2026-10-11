@@ -201,6 +201,16 @@ async function runHostedManagement() {
       body: { ...paymentBodies[0], expectedActorId: accounts.instructor.id }, expected: 403 });
     assert.equal(await owner.payment.count({ where: { studentId } }), 2);
     assert.equal((await request(`/api/alunos/${studentId}`, { cookie: adminCookie })).data.planEndDate, finalEnd.toISOString());
+    stage = 'financial records cannot be overwritten';
+    for (const method of ['PUT', 'PATCH', 'DELETE']) {
+      const blocked = await request(`/api/pagamentos/${payments[0].data.id}`, { method, cookie: adminCookie,
+        body: { amount: '1.00', status: 'pending', paymentDate: '2000-01-01' }, expected: 405 });
+      assert.equal(blocked.response.headers.get('allow'), 'GET');
+    }
+    const preserved = (await request(`/api/pagamentos/${payments[0].data.id}`, { cookie: adminCookie })).data;
+    assert.equal(Number(preserved.amount), 74.39); assert.equal(preserved.status, 'paid');
+    assert.equal(preserved.paymentDate, `${paidDate}T00:00:00.000Z`);
+    assert.equal((await request(`/api/alunos/${studentId}`, { cookie: adminCookie })).data.planEndDate, finalEnd.toISOString());
     stage = 'financial date filters';
     const filtered = (await request(`/api/pagamentos?studentId=${studentId}&startDate=${paidDate}&endDate=${paidDate}`, { cookie: adminCookie })).data;
     assert.deepEqual(filtered.map(row => row.id).sort((a, b) => a - b), known.payments.slice().sort((a, b) => a - b));

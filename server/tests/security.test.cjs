@@ -158,7 +158,7 @@ test('matrícula exige senha própria e não devolve hash', async () => {
   assert.equal(result.passwordHash, undefined);
 });
 
-test('pagamentos validam método em criação e atualização antes do banco', async () => {
+test('recebimentos validam método em criação antes do banco', async () => {
   let writes = 0;
   const db = { student: { findUnique: async () => ({ id: 11, user: { active: true }, status: 'active', planId: null }), update: async () => {} },
     payment: { findUnique: async ({ where }) => where.manualRequestId ? null : ({ id: 3 }), create: async ({ data }) => { writes++; return data; }, update: async ({ data }) => { writes++; return data; } } };
@@ -166,11 +166,9 @@ test('pagamentos validam método em criação e atualização antes do banco', a
   const service = createPagamentosService({ db });
   for (const paymentMethod of ['<img src=x onerror=alert(1)>', {}, ['pix'], 'pix ']) {
     await assert.rejects(service.registrar({ studentId: 11, amount: 50, paymentMethod, idempotencyKey: randomUUID() }, 7), e => e.statusCode === 400);
-    await assert.rejects(service.atualizar(3, { paymentMethod }), e => e.statusCode === 400);
   }
   assert.equal(writes, 0);
   assert.equal((await service.registrar({ studentId: 11, amount: 50, paymentMethod: 'Pix', idempotencyKey: randomUUID() }, 7)).paymentMethod, 'pix');
-  assert.equal((await service.atualizar(3, { paymentMethod: 'cartao_credito' })).paymentMethod, 'cartao_credito');
 });
 
 function browser(files, globals = {}, exports = '') {

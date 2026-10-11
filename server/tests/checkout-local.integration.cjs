@@ -44,7 +44,9 @@ let user; let student; let plan;
     const settled = await repository.findById(first.intent.id);
     await repository.recordStatus(first.intent.id, { ...payment, status: 'pending' });
     assert.equal((await repository.findById(first.intent.id)).state, 'paid');
-    await assert.rejects(manual.atualizar(settled.paymentId, { amount: '1.00' }), error => error.statusCode === 409);
+    const preservedPayment = await db.payment.findUnique({ where: { id: settled.paymentId } });
+    assert.equal(Number(preservedPayment.amount), 150);
+    assert.equal(preservedPayment.status, 'paid');
     payment.status = 'refunded';
     assert.equal((await service.get(user.id, first.intent.id)).state, 'review');
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 3);
@@ -55,7 +57,7 @@ let user; let student; let plan;
     const reviewed = await repository.settle(second.intent.id, inactivePayment, 'pix');
     assert.equal(reviewed.state, 'review');
     assert.equal((await db.student.findUnique({ where: { id: student.id } })).planEndDate.toISOString().slice(0, 10), '2027-01-30');
-    console.log('PASS local: renovação concorrente, intent único, conciliação 4x/1 ledger, ownership, estorno, conta inativa e audit protegido.');
+    console.log('PASS local: renovação concorrente, intent único, conciliação 4x/1 ledger, ownership, refund em revisão, conta inativa e valor/status preservados. Provedor controlado, sem estorno financeiro real.');
   } finally {
     // Remove somente registros criados por este teste; nunca altera fixture demo ou histórico existente.
     if (student) await db.$transaction([

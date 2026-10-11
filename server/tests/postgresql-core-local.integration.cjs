@@ -152,7 +152,9 @@ async function run() {
     const settled = await checkout.findById(intent.id);
     await checkout.recordStatus(intent.id, { ...payment, status: 'pending' });
     assert.equal((await checkout.findById(intent.id)).state, 'paid');
-    await rejectsStatus(() => manual.atualizar(settled.paymentId, { amount: '1.00' }), 409);
+    const preservedPayment = await db.payment.findUnique({ where: { id: settled.paymentId } });
+    assert.equal(Number(preservedPayment.amount), 150);
+    assert.equal(preservedPayment.status, 'paid');
     payment.status = 'refunded';
     assert.equal((await checkoutService.get(user.id, intent.id)).state, 'review');
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 3);

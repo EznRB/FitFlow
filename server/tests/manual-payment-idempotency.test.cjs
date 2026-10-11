@@ -40,12 +40,11 @@ test('UUID usado com outro ator ou payload retorna 409 sem renovar nem alterar l
   }
   assert.equal(db.rows.length, 1); assert.equal(db.studentState.planEndDate.toISOString(), '2026-12-01T00:00:00.000Z');
 });
-test('edição posterior não altera fingerprint e repetição original retorna registro corrigido', async () => {
+test('repetição original retorna valor e fingerprint do recebimento preservado', async () => {
   const { db, service, payload } = fixture(); const first = await service.registrar(payload, 7);
   const originalHash = db.rows[0].manualRequestHash;
-  await service.atualizar(first.id, { amount: '140.00', notes: 'Correção administrativa' });
   const retry = await service.registrar(payload, 7);
-  assert.equal(retry.id, first.id); assert.equal(retry.amount, 140);
+  assert.equal(retry.id, first.id); assert.equal(retry.amount, 150);
   assert.equal(db.rows.length, 1); assert.equal(db.rows[0].manualRequestHash, originalHash);
 });
 test('UUID ausente/inválido e ator ausente falham antes de uma criação', async () => {

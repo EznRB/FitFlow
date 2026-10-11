@@ -20,6 +20,12 @@ Logout cujo POST não é confirmado persiste uma intenção de saída e não res
 
 O cliente compara o epoch observado pelo Auth com o marcador compartilhado antes de enviar uma nova consulta ou escrita autenticada. Isso cobre o intervalo anterior à entrega do evento entre abas. Respostas de escritas já enviadas conservam o resultado HTTP real. Logout explícito aguarda as promises de limpeza registradas pelos listeners ainda dentro do Web Lock de cookie; uma saída iniciada por tela com epoch antigo sinaliza expiração, preservando a fila da sessão nova.
 
+## Recebimentos financeiros
+
+Lançamento manual usa UUID e fingerprint da intenção; repetir a solicitação original não altera valor nem renova a vigência novamente. A rota legada de edição direta foi removida: `PUT`, `PATCH` e `DELETE /api/pagamentos/:id` retornam 405 para o administrador autenticado, com `Allow: GET`. Consultas, criação e conciliação do provedor permanecem. Isso é uma regra da API, não uma garantia de imutabilidade de toda operação SQL: a rotina de inadimplência ainda marca registros pendentes como vencidos.
+
+Correção administrativa e estorno financeiro precisam de eventos próprios com responsável, motivo, valores anteriores e efeitos explícitos na vigência. Esse fluxo ainda não está implementado. O estado de revisão de reembolso do checkout não executa estorno nem revoga vigência automaticamente. Não substituir esses eventos por edição de um recebimento já confirmado.
+
 ## Planejamento e execução
 
 `Workout`/`Exercise` descrevem a ficha. `WorkoutSession` salva um snapshot imutável para a execução; `WorkoutSet` guarda UUID, exercício do snapshot, carga externa, repetições, RIR opcional, tipo e horário. Não há ligação destrutiva de série executada com exercício editável.

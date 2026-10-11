@@ -832,13 +832,24 @@ const App = {
 const DashboardView = {
   chartInstance: null,
   currentStats: null,
+  requestVersion: 0,
 
   async inicializar() {
+    const version = ++this.requestVersion;
+    const screen = document.querySelector('.premium-dashboard');
+    const userId = Auth.user?.id, generation = Auth.generation;
+    const epoch = typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null;
+    const current = () => Boolean(screen?.isConnected && document.querySelector('.premium-dashboard') === screen
+      && App.currentPage === 'dashboard' && version === this.requestVersion && Auth.user?.role === 'admin'
+      && Auth.user.id === userId && Auth.generation === generation
+      && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === epoch && Auth.getSessionEpoch() === epoch)));
+    if (!current()) return;
     try {
       // Reseta o estado do gráfico
       this.destroyChart();
 
       const resp = await API.get('/relatorios/dashboard');
+      if (!current()) return;
       const stats = resp.data;
       this.currentStats = stats;
       const totalEl = document.getElementById('kpi-total-alunos');
@@ -868,11 +879,11 @@ const DashboardView = {
       }
 
       if (stats.tendencias) {
-        setTimeout(() => this.renderChart(stats.tendencias), 100);
+        this.renderChart(stats.tendencias);
       }
       this.renderAtividades(stats.atividades, stats.pagamentosRecentes);
     } catch (error) {
-      console.warn('DashboardView.inicializar() [ERR]:', error.message);
+      if (!current()) return;
       const content = document.getElementById('page-content');
       if (App.currentPage === 'dashboard' && content) {
         content.innerHTML = '<section class="card" role="alert"><h3>Não foi possível carregar o painel</h3><p id="dashboard-error"></p><button class="btn btn-primary" id="dashboard-retry" type="button">Tentar novamente</button></section>';

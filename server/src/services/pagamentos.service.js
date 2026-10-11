@@ -215,37 +215,6 @@ class PagamentosService {
   }
 
   /**
-   * Atualiza um pagamento existente.
-   * ⚠️ Nunca apaga — apenas permite correção de dados.
-   */
-  async atualizar(id, data) {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de pagamento inválidos.', 400);
-    const idValue = paymentId(id, 'ID do pagamento');
-    const validatedMethod = data.paymentMethod === undefined ? undefined : validatePaymentMethod(data.paymentMethod);
-    const updateData = {};
-    if (data.amount !== undefined) updateData.amount = moneyCents(data.amount) / 100;
-    if (validatedMethod !== undefined) updateData.paymentMethod = validatedMethod;
-    if (data.paymentDate !== undefined) updateData.paymentDate = validateDate(data.paymentDate);
-    if (data.dueDate !== undefined) updateData.dueDate = validateDate(data.dueDate);
-    if (data.status !== undefined) {
-      updateData.status = paymentStatus(data.status);
-    }
-    if (data.notes !== undefined) updateData.notes = validateNotes(data.notes);
-    const pagamento = await this.buscarPorId(idValue);
-    if (this.db.paymentIntent && await this.db.paymentIntent.findFirst({ where: { paymentId: idValue } })) throw new AppError('Pagamento conciliado pelo provedor não admite alteração manual.', 409);
-    if (new Date(updateData.dueDate || pagamento.dueDate) < new Date(updateData.paymentDate || pagamento.paymentDate)) throw new AppError('Vencimento não pode anteceder o pagamento.', 400);
-
-    return this.db.payment.update({
-      where: { id: idValue },
-      data: updateData,
-      include: {
-        student: { include: { user: { select: { name: true } } } },
-        plan: { select: { name: true } },
-      },
-    });
-  }
-
-  /**
    * REGRA DE NEGÓCIO CRÍTICA — Verificação de inadimplência.
    * 
    * Deve ser chamada periodicamente (ex: ao iniciar o servidor, via cron, ou
