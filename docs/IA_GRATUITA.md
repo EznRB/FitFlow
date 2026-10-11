@@ -14,9 +14,9 @@ Escolha revisada em 10/10/2026 após o pedido de um modelo aberto ou serviço gr
 
 ## Escolha e limites
 
-O [GPT-OSS](https://github.com/openai/gpt-oss) tem pesos abertos sob Apache 2.0. A inferência ocorre na Groq: não exige Docker, virtualização ou GPU no computador. O modelo configurado é `openai/gpt-oss-120b`; o adaptador também aceita `openai/gpt-oss-20b`, somente por configuração explícita, sem fallback automático.
+O [GPT-OSS](https://github.com/openai/gpt-oss) tem pesos abertos sob Apache 2.0. A inferência ocorre na Groq: não exige Docker, virtualização ou GPU no computador. As explicações legadas usam `GROQ_MODEL`, configurado em `openai/gpt-oss-120b`. O chat usa `GROQ_CHAT_MODEL`, padrão `openai/gpt-oss-20b`, para a primeira resposta ou rascunho. Respostas gerais passam obrigatoriamente por `openai/gpt-oss-120b` para revisão. Esses papéis são definidos antes da solicitação, sem troca de modelo após erro ou quota.
 
-Os dois modelos suportam [JSON Schema estrito](https://console.groq.com/docs/structured-outputs). Formato e IDs válidos não comprovam a veracidade de cada frase. A interface identifica o conteúdo como IA e mantém as referências originais para conferência. Fórmulas e indicadores continuam determinísticos; a IA não prescreve dieta, exercício ou carga.
+Os dois modelos suportam [JSON Schema estrito](https://console.groq.com/docs/structured-outputs). Formato e IDs válidos não comprovam a veracidade de cada frase. A interface identifica o conteúdo como IA e mantém as referências originais para conferência. Fórmulas e indicadores continuam determinísticos. O chat pode sugerir uma divisão educativa para revisão, mas não aplica fichas, não escolhe carga em kg e não prescreve dieta ou treino clínico.
 
 Os [limites publicados do Free](https://console.groq.com/docs/rate-limits) consultados foram 30 requisições/minuto, 1.000/dia, 8.000 tokens/minuto e 200.000/dia para ambos os modelos. Confirmar os limites efetivos da organização no console; são compartilhados pela conta e podem mudar. O FitFlow limita solicitações por usuário, mas esse contador não determina o plano ou a quota do provedor.
 
@@ -35,6 +35,7 @@ Esse arquivo é um recipiente privado de configuração; não é carregado autom
 ```dotenv
 IA_PROVIDER=groq
 GROQ_MODEL=openai/gpt-oss-120b
+GROQ_CHAT_MODEL=openai/gpt-oss-20b
 GROQ_API_KEY=CHAVE_PRIVADA_DO_SERVIDOR
 GROQ_FREE_TIER_CONFIRMED=true
 ```
@@ -45,11 +46,32 @@ A flag `GROQ_FREE_TIER_CONFIRMED` registra a conferência do operador: não cons
 
 Após configurar conta/chave e publicar:
 
-1. Fazer login e consultar Fundamentos; `/api/ia/status` deve informar `enabled: true` e `provider: groq`, sem devolver chave ou modelo.
+1. Fazer login e consultar Fundamentos; `/api/ia/status` informa disponibilidade das explicações em `enabled` e do chat em `chatEnabled`, além de `provider: groq`, sem devolver chave ou modelo. Chat exige Groq Free configurada; outro adaptador de explicações não o ativa.
 2. Gerar uma explicação de um tema disponível, conferir afirmações contra as referências e registrar o resultado sem segredos.
 3. Conferir quota e plano no console. Não repetir solicitações para contornar 429; não trocar automaticamente para provedor ou modelo pago.
 
-Somente o tema e resumos do corpus curado são enviados. Peso, altura, idade, dieta, histórico de treino, identidade e texto livre do aluno não entram na requisição. Endpoint fixo, redirects recusados, timeout de 15 segundos, saída limitada e validação backend protegem o contrato. Erros não expõem resposta bruta do provedor, chave ou raciocínio interno.
+Na rota legada `/explicar`, somente o tema e os resumos do corpus são enviados. Peso, altura, idade, dieta, histórico de treino, identidade e texto livre não são anexados nessa rota. Endpoint fixo, redirects recusados, timeout de 15 segundos, saída limitada e validação backend protegem esse contrato. Erros não expõem resposta bruta do provedor, chave ou raciocínio interno.
+
+## Chat de treinamento em Fundamentos
+
+O fluxo principal é uma conversa: perguntas sobre hipertrofia e exercícios, esclarecimentos e proposta de divisão baseada na rotina informada. As referências e o glossário permanecem em conteúdo secundário revisado. Visitantes do laboratório público acessam as fontes e um link para entrar; não recebem um chat autenticado inativo.
+
+1. Confirmar o envio das mensagens e da rotina digitada à Groq. Evitar nomes, contatos e informações de saúde. O servidor não busca nem envia dados do perfil, medidas, ficha ou histórico do aplicativo.
+2. Perguntar livremente ou pedir uma proposta. O assistente deve esclarecer dias e distribuição semanal, duração, equipamentos, experiência, objetivo e escopo adulto saudável antes de montar o rascunho.
+3. Continuar a discussão com o histórico da conversa. O frontend envia somente mensagens de usuário/assistente; papéis de sistema e campos adicionais são recusados. Fontes são resolvidas no servidor por IDs do corpus, e a interface usa texto simples.
+4. Conferir a proposta com o instrutor. Ela não altera fichas ou registros. Parâmetros iniciais são escolhas práticas ajustáveis, não doses ótimas comprovadas para uma pessoa.
+
+O histórico e o texto digitado ficam apenas na memória da página autenticada: permanecem ao visitar outra tela e voltar, mas são removidos na recarga, na saída e na troca de sessão/conta. Não há armazenamento de conversas no Neon nem sincronização de chat entre aparelhos. Essa limitação não altera a persistência separada dos registros de treino.
+
+O contrato aceita até 16 mensagens, 2.000 caracteres por pergunta, 6.000 por resposta e 12.000 no contexto total. Quando o contexto ultrapassa esses limites, o frontend retira pares antigos e avisa; informações importantes podem precisar ser repetidas. Falhas preservam a pergunta, e reenvio não duplica o turno na interface. O backend limita cada geração a 25 segundos, incluindo corpo da resposta; o cliente usa margem de 30 segundos. A quota do chat é dez solicitações por usuário a cada quinze minutos, compartilhada entre instâncias, além dos limites da Groq.
+
+O corpus de treinamento inclui ACSM 2026, comparação split/full body e revisões de RIR, proximidade da falha e descanso. A indicação de fontes não certifica cada frase. A proposta estruturada tem contagens verificadas no backend; interpretações da rotina e escolhas de exercício ainda exigem revisão humana. Dias disponíveis não obrigam sessões em todos eles: o rascunho pode escolher um subconjunto, respeitando a preferência discutida. Não há migração de banco nem chamada paga automática.
+
+Na homologação do novo chat, amostras iniciais foram reprovadas: contagens livres inconsistentes, equipamentos classificados incorretamente, extrapolações sobre dose e regras quantitativas de progressão sem suporte no corpus. Uma revisão inicial com 20B também repetiu erros de contagem e inventou justificativas. Esses resultados motivaram cálculo no servidor, grupos explícitos por exercício e revisão com 120B. Uma resposta aprovada não certifica gerações futuras; respostas livres continuam exigindo leitura crítica das fontes. O relatório de entrega registra somente as amostras efetivamente conferidas.
+
+A segunda etapa responde novamente à pergunta com a conversa, os dados explícitos do rascunho e os resumos curados; não recebe o texto candidato da primeira etapa, que repetia erros de atribuição. Declarações científicas exigem metadados com um trecho da resposta, ID da fonte e trecho literal do resumo correspondente. O servidor confere esses vínculos e remove os metadados antes da resposta pública. Isso comprova existência dos trechos e atribuição declarada, não implicação científica nem cobertura de toda frase. Ausência de suporte deve ser informada; fontes vazias são permitidas para não decorar uma lacuna com uma referência.
+
+Dados numéricos explicitamente apresentados no rascunho são extraídos pelo servidor, sem inferir anatomia por nome do exercício. O histórico vem do cliente: reconhecer seu formato não comprova autoria anterior nem integridade. Raciocínio privado não é solicitado nem exibido. Essa etapa acrescenta uma chamada e consome quota da mesma conta gratuita. Erro, quota ou prazo recusa a resposta inteira; não apresenta a candidata e não repete automaticamente. Esclarecimentos e rascunhos estruturados usam uma chamada; estes têm validação e apresentação determinística no servidor.
 
 ## Indicadores: conteúdo revisado, sem inferência
 
@@ -59,9 +81,9 @@ O glossário distingue séries previstas, repetições por série, séries de tr
 
 As definições dos campos pertencem ao FitFlow. A referência ACSM fornece contexto científico geral e é identificada separadamente; não é apresentada como autora dessas definições. Esse caminho é uma consulta de conteúdo fixo, não fallback automático de uma geração que falhou.
 
-Somente divisões e nutrição mantêm inferência externa, com quota de dez solicitações por usuário a cada quinze minutos. O glossário dispensa a quota de inferência; autenticação, autorização, CSRF e proteção global da API continuam aplicados. A revisão focada de IA passou em 19/19 e a suíte integral em 309/309 no código `f9ac83d`.
+Na rota legada `/explicar`, divisões e nutrição mantêm inferência externa, com quota de dez solicitações por usuário a cada quinze minutos. O chat tem contador próprio `ia:chat`. O glossário dispensa a quota de inferência; autenticação, autorização, CSRF e proteção global da API continuam aplicados. A revisão focada de IA passou em 19/19 e a suíte integral em 309/309 na baseline `f9ac83d`.
 
-O código solicita `include_reasoning: false`, `reasoning_effort: low`, `stream: false` e `service_tier: on_demand`, conforme a [API](https://console.groq.com/docs/api-reference) e [parâmetros de raciocínio](https://console.groq.com/docs/reasoning). `on_demand` é o tier de execução padrão, não uma comprovação de gratuidade.
+A rota legada solicita `reasoning_effort: low`; ambas as etapas do chat usam `medium`, com temperaturas 0,2 e 0,1. Todas solicitam `include_reasoning: false`, `stream: false` e `service_tier: on_demand`, conforme a [API](https://console.groq.com/docs/api-reference) e [parâmetros de raciocínio](https://console.groq.com/docs/reasoning). `on_demand` é o tier de execução padrão, não uma comprovação de gratuidade. A primeira etapa usa JSON Object Mode com schema de referência no prompt. A resposta ancorada usa um schema estrito separado, com as declarações antes do texto final. O servidor valida ambas; formato não comprova interpretação ou veracidade. Arrays, campos indevidos ou planos inconsistentes são recusados. A omissão de `program` equivale a `null` apenas em respostas gerais/esclarecimentos; um rascunho sempre exige o plano completo. Falhas do provedor são recusadas sem aproveitar o conteúdo rejeitado ou repetir a inferência automaticamente.
 
 ## Alternativas pesquisadas
 

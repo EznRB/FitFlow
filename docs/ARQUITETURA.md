@@ -61,7 +61,11 @@ Presenças, vencimentos, pagamentos e vigência são datas civis. O calendário 
 
 ## Integrações opcionais
 
-IA educativa usa temas fechados e corpus com referências permitidas, chave somente no servidor e timeout. Não recebe medidas, prontuários, dietas ou fichas pessoais. IDs de fontes permitidos não provam a correção de toda frase gerada; revisar o resultado e manter cálculos determinísticos.
+Fundamentos usa chat contextual com corpus de referências permitido e inferência GPT-OSS via Groq Free. Mensagens digitadas são enviadas somente após consentimento; perfil, medidas, ficha e histórico do aplicativo não são anexados. O histórico da conversa fica em memória por sessão/conta, sem persistência no banco. Rotinas geradas são rascunhos estruturados; o backend valida dados e calcula contagens antes de renderizar texto. Elas não alteram fichas ou séries. IDs de fontes não certificam cada afirmação ou a adequação individual dos exercícios.
+
+`POST /api/ia/chat` exige sessão, papel permitido e origem válida; quota própria `ia:chat` compartilhada no banco em produção. O deadline de 25 segundos cobre conexão e corpo, com limite do cliente de 30 segundos apenas para esse endpoint. Chave/modelo permanecem no servidor. A rota legada `/explicar` preserva explicações temáticas de nutrição/divisões e glossário fixo de indicadores; cálculos continuam determinísticos.
+
+O chat gera com GPT-OSS 20B por padrão e revisa respostas gerais com 120B; etapas definidas previamente, sem fallback após quota. Falha da revisão recusa a candidata. Rascunhos/esclarecimentos usam uma chamada, e o servidor calcula as contagens do rascunho. A revisão por modelo não certifica veracidade ou adequação individual. O prazo inclui todas as etapas.
 
 O modelo padrão é `gemini-3.5-flash-lite`, configurável por `GEMINI_MODEL`. O adaptador usa `generationConfig.responseFormat.text` com schema JSON; `thinkingLevel: MINIMAL` é aplicado ao modelo padrão. Os testes usam provedor controlado. Geração real depende de chave e limites configurados no provedor.
 

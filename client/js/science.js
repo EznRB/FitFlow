@@ -8,12 +8,18 @@
   else root.FitFlowScience = science;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
-  const version = '2026-10-07.1';
+  const version = '2026-10-10.1';
   const references = {
     'acsm-2026': { title: 'ACSM — treinamento resistido (2026)', url: 'https://pubmed.ncbi.nlm.nih.gov/41843416/',
-      summary: 'Em adultos saudáveis, adequar volume, carga e frequência ao objetivo. Falha muscular não é obrigatória para todos os resultados.' },
+      summary: 'Visão de revisões em adultos saudáveis, com estudos de pelo menos seis semanas e busca até outubro de 2024. Treinamento resistido progressivo melhora força e hipertrofia. A recomendação geral é treinar com esforço elevado pelo menos duas vezes por semana, envolvendo os principais grupos musculares. Volumes semanais maiores, incluindo dez ou mais séries por grupo muscular, favoreceram hipertrofia nas comparações; isso não estabelece mínimo obrigatório nem dose ótima individual. Cargas mais altas favoreceram força; hipertrofia ocorreu numa faixa ampla de cargas. Falha muscular absoluta não mostrou vantagem consistente. A sobrecarga progressiva pode envolver carga, volume ou outras variáveis, sem exigir aumento em toda sessão. A revisão não determina um exercício universalmente melhor nem permite inferir técnica, estímulo ou lesão individual.' },
     'split-2024': { title: 'Ramos-Campo — split versus full body (2024)', url: 'https://pubmed.ncbi.nlm.nih.gov/38595233/',
       summary: 'A meta-análise encontrou resultados semelhantes entre divisões e full body quando o volume foi igualado; escolher considerando disponibilidade e adesão.' },
+    'rir-2022': { title: 'Halperin — precisão das repetições em reserva (2022)', url: 'https://pubmed.ncbi.nlm.nih.gov/34542869/',
+      summary: 'Revisão de escopo e meta-análise exploratória sobre previsão de repetições até a falha. A previsão apresentou erro e grande heterogeneidade; tendia a ser mais precisa perto da falha. RIR autorrelatado estima quantas repetições adicionais poderiam ser feitas com a mesma técnica; não é medição objetiva nem garantia de um esforço exato.' },
+    'failure-2024': { title: 'Robinson — proximidade da falha e adaptações (2024)', url: 'https://pubmed.ncbi.nlm.nih.gov/38970765/',
+      summary: 'Meta-regressões exploratórias associaram séries terminadas mais perto da falha a maior hipertrofia, enquanto força teve relação pequena com RIR. O RIR das intervenções foi estimado a partir das descrições dos estudos e o ajuste dos modelos foi modesto. A análise não define um RIR ótimo individual nem prova necessidade de falha absoluta em toda série.' },
+    'rest-2024': { title: 'Singer — descanso entre séries e hipertrofia (2024)', url: 'https://pubmed.ncbi.nlm.nih.gov/39205815/',
+      summary: 'Meta-análise bayesiana de nove estudos em adultos saudáveis sugere pequeno benefício de descansos acima de sessenta segundos, com resultados heterogêneos e intervalos de incerteza sobrepostos. Não detectou diferenças apreciáveis de hipertrofia além de noventa segundos; isso não prova equivalência nem torna noventa segundos um limite máximo. O artigo não estabelece tempo ótimo universal para cada exercício ou pessoa.' },
     'mifflin-1990': { title: 'Mifflin–St Jeor (1990)', url: 'https://pubmed.ncbi.nlm.nih.gov/2305711/',
       summary: 'Equação de predição do gasto em repouso com peso, altura, idade e coeficientes por sexo; não mede gasto energético individual.' },
     'harris-1984': { title: 'Roza e Shizgal — Harris–Benedict revisada (1984)', url: 'https://pubmed.ncbi.nlm.nih.gov/6741850/',

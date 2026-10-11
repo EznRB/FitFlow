@@ -25,7 +25,9 @@ const API = {
 
     // O prazo é optativo; escritas sem identificação idempotente mantêm seu fluxo atual.
     const { timeoutMs, ...fetchOptions } = options;
-    const deadlineMs = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.min(timeoutMs, 15000) : 0;
+    // O chat pode gerar uma proposta detalhada; seu servidor limita a geração a 25 s.
+    const maximumDeadlineMs = endpoint === '/ia/chat' ? 30000 : 15000;
+    const deadlineMs = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.min(timeoutMs, maximumDeadlineMs) : 0;
     const config = {
       headers: {
         'Content-Type': 'application/json',

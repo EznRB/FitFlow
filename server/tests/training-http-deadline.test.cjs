@@ -87,6 +87,25 @@ test('cancelamento externo opt-in rejeita transporte parado e não processa erro
   pending.resolve(new Response('{}', { status: 401 })); await tick(); assert.deepEqual(h.events, []);
 });
 
+test('chat admite seu prazo maior, limita corpo parado e preserva limite dos demais endpoints', async () => {
+  const body = deferred(), h = harness(async () => ({ ok: true, status: 200, text: () => body.promise }));
+  const result = observe(h.api.post('/ia/chat', { messages: [{ role: 'user', content: 'Como organizar três dias?' }], consent: true }, { timeoutMs: 60000 }));
+  await tick();
+  assert.deepEqual(h.delays, [30000], 'o limite do cliente deve dar margem ao servidor de 25 segundos');
+  assert.equal(result.settled, false);
+  h.expire(); await result.promise;
+  assert.equal(result.error.timeout, true);
+  assert.equal(h.requests[0].options.signal.aborted, true);
+  assert.equal(h.timers.size, 0);
+  body.resolve(JSON.stringify({ data: { message: 'Resposta tardia' } })); await tick();
+  assert.equal(result.value, undefined);
+  for (const endpoint of ['/ia/explicar', '/treinos/meus', '/ia/chat/other']) {
+    const normal = harness(async () => response({ ready: true }));
+    await normal.api.post(endpoint, {}, { timeoutMs: 60000 });
+    assert.deepEqual(normal.delays, [15000]);
+  }
+});
+
 test('login e financeiro sem opt-in conservam espera e resposta reais, sem timer ou controller novo', async () => {
   for (const endpoint of ['/auth/login', '/pagamentos']) {
     const pending = deferred(), h = harness(() => pending.promise), result = observe(h.api.post(endpoint, { fixture: true }));

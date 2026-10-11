@@ -1,0 +1,79 @@
+/* A conversation workspace: editorial hierarchy, clear authorship and readable replies. */
+.ia-page { max-width:1020px; }
+.ia-heading { display:block; padding-bottom:24px; margin-bottom:24px; }
+.ia-heading h2 { max-width:700px; font-size:clamp(30px,4vw,44px); line-height:1.1; }
+.ia-heading p { font-size:15px; max-width:660px; margin-bottom:0; }
+.ia-workspace { min-width:0; background:var(--bg-surface); border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
+.ia-workspace-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 26px; border-bottom:1px solid var(--border-color); }
+.ia-workspace-header > div { display:flex; align-items:center; gap:13px; min-width:0; }
+.ia-wordmark { font:700 25px/1 var(--font-heading); letter-spacing:-.04em; color:var(--text-primary); width:36px; flex-shrink:0; }
+.ia-wordmark span { color:var(--primary-400); }
+.ia-workspace-header h3 { font:600 16px/1.3 var(--font-family); text-transform:none; margin:0; letter-spacing:-.02em; }
+.ia-workspace-header p { margin:4px 0 0; font-size:12px; }
+.ia-reset { background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); border-radius:6px; padding:9px 12px; font:500 12px var(--font-family); cursor:pointer; flex-shrink:0; }
+.ia-reset:hover { color:var(--text-primary); border-color:var(--border-strong); }
+.ia-reset:disabled { opacity:.55; cursor:default; }
+.ia-thread { min-height:285px; max-height:610px; max-height:min(610px,68vh); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:30px 34px; scrollbar-gutter:stable; }
+.ia-welcome { padding:18px 0 8px; max-width:650px; }
+.ia-welcome-kicker { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--primary-400); }
+.ia-welcome h3 { font:600 clamp(24px,3vw,30px)/1.2 var(--font-family); letter-spacing:-.025em; margin:14px 0; text-transform:none; }
+.ia-welcome p { font-size:14px; max-width:575px; }
+.ia-suggestions { display:flex; flex-wrap:wrap; gap:8px; margin-top:22px; }
+.ia-suggestions button { text-align:left; background:var(--bg-base); border:1px solid var(--border-subtle); color:var(--text-primary); padding:10px 13px; border-radius:6px; font:400 13px var(--font-family); cursor:pointer; }
+.ia-suggestions button:hover { border-color:var(--primary-400); }
+.ia-message { margin-bottom:28px; min-width:0; max-width:780px; }
+.ia-message:last-child { margin-bottom:8px; }
+.ia-message .ia-message-author { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; margin:0 0 9px; color:var(--primary-400); }
+.ia-message-body { white-space:pre-wrap; overflow-wrap:anywhere; color:var(--text-primary); font-size:15px; line-height:1.75; }
+.ia-message-user { margin-left:44px; padding:16px 19px; background:var(--bg-base); border:1px solid var(--border-color); border-radius:8px; }
+.ia-message-user .ia-message-author { color:var(--text-secondary); }
+.ia-message-assistant { padding-left:18px; border-left:2px solid var(--primary-500); }
+.ia-message-sources { margin:14px 0 0; }
+.ia-message-sources summary { font-size:12px; color:var(--text-secondary); }
+.ia-message-sources .science-sources { margin:6px 0 0; }
+.ia-message-sources .science-sources a { font-size:12px; padding:8px 0; }
+.ia-draft-note { padding-top:12px; border-top:1px solid var(--border-color); font-size:12px; margin:14px 0 0; }
+.ia-compose { padding:20px 26px 12px; border-top:1px solid var(--border-color); background:var(--bg-base); }
+.ia-input-label { display:block; margin-bottom:9px; font-size:12px; font-weight:500; color:var(--text-primary); }
+.ia-compose textarea { display:block; width:100%; box-sizing:border-box; min-height:94px; max-height:250px; resize:vertical; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:7px; padding:13px 15px; font:400 16px/1.5 var(--font-family); color:var(--text-primary); }
+.ia-compose textarea::placeholder { color:var(--text-muted); }
+.ia-compose textarea:focus { border-color:var(--primary-400); }
+.ia-compose-footer { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-top:11px; }
+.ia-compose-footer > span { font-size:11px; color:var(--text-muted); }
+.ia-compose-footer .btn { font-size:13px; gap:16px; min-height:44px; white-space:normal; }
+.ia-consent { display:flex; align-items:flex-start; gap:9px; font-size:12px; line-height:1.5; color:var(--text-secondary); margin:16px 0 10px; max-width:700px; }
+.ia-consent input { width:17px; height:17px; margin-top:2px; accent-color:var(--primary-500); flex-shrink:0; }
+.ia-status { margin:12px 0 6px; min-height:20px; font-size:12px; line-height:1.5; }
+.ia-status-row { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; }
+.ia-status-row .ia-status { flex:1 1 300px; }
+.ia-check-service { background:transparent; color:var(--primary-400); border:0; padding:0; text-align:left; font:500 12px var(--font-family); cursor:pointer; }
+.ia-check-service[hidden] { display:none; }
+.ia-context-note { font-size:12px; margin:0 0 15px; color:var(--primary-400) !important; }
+.ia-workspace-footnote { padding:14px 26px 19px; font-size:11px; line-height:1.6; color:var(--text-muted); background:var(--bg-base); }
+.ia-principles { margin:28px 0; border-top:1px solid var(--border-color); border-bottom:1px solid var(--border-color); padding:18px 0; }
+.ia-principles summary { font-size:14px; }
+.ia-principles summary span { display:block; font-size:12px; color:var(--text-secondary); font-weight:400; margin:7px 0 0 16px; }
+.ia-principles-body { max-width:800px; padding:24px 0 5px; }
+.ia-principles-body h3 { font:600 17px var(--font-family); text-transform:none; margin-bottom:12px; }
+.ia-principles-body > p { font-size:14px; }
+@media (max-width:768px) {
+  .ia-workspace-header { padding:17px 18px; gap:10px; }
+  .ia-thread { padding:24px 20px; min-height:290px; max-height:560px; max-height:min(560px,65vh); }
+  .ia-compose { padding:18px 18px 9px; }
+  .ia-message-user { margin-left:20px; padding:14px; }
+  .ia-message-assistant { padding-left:13px; }
+  .ia-workspace-footnote { padding:12px 18px 16px; }
+}
+@media (max-width:480px) {
+  .ia-heading { padding-top:16px; }
+  .ia-workspace-header h3 { font-size:14px; }
+  .ia-workspace-header p { font-size:11px; }
+  .ia-wordmark { width:27px; font-size:23px; }
+  .ia-reset { font-size:11px; padding:8px; }
+  .ia-thread { padding:24px 16px; }
+  .ia-compose-footer { align-items:flex-start; flex-direction:column-reverse; gap:8px; }
+  .ia-compose-footer .btn { width:100%; justify-content:center; }
+  .ia-message-body { font-size:14px; }
+  .ia-suggestions { flex-direction:column; }
+  .ia-suggestions button { width:100%; }
+}

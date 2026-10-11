@@ -62,7 +62,7 @@ O servidor oferece leitura e escrita em wger; habilite só as ferramentas de con
 
 1. Pesquisar artigo/API original → registrar contrato e população → escrever teste de comportamento.
 2. Implementar cálculo determinístico e interface acessível → usar navegador para verificar fluxo real.
-3. Usar IA apenas para explicar o conjunto curado → validar JSON/IDs e renderizar texto simples.
+3. Usar IA para conversar sobre treinamento a partir do corpus curado e da rotina informada com consentimento → validar contrato/IDs, conferir os dados estruturados das propostas e renderizar texto simples. Cálculos de nutrição e indicadores não são delegados ao modelo.
 4. Recuperar banco → executar migrações em cópia → validar usuário/role/CRUD → só então publicar.
 5. Integrar gateway/IndexedDB quando seus testes de confirmação/idempotência estiverem definidos.
 

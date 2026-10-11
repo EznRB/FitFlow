@@ -6,6 +6,9 @@ O sistema não define uma divisão universal nem presume estímulo pela quantida
 
 - [ACSM, atualização de treinamento resistido de 2026](https://pubmed.ncbi.nlm.nih.gov/41843416/): contexto de adultos saudáveis; adaptar variáveis ao objetivo e à pessoa. Falha muscular não é exigência universal.
 - [Ramos-Campo et al., split e full body, 2024](https://pubmed.ncbi.nlm.nih.gov/38595233/): resultados semelhantes quando o volume foi igualado; não demonstra equivalência de qualquer ficha ou calendário.
+- [Halperin et al., previsão de repetições até a falha, 2022](https://pubmed.ncbi.nlm.nih.gov/34542869/): RIR estimado tem erro e heterogeneidade; não é uma medição objetiva.
+- [Robinson et al., proximidade da falha, 2024](https://pubmed.ncbi.nlm.nih.gov/38970765/): associações exploratórias com hipertrofia não definem RIR ótimo individual nem obrigam falha absoluta.
+- [Singer et al., descanso entre séries, 2024](https://pubmed.ncbi.nlm.nih.gov/39205815/): pequeno benefício observado acima de sessenta segundos, com incerteza; noventa segundos não é teto universal.
 
 Calendários da interface são exemplos de distribuição, não fichas prontas nem recomendação individual. Dados wger descrevem movimentos; autoria/licença de um exercício não comprovam segurança ou superioridade científica. Curadoria e supervisão permanecem necessárias.
 
@@ -33,4 +36,8 @@ Mifflin, coeficiente masculino, 80kg, 180cm, 30 anos: repouso **1780kcal**. Fato
 
 ## IA
 
-Explica temas curados; não calcula macros por texto, não escolhe carga e não prescreve dieta. Validação de JSON e IDs de fonte restringe referências, mas não certifica cientificamente cada frase. Sempre consultar as fontes e a população aplicável. Sem chave, calculadora e fontes continuam disponíveis.
+O assistente conversa sobre treinamento, exercícios e hipertrofia, usando o contexto informado voluntariamente pelo usuário. Pode propor um rascunho de divisão depois de esclarecer disponibilidade, duração, equipamentos, experiência, objetivo e escopo adulto saudável. Escolhas práticas e doses iniciais são hipóteses para revisar com o instrutor; não representam ótimo individual comprovado. Dez séries semanais não são mínimo obrigatório, e a frequência geral da ACSM não certifica a frequência de uma ficha gerada.
+
+O rascunho não altera a ficha nem os registros de treino. Séries planejadas, séries executadas e tonelagem são conceitos distintos; cálculos e indicadores do aplicativo continuam determinísticos. A IA não calcula macros por texto, não escolhe carga em kg e não prescreve dieta ou treino clínico. Mensagens e rotina informada são enviadas ao provedor somente após consentimento; medidas e histórico do aplicativo não são anexados automaticamente.
+
+Validação de JSON e IDs restringe o formato e as referências, mas não certifica cada afirmação da conversa. Amostras reais precisam ser inspecionadas; sempre consultar os estudos e a população aplicável. Sem chave, calculadora e referências revisadas continuam disponíveis, inclusive no laboratório público.
