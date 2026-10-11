@@ -2,7 +2,15 @@
 
 Escolha revisada em 11/10/2026 após o pedido de um modelo aberto ou serviço gratuito. O adaptador está implementado e a geração real foi verificada localmente. O console da organização confirmou plano **Free, US$ 0**. Não habilitar plano pago para concluir a demonstração.
 
-## Estado verificado
+## Chat contextual publicado — 11/10/2026
+
+Fundamentos oferece mensagens livres, rascunhos segundo dias, tempo e equipamentos informados e perguntas de continuação. O navegador publicado gerou uma rotina em `5e4ec38`; preservada essa conversa e a interface, a continuação foi atendida em `943d495`. As contagens de peito (6 séries em 2 dias) e costas (9 em 2 dias), as três referências e os limites científicos foram conferidos nesta amostra. Não é certificação de doses individuais ou respostas futuras. [Publicação, CI e capturas](STATUS_ENTREGA.md).
+
+Uma continuação anterior foi recusada; sua causa exata não foi comprovada. A revisão atual alinha a resposta ao limite de 6.000 caracteres da interface: unidades completas, ressalvas preservadas e aviso explícito de tópicos omitidos. Os links representam somente fontes exibidas. Logs de validação contêm códigos fixos e etapa, sem conversa ou chave. A suíte integral passou em 401/401, sem migration ou dependência nova.
+
+A IA organiza conteúdo científico curado e calcula contagens a partir das declarações do rascunho. Não faz pesquisa científica aberta em cada resposta. O histórico fica apenas em memória; recarga, logout ou troca de sessão removem a conversa. Nenhuma ficha é aplicada automaticamente.
+
+## Histórico de verificações anteriores
 
 - GPT-OSS 120B via Groq gerou uma explicação real do tema `divisoes` localmente em aproximadamente 1,2 segundo.
 - O conteúdo foi conferido contra Ramos-Campo et al. (2024) e ACSM (2026), fontes primárias do corpus. Essa conferência valida a amostra examinada, não toda resposta futura.

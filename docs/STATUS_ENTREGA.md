@@ -1,4 +1,4 @@
-# Estado da entrega — 10/10/2026
+# Estado da entrega — 11/10/2026
 
 A entrega completa ainda depende dos gates de pagamentos e telefone físico. O login publicado foi recuperado com Neon; aplicativo e landing têm evidências públicas. Código enviado aos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum merge à branch principal foi realizado.
 
@@ -6,10 +6,10 @@ A entrega completa ainda depende dos gates de pagamentos e telefone físico. O l
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app) | `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, READY pelo CLI com alias canônico. URL exata: `https://fit-flow-5j7ntzyzj-eznrbs-projects.vercel.app`. Saúde HTTP 200, banco ready, API no-store e hashes de api.js/sessoes.js/app.js/sessoes.css iguais ao checkout. Sessão demonstrativa restaurada, estados de consulta observados durante atualização e botão liberado ao concluir; histórico de 160 kg·reps preservado, captura 34. Sem gravação nova. |
+| [FitFlow](https://fit-flow-indol.vercel.app) | `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`. Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-[CI GitHub da revisão atual 2d74840](https://github.com/EznRB/FitFlow/actions/runs/38058786911): sucesso. Suíte integral local **328/328**, zero falhas e ignorados; testes focados de consultas 12/12 e revisão independente aprovada. Gate privado atual em 296 arquivos. Estados de consulta, acabamento visual de sessões e remoção de três propostas Prisma obsoletas já implementadas nos schemas ativos; sem migration ou dependência nova. Preview automático Git aprovado; Production pelo CLI READY.
+[CI GitHub da revisão atual 943d495](https://github.com/EznRB/FitFlow/actions/runs/38147855767): sucesso. Suíte integral local **401/401**, zero falhas e ignorados; revisão independente de contrato aprovada. Gate privado em 307 arquivos. Nenhuma migration ou dependência nova no chat.
 
 Revisão de gestão/login `3adf5c1`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38054589595), 304/304, revisão independente focada 29/29 e backend focado 48/48. Os subconjuntos não são contagens adicionais à suíte. Login editorial, correção de contraste, corridas de alunos, edição parcial e cancelamento atômico de presença não exigiram nova migration.
 
@@ -38,6 +38,12 @@ Sete novos testes controlados integram a suíte 316/316. Revisão independente 1
 Carregamento, falha/offline e ausência confirmada têm mensagens próprias; o cache permanece disponível enquanto o servidor é consultado. O botão mostra Atualizando… somente durante a operação corrente. Respostas de leituras iniciais antigas não sobrescrevem uma atualização mais recente. O formulário preserva texto digitado e UUID; falha inicial de armazenamento permite tentar novamente. Cores usam os tokens laranja/navy ativos, painéis têm raio de 8 pixels e inputs de 16 pixels.
 
 Doze novos testes controlados cobrem consultas parciais, armazenamento, identidade, navegação e concorrência da atualização; integram o total 328/328. Revisão independente aprovada. Navegador publicado confirmou mensagens durante a consulta, cache visível e término normal, captura 34. Os testes de timing não são evidência de reconexão física.
+
+### Chat contextual de treinamento — 943d495
+
+Fundamentos agora oferece conversa livre sobre hipertrofia e exercícios e rascunhos conforme rotina informada. O servidor valida contexto/equipamentos, calcula séries diretas e frequência e informa hipóteses logísticas. A interpretação por exercício não é uma dose ótima individual comprovada. Respostas gerais são organizadas pelo modelo maior com a conversa e o corpus no mesmo provedor gratuito; o servidor apresenta resumos científicos completos e orientações controladas; erro/quota/prazo dessa etapa não apresenta a candidata da primeira etapa.
+
+Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. A amostra final foi conferida; resultados iniciais com contagens erradas e justificativas inventadas foram reprovados. A seleção por IA não certifica a pertinência do bloco ou a classificação dos exercícios. Histórico somente em memória; recarga/logout/troca de sessão removem a conversa. Consentimento antes do envio à Groq; perfil e ficha não são anexados. Gate publicado não aplicou nenhuma ficha ou série.
 
 ## Evidências obtidas
 
@@ -82,7 +88,7 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. A revisão atual `2d74840` passou em 328/328, conforme registrado acima.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. A revisão atual `943d495` passou em 401/401, conforme registrado acima.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
@@ -170,5 +176,8 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 - `evidence/33-sessoes-prazo-vercel.png`: histórico normal em `143c228` após login e Sincronizar; série anterior 20 kg × 8, RIR 2 e 160 kg·reps preservada. Não comprova transporte parado, reconexão física nem gravação nova.
 
 - `evidence/34-sessoes-consultas-vercel.png`: revisão `2d74840`, fichas/histórico consultados no servidor, botão disponível e registro anterior de 160 kg·reps preservado. Sem gravação nova; não comprova telefone físico nem os timings controlados dos testes.
+
+- [Conversa publicada no desktop](evidence/35-chat-treinamento-vercel.png): pergunta e resposta contextual na revisão `943d495`; rotina gerada em 5e4ec38 e continuação atendida em 943d495, com interface idêntica.
+- [Conversa em viewport de celular](evidence/36-chat-treinamento-mobile.png): mesma revisão, 375 × 812, campo de 16 pixels e sem overflow horizontal; não substitui telefone físico.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.

@@ -1,8 +1,10 @@
-# Revisão de entrega — 10/10/2026
+# Revisão de entrega — 11/10/2026
 
-Revisão publicada `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, READY pelo CLI com alias canônico. URL exata: `https://fit-flow-5j7ntzyzj-eznrbs-projects.vercel.app`, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38058786911). Gestão/login de `3adf5c1` e conteúdo revisado de `f9ac83d` preservados. A meta completa permanece ativa; esta revisão não declara conclusão do projeto.
+Revisão publicada `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38147855767). A entrega completa depende de pagamentos reais em sandbox e telefone físico; este marco não declara conclusão do projeto.
 
 ## Alterações
+
+- Chat real em Fundamentos com histórico contextual, consentimento, fontes curadas, seleção de conteúdo curado e rascunhos estruturados; contagens calculadas no servidor. Sem aplicação automática de ficha.
 
 - Estados explícitos para consulta, cache, falha e ausência confirmada; atualizações antigas não sobrescrevem as novas e falha de armazenamento permite retry. Formulário digitado e UUID preservados.
 - Sessões alinhadas aos tokens laranja/navy, inputs de 16 pixels e painéis de 8 pixels. Três propostas Prisma obsoletas removidas após conferir os modelos/migrations ativos.
@@ -20,15 +22,15 @@ Revisão publicada `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, REA
 
 | Gate | Evidência |
 |---|---|
-| Suíte integral local | 328/328 em `2d74840`; zero falhas e zero ignorados. |
+| Suíte integral local | 401/401 em `943d495`; zero falhas e ignorados. |
 | Consultas de sessões | 12/12 testes controlados; revisão independente aprovada após correções de timing. Cache, falhas iniciais, conta/tela e precedência de atualização verificados. |
 | Revisão do prazo de treino | 12/12 focados, sem novo defeito concreto. Transporte/corpo parados, respostas tardias, cancelamento, limpeza, UUID e reenvio verificados em ambiente controlado. |
 | Revisão independente | IA 19/19 em `f9ac83d`; gestão/login 29/29 e backend 48/48 em `3adf5c1`. Subconjuntos não somados à suíte. |
-| Gate privado/dependências | 296 arquivos no gate atual, sem segredo local conhecido. Auditoria de dependências de produção aprovada na baseline `f9ac83d`; nenhuma dependência nova neste patch. Não equivale a auditoria completa de segurança. |
+| Gate privado/dependências | 307 arquivos, sem segredo local conhecido. Nenhuma dependência nova; não equivale a auditoria completa de segurança. |
 | Banco nativo | Datas/presenças no destino guardado, aprovado e fixture própria removida. |
 | Login local | 1280 e 375 pixels, teclado, mostrar/ocultar senha, campos obrigatórios e ajuda. |
-| Publicação | `2d74840`, deployment `dpl_7tUWcsw3Kwd3fUFy3t7h1tzdAFdt`, READY pelo CLI com alias canônico. URL exata: `https://fit-flow-5j7ntzyzj-eznrbs-projects.vercel.app`; CI e status do Preview Git aprovados. Saúde/banco e quatro assets conferidos por hash. |
-| Navegador na revisão atual | Saúde HTTP 200, banco ready, API no-store e hashes de api.js/sessoes.js/app.js/sessoes.css iguais ao checkout. Sessão demonstrativa restaurada, estados de consulta observados durante atualização e botão liberado ao concluir; histórico de 160 kg·reps preservado, captura 34. Sem gravação nova. Não reproduz reconexão física ou todas as corridas de timing. |
+| Publicação | `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`; CI aprovada, saúde/banco e cinco assets conferidos. |
+| Navegador na revisão atual | Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. |
 | Gestão HTTPS | Em `3adf5c1`: três logins, fluxos aprovados, somente fixtures UUID próprias removidas; quotas preservadas. |
 | Navegador publicado | Login real do aluno em 375 pixels e sessão restaurada após recarga; capturas 28/29/31 em 1280 × 720, 375 × 812 e 768 × 1024, sem overflow horizontal. |
 | IA real local | Explicação de divisões em aproximadamente 1,2 segundo; amostra conferida contra Ramos-Campo (2024)/ACSM (2026). |
@@ -49,3 +51,7 @@ Fontes, limites, revisões anteriores e capturas em [Estado da entrega](STATUS_E
 Atualização da integração Git: o Preview automático de `143c228` voltou a falhar antes do build com `git_info_fail`, em `dpl_4UHk4jkPh6zFAEp9CxSvDYNvHNNL`. A recuperação de `89ba731` foi temporária; causa específica ainda desconhecida. A CI GitHub e a publicação Production pelo CLI estão aprovadas. Nenhuma permissão ou proteção foi alterada.
 
 Atualização em `2d74840`: CI e status do Preview Git aprovados novamente; Production READY e banco pronto. Sem alteração de permissões/proteção. O histórico acima não representa um bloqueio atual.
+
+### Limite factual do chat
+
+Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A amostra final foi inspecionada contra o rascunho/corpus, sem generalizar correção para o futuro. A IA seleciona e ordena blocos; resumos científicos curados são renderizados integralmente pelo servidor. Isso não certifica a classificação dos exercícios ou a adequação individual. Conversas são temporárias em memória; fichas e registros existentes têm persistência separada.
