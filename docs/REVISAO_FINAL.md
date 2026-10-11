@@ -1,8 +1,12 @@
 # Revisão de entrega — 11/10/2026
 
-Código publicado **16b09b6** (`16b09b63fca441243907e0d713e5592fc0664984`), deployment `dpl_4nh2HxowzwdhEfoMi2yaiTv6v2Vd`, READY em Production: [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-hndm88opa-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38148855631) e status do Preview Git aprovado. Este marco não declara conclusão da meta; há gates externos e melhorias funcionais em aberto.
+Código publicado `bb68606` (`bb6860652cc1bb9d40339e7a55835544fc177209`), deployment `dpl_88MfRq5H3ap6U5qJVkNfCiFVmxYm`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-7li23rgo7-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38178489433) e status Preview Git aprovado. Saúde HTTP 200, banco ready e API no-store; dez assets conferidos por hash, incluindo planos.js e professional.css. Suíte integral **426/426**, zero falhas e ignorados; sem migration ou dependência nova. Este marco não declara conclusão da meta.
 
 ## Alterações desta revisão
+
+Planos protege lista, cache, formulário e confirmação por conta/epoch/tela/âncora; onze testes controlados cobrem respostas antigas, modais substituídos, duplo envio e falhas. Uma gravação enviada conserva o resultado real, sem efeitos na tela substituta. Campos mobile usam 16 pixels e a duração personalizada fica oculta nas vigências padrão. O navegador publicado confirmou sessão restaurada, edição, vigência personalizada de 45 dias e equivalência aritmética de R$ 86,60 para R$ 129,90; cenário cancelado sem gravação. Viewport 375 × 812, clientWidth = scrollWidth = 375, captura 39. Não comprova telefone físico nem timing artificial no navegador. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png).
+
+## Gestão anterior — 16b09b6
 
 - Dashboard e pagamentos/relatórios descartam respostas e erros de conta, geração, epoch, navegação, requisição ou elemento de origem anteriores. Chart é criado após resposta válida, sem temporizador de desenho. Quatro casos de dashboard e dez de pagamentos/relatórios passaram por RED → GREEN em testes controlados.
 - Edição financeira legada sem chamador no cliente removida da rota/controller/service. PUT/PATCH/DELETE de `/api/pagamentos/:id` recebem 405 para administrador autenticado, com `Allow: GET`; GET e POST permanecem. Valor, status, data e vigência foram conferidos após essas recusas. Conciliação do checkout permanece separada.
@@ -13,11 +17,11 @@ Código publicado **16b09b6** (`16b09b63fca441243907e0d713e5592fc0664984`), depl
 
 | Gate | Evidência |
 |---|---|
-| Suíte integral local | 415/415 em `16b09b6`; zero falhas e ignorados. Os 14 casos de timing estão incluídos, sem somar subconjuntos. |
-| Gate privado | 310 arquivos antes das capturas 37/38; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
+| Suíte integral local | 426/426 em `bb68606`; zero falhas e ignorados. Onze casos novos de Planos, incluídos no total. |
+| Gate privado | 314 arquivos, incluindo a captura 39; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
 | Publicação | Deployment READY, CI e status Preview Git aprovados; saúde HTTP 200, banco ready e API no-store. |
-| Assets publicados | Hashes de index.html, app.js, pagamentos.js, relatorios.js, api.js, evidencias.js, science.js e ia-chat.css coincidem com o checkout. |
-| Gestão HTTPS após deploy | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
+| Assets publicados | Dez hashes coincidem com o checkout: index.html, app.js, pagamentos.js, relatorios.js, planos.js, api.js, evidencias.js, science.js, ia-chat.css e professional.css. |
+| Gestão HTTPS em 16b09b6 | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
 | MariaDB nativo | Lançamento manual e checkout aprovados após remoção da edição legada, com fixtures próprias limpas. |
 | PostgreSQL | Core adaptado para a remoção; não reexecutado nesta etapa. Gates PostgreSQL/Neon anteriores preservados no histórico, sem nova migration. |
 | Navegador em 16b09b6 | Dashboard com Chart real; pagamentos vazio e inadimplência normal de 13 dias; relatório por período com um check-in de 08/10/2026 às 23:46 em São Paulo. Sem lançamento financeiro ou atraso artificial. |
@@ -44,8 +48,7 @@ Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A 
 3. Preservar proveniência do exercício escolhido no catálogo até a ficha e snapshot da sessão; não inferir identidades retrospectivamente no histórico. Contrato recomendado para nova implementação: `catalogExerciseId` nullable e snapshot de proveniência validado pelo servidor a partir do catálogo, preservando separadamente fontes/licenças/autoria da base, texto e imagem. Sem backfill por nome ou alteração retrospectiva do histórico.
 4. Troca de senha autenticada pelo titular e revogação de sessões anteriores.
 5. Correção/estorno financeiro administrativo com motivo, ator, histórico e tratamento explícito da vigência. A recusa 405 elimina edição direta, sem entregar esse recurso.
-6. Corridas da tela de Planos: correção em frente posterior, ainda não integrante deste marco publicado.
-7. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
+6. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
 
 O Preview Git teve falhas históricas antes do build (git_info_fail em 7cf0d2b/143c228) e recuperações observadas sem mudar permissões/proteção. A causa da intermitência não foi comprovada; o status atual está aprovado. [Histórico](STATUS_ENTREGA.md#publicação-automática-pelo-github).
 

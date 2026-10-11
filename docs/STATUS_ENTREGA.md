@@ -6,10 +6,14 @@ A entrega completa ainda depende de pagamentos, telefone físico e das melhorias
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `16b09b6` (`16b09b63fca441243907e0d713e5592fc0664984`), deployment `dpl_4nh2HxowzwdhEfoMi2yaiTv6v2Vd`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-hndm88opa-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38148855631) e status do Preview Git aprovados. Saúde HTTP 200, banco ready e API no-store; hashes de index.html, app.js, pagamentos.js, relatorios.js, api.js, evidencias.js, science.js e ia-chat.css coincidem com o checkout. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `bb68606` (`bb6860652cc1bb9d40339e7a55835544fc177209`), deployment `dpl_88MfRq5H3ap6U5qJVkNfCiFVmxYm`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-7li23rgo7-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38178489433) e status Preview Git aprovado. Saúde HTTP 200, banco ready e API no-store; dez assets conferidos por hash, incluindo planos.js e professional.css. Suíte integral **426/426**, zero falhas e ignorados; sem migration ou dependência nova. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-[CI GitHub da revisão atual 16b09b6](https://github.com/EznRB/FitFlow/actions/runs/38148855631): sucesso; status do Preview Git aprovado. Suíte integral local **415/415**, zero falhas e ignorados. Gate privado em 310 arquivos antes das capturas 37/38; não certifica segredos desconhecidos nem todo o histórico Git. Sem migration ou dependência nova nesta revisão.
+Suíte atual e CI conforme a implantação acima. Gate privado em 314 arquivos, incluindo a captura 39; não certifica segredos desconhecidos nem todo o histórico Git.
+
+### Planos e campos mobile — bb68606
+
+Planos protege lista, cache, formulário e confirmação por conta/epoch/tela/âncora; onze testes controlados cobrem respostas antigas, modais substituídos, duplo envio e falhas. Uma gravação enviada conserva o resultado real, sem efeitos na tela substituta. Campos mobile usam 16 pixels e a duração personalizada fica oculta nas vigências padrão. O navegador publicado confirmou sessão restaurada, edição, vigência personalizada de 45 dias e equivalência aritmética de R$ 86,60 para R$ 129,90; cenário cancelado sem gravação. Viewport 375 × 812, clientWidth = scrollWidth = 375, captura 39. Não comprova telefone físico nem timing artificial no navegador. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png).
 
 Revisão de gestão/login `3adf5c1`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38054589595), 304/304, revisão independente focada 29/29 e backend focado 48/48. Os subconjuntos não são contagens adicionais à suíte. Login editorial, correção de contraste, corridas de alunos, edição parcial e cancelamento atômico de presença não exigiram nova migration.
 
@@ -98,7 +102,7 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; a revisão atual `16b09b6` passou em 415/415, conforme registrado acima.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; gestão `16b09b6` passou em 415/415 e a revisão atual `bb68606` em 426/426.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
@@ -197,5 +201,7 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 
 - [Dashboard de gestão publicado](evidence/37-gestao-dashboard-publicado.png): revisão `16b09b6`, conta administrativa e Chart real no desktop.
 - [Relatório publicado em viewport mobile](evidence/38-relatorios-publicados-mobile.png): revisão `16b09b6`, 375 × 812, check-in de 08/10/2026 às 23:46 em São Paulo; documento com clientWidth/scrollWidth de 369 pixels. Emulação, sem teclado físico ou escrita financeira.
+
+- [Vigência personalizada no celular](evidence/39-plano-vigencia-mobile-vercel.png): `bb68606`, 375 × 812, inputs/select/textarea de 16 pixels, equivalência aritmética de R$ 86,60 para 45 dias e R$ 129,90. Formulário cancelado sem gravar.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.
