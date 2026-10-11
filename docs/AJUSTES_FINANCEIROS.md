@@ -1,6 +1,6 @@
 # Correções e devoluções de recebimentos
 
-Contrato de desenvolvimento: 11/10/2026. A implantação e suas evidências serão registradas no status de entrega após a validação.
+Implementado e publicado em `9d0361e`, em 11/10/2026. A validação administrativa não substitui o teste do checkout do provedor.
 
 ## Finalidade
 
@@ -49,4 +49,4 @@ Migration `20261011_payment_adjustments` aplicada também no Neon principal. Há
 
 No navegador local, um recibo sintético de R$ 100,01 recebeu correção de R$ 25,01 e passou a ter saldo de R$ 75,00, preservando a vigência e o recibo. [Histórico local](evidence/41-ajuste-financeiro-local.png). O formulário foi conferido em viewport emulada 375 × 812, documento sem overflow (375/375), inputs de 16 pixels e abertura no início, com instruções visíveis e sem foco automático em campo fora da tela. [Formulário mobile local](evidence/42-ajuste-mobile-local.png). As duas fixtures locais foram removidas; não houve cobrança nem devolução no provedor. Emulação não comprova telefone físico.
 
-O gate HTTPS `tests/hosted-payment-adjustments.integration.cjs --execute-hosted-fixtures` será executado depois da publicação; sua execução não testa o checkout do provedor.
+O gate HTTPS `tests/hosted-payment-adjustments.integration.cjs --execute-hosted-fixtures` passou no domínio Production: saldo parcial/integral, replay, autenticação/autorização e imutabilidade, CAS após renovação, vigência explícita, mensalidade e relatório de eventos. Foram dois logins, com quotas preservadas e somente fixtures UUID próprias removidas. Sua execução não testa o checkout do provedor. [Dashboard publicado](evidence/43-financeiro-dashboard-vercel.png). [Estado da implantação](STATUS_ENTREGA.md).

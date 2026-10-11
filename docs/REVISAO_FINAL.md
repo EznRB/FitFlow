@@ -1,8 +1,14 @@
 # Revisão de entrega — 11/10/2026
 
-Código publicado `8c35628` (`8c35628e3e451c4d5ca59e7dade33914c2fd28e6`), Production READY `dpl_CyiKpSB3YyuUW756mxRr1Ym9XHqU`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-d5q9wdooh-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38180298416) e Preview Git aprovado. Suíte integral **438/438**, zero falhas e ignorados; gate privado em 323 arquivos. Saúde HTTP 200, banco ready e API no-store; HTML, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css conferidos por hash. Este marco não conclui a meta completa.
+Código publicado `9d0361e` (`9d0361eae38c023635ba2f9958239ff840fcb9ba`), Production READY `dpl_5YRDgobgwuxx4zfsrFFeYg7eNFXj`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-2xrp9f8zy-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38182537049) e Preview Git aprovado. Suíte integral **470/470**, zero falhas e ignorados; gate privado em 338 arquivos. Saúde HTTP 200, banco ready e API no-store; oito hashes financeiros de HTML/JS/CSS conferidos. Este marco não conclui a meta completa.
 
 ## Alterações desta revisão
+
+Correções de recebimentos manuais e devoluções informadas são eventos permanentes com UUID, motivo, responsável, saldo em centavos e efeito explícito de vigência. O recibo pago é protegido por trigger; não há operação de reembolso no provedor por esse formulário. Novos recebimentos capturam concessão real; registros legados não permitem reversão automática. Alteração de plano/status exige revisão atual e todos os escritores de matrícula compartilham o lock. Relatórios separam bruto, correções, devoluções informadas e líquido pela data efetiva do evento. [Contrato e testes](AJUSTES_FINANCEIROS.md).
+
+Gates reais aprovados nos dois bancos nativos, branch Neon de verificação e API HTTPS publicada. Foram aplicadas sete migrations MySQL e quatro PostgreSQL, incluindo a de ajustes nas duas branches Neon. Runtime confirmou SELECT/INSERT de ajustes e negou UPDATE/DELETE, com probe revertido. API pública verificou saldo parcial/integral, replay, forjados/auth/405, CAS após renovação, alteração explícita de vencimento, mensalidade e relatórios; dois logins e somente fixtures UUID próprias removidas, sem chamadas ao PSP. Capturas 41/42 são locais; captura 43 mostra dashboard publicado após a limpeza. Emulação não comprova telefone físico.
+
+### Catálogo na revisão anterior
 
 Origem do catálogo e créditos separados de base/texto/mídia preservados na ficha, na revisão, na sessão e no cache offline. Captura transacional no servidor; metadados fornecidos pelo cliente são recusados. Exercícios manuais/legados ficam sem origem, sem inferência por nome. Revisões preservam créditos anteriores e continuam com IDs de Exercise distintos; cliente antigo não pode apagar a origem silenciosamente. Gates nativos MariaDB/PostgreSQL e Neon de verificação aprovados; migration aplicada nas duas branches antes do deploy. HTTPS validou catálogo real, revisão e sessão/replay. Captura local [40](evidence/40-catalogo-origem-local.png); nenhuma confirmação de telefone físico.
 
@@ -21,11 +27,12 @@ Planos protege lista, cache, formulário e confirmação por conta/epoch/tela/â
 
 | Gate | Evidência |
 |---|---|
-| Suíte integral local | 438/438 em `8c35628`; zero falhas e ignorados. Doze casos novos de origem incluídos no total. |
-| Gate privado | 323 arquivos, incluindo a captura 40; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
+| Suíte integral local | 470/470 em `9d0361e`; zero falhas e ignorados. 32 casos novos incluídos no total. |
+| Gate privado | 338 arquivos; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
 | Publicação | Deployment READY, CI e status Preview Git aprovados; saúde HTTP 200, banco ready e API no-store. |
-| Assets publicados | Seis hashes correspondem ao checkout: index.html, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css. |
-| Gestão HTTPS em 16b09b6 | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
+| Assets publicados | Oito hashes conferidos: index.html, payment-adjustments.js, pagamentos.js, relatorios.js, app.js, aluno-painel.js, components/modal.js e professional.css. |
+| Ajustes HTTPS em 9d0361e | API publicada confirmou saldo/replay/405/CAS, mensalidade e eventos no relatório; fixtures exclusivas removidas, dois logins, nenhuma chamada ao PSP. |
+| Gestão HTTPS histórica em 16b09b6 | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
 | MariaDB nativo | Lançamento manual e checkout aprovados após remoção da edição legada, com fixtures próprias limpas. |
 | Origem nos bancos/HTTPS | Gates específicos aprovados nos dois bancos nativos, Neon de verificação e API publicada; fixtures próprias removidas. Migration de origem aplicada nas duas branches. |
 | Navegador em 16b09b6 | Dashboard com Chart real; pagamentos vazio e inadimplência normal de 13 dias; relatório por período com um check-in de 08/10/2026 às 23:46 em São Paulo. Sem lançamento financeiro ou atraso artificial. |

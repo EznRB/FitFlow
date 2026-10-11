@@ -6,8 +6,16 @@ A entrega completa ainda depende de pagamentos, telefone físico e das melhorias
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `8c35628` (`8c35628e3e451c4d5ca59e7dade33914c2fd28e6`), Production READY `dpl_CyiKpSB3YyuUW756mxRr1Ym9XHqU`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-d5q9wdooh-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38180298416) e Preview Git aprovado. Suíte integral **438/438**, zero falhas e ignorados; gate privado em 323 arquivos. Saúde HTTP 200, banco ready e API no-store; HTML, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css conferidos por hash. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `9d0361e` (`9d0361eae38c023635ba2f9958239ff840fcb9ba`), Production READY `dpl_5YRDgobgwuxx4zfsrFFeYg7eNFXj`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-2xrp9f8zy-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38182537049) e Preview Git aprovado. Suíte integral **470/470**, zero falhas e ignorados; gate privado em 338 arquivos. Saúde HTTP 200, banco ready e API no-store; oito hashes financeiros de HTML/JS/CSS conferidos. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
+
+### Ajustes financeiros — 9d0361e
+
+Correções de recebimentos manuais e devoluções informadas são eventos permanentes com UUID, motivo, responsável, saldo em centavos e efeito explícito de vigência. O recibo pago é protegido por trigger; não há operação de reembolso no provedor por esse formulário. Novos recebimentos capturam concessão real; registros legados não permitem reversão automática. Alteração de plano/status exige revisão atual e todos os escritores de matrícula compartilham o lock. Relatórios separam bruto, correções, devoluções informadas e líquido pela data efetiva do evento. [Contrato e testes](AJUSTES_FINANCEIROS.md).
+
+Gates reais aprovados nos dois bancos nativos, branch Neon de verificação e API HTTPS publicada. Foram aplicadas sete migrations MySQL e quatro PostgreSQL, incluindo a de ajustes nas duas branches Neon. Runtime confirmou SELECT/INSERT de ajustes e negou UPDATE/DELETE, com probe revertido. API pública verificou saldo parcial/integral, replay, forjados/auth/405, CAS após renovação, alteração explícita de vencimento, mensalidade e relatórios; dois logins e somente fixtures UUID próprias removidas, sem chamadas ao PSP. Capturas 41/42 são locais; captura 43 mostra dashboard publicado após a limpeza. Emulação não comprova telefone físico.
+
+[Histórico local](evidence/41-ajuste-financeiro-local.png), [formulário mobile local](evidence/42-ajuste-mobile-local.png) e [dashboard publicado](evidence/43-financeiro-dashboard-vercel.png).
 
 ### Origem do catálogo — 8c35628
 
@@ -73,7 +81,7 @@ Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, 
 
 | Frente | Implementação e verificação |
 |---|---|
-| Banco local | MariaDB 11.8.8 nativo, loopback 3308, seis migrations MySQL e senhas demonstrativas individuais. Smoke, concorrência e gate de origem passaram. Sem Docker e sem alteração do banco antigo. |
+| Banco local | MariaDB 11.8.8 nativo, loopback 3308, sete migrations MySQL e senhas demonstrativas individuais. Smoke, concorrência e gate de origem passaram. Sem Docker e sem alteração do banco antigo. |
 | Banco remoto | Neon Free, PostgreSQL 17, São Paulo; baseline preservada, idempotência manual e origem do catálogo aplicadas nas duas branches. Seis migrations MySQL e três PostgreSQL; CHECK de origem além dos onze anteriores. Gates reais pelo pooler TLS e origem/revisão/sessão aprovados. `fitflow_app` recusou DDL, alteração de séries e exclusões protegidas. Cinco contas, três alunos, duas fichas e 798 exercícios demonstrativos preservados. |
 | Login publicado | Preview e Production passaram em HTTPS: banco pronto, três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. Navegador confirmou autenticação após recarga. |
 | Login editorial | Fotografia ilustrativa da landing reutilizada como WEBP de aproximadamente 199 KB; composição de acesso, tipografia, ajuda e contraste refinados. Navegador local confirmou 1280 e 375 pixels, teclado, mostrar/ocultar senha e campos obrigatórios. Assets publicados conferidos por hash; capturas 28/29/31 documentam 1280 × 720, 375 × 812 e 768 × 1024, sem overflow horizontal. Login real do aluno aprovado em 375 pixels e sessão restaurada após recarga. |
@@ -112,7 +120,7 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; gestão `16b09b6` passou em 415/415 e Planos `bb68606` em 426/426 e a revisão atual `8c35628` em 438/438.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; gestão `16b09b6` passou em 415/415 e Planos `bb68606` em 426/426 catálogo `8c35628` em 438/438 e a revisão atual `9d0361e` em 470/470.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
@@ -161,7 +169,7 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate. [Matriz M01–M14 e evidências necessárias](VALIDACAO_MOBILE.md), todos inicialmente NÃO FEITO.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
-4. **Financeiro:** criar correção/estorno administrativo com motivo, ator e histórico preservado, reconciliando vigência quando cabível. A recusa 405 não implementa esse recurso. Prioridade da próxima frente, junto da avaliação de provedores abertos solicitada pelo usuário.
+4. **Financeiro administrativo:** concluído em `9d0361e`, com histórico, saldo e vigência explícita. Isso não encerra a validação do checkout externo descrita no item 1.
 5. **Conta:** implementar troca de senha autenticada pelo titular e revogação das sessões anteriores; senha inicial fornecida pelo gestor não substitui esse fluxo.
 
 ## Roteiro de apresentação
@@ -213,3 +221,7 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 - [Vigência personalizada no celular](evidence/39-plano-vigencia-mobile-vercel.png): `bb68606`, 375 × 812, inputs/select/textarea de 16 pixels, equivalência aritmética de R$ 86,60 para 45 dias e R$ 129,90. Formulário cancelado sem gravar.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.
+
+- [Ajuste financeiro local](evidence/41-ajuste-financeiro-local.png): recibo R$ 100,01, correção R$ 25,01, saldo R$ 75,00 e vigência preservada; fixture removida.
+- [Formulário local em mobile](evidence/42-ajuste-mobile-local.png): 375 × 812, documento 375/375, campos 16 px e instruções no início; cancelado sem novo ajuste.
+- [Dashboard financeiro publicado](evidence/43-financeiro-dashboard-vercel.png): `9d0361e`, sessão administrativa restaurada, bruto/ajustes/líquido e conferências separados. Sem recebimentos de teste persistidos.
