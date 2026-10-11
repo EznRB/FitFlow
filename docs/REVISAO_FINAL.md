@@ -1,8 +1,12 @@
 # Revisão de entrega — 11/10/2026
 
-Código publicado `bb68606` (`bb6860652cc1bb9d40339e7a55835544fc177209`), deployment `dpl_88MfRq5H3ap6U5qJVkNfCiFVmxYm`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-7li23rgo7-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38178489433) e status Preview Git aprovado. Saúde HTTP 200, banco ready e API no-store; dez assets conferidos por hash, incluindo planos.js e professional.css. Suíte integral **426/426**, zero falhas e ignorados; sem migration ou dependência nova. Este marco não declara conclusão da meta.
+Código publicado `8c35628` (`8c35628e3e451c4d5ca59e7dade33914c2fd28e6`), Production READY `dpl_CyiKpSB3YyuUW756mxRr1Ym9XHqU`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-d5q9wdooh-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38180298416) e Preview Git aprovado. Suíte integral **438/438**, zero falhas e ignorados; gate privado em 323 arquivos. Saúde HTTP 200, banco ready e API no-store; HTML, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css conferidos por hash. Este marco não conclui a meta completa.
 
 ## Alterações desta revisão
+
+Origem do catálogo e créditos separados de base/texto/mídia preservados na ficha, na revisão, na sessão e no cache offline. Captura transacional no servidor; metadados fornecidos pelo cliente são recusados. Exercícios manuais/legados ficam sem origem, sem inferência por nome. Revisões preservam créditos anteriores e continuam com IDs de Exercise distintos; cliente antigo não pode apagar a origem silenciosamente. Gates nativos MariaDB/PostgreSQL e Neon de verificação aprovados; migration aplicada nas duas branches antes do deploy. HTTPS validou catálogo real, revisão e sessão/replay. Captura local [40](evidence/40-catalogo-origem-local.png); nenhuma confirmação de telefone físico.
+
+## Planos anterior — bb68606
 
 Planos protege lista, cache, formulário e confirmação por conta/epoch/tela/âncora; onze testes controlados cobrem respostas antigas, modais substituídos, duplo envio e falhas. Uma gravação enviada conserva o resultado real, sem efeitos na tela substituta. Campos mobile usam 16 pixels e a duração personalizada fica oculta nas vigências padrão. O navegador publicado confirmou sessão restaurada, edição, vigência personalizada de 45 dias e equivalência aritmética de R$ 86,60 para R$ 129,90; cenário cancelado sem gravação. Viewport 375 × 812, clientWidth = scrollWidth = 375, captura 39. Não comprova telefone físico nem timing artificial no navegador. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png).
 
@@ -17,13 +21,13 @@ Planos protege lista, cache, formulário e confirmação por conta/epoch/tela/â
 
 | Gate | Evidência |
 |---|---|
-| Suíte integral local | 426/426 em `bb68606`; zero falhas e ignorados. Onze casos novos de Planos, incluídos no total. |
-| Gate privado | 314 arquivos, incluindo a captura 39; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
+| Suíte integral local | 438/438 em `8c35628`; zero falhas e ignorados. Doze casos novos de origem incluídos no total. |
+| Gate privado | 323 arquivos, incluindo a captura 40; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
 | Publicação | Deployment READY, CI e status Preview Git aprovados; saúde HTTP 200, banco ready e API no-store. |
-| Assets publicados | Dez hashes coincidem com o checkout: index.html, app.js, pagamentos.js, relatorios.js, planos.js, api.js, evidencias.js, science.js, ia-chat.css e professional.css. |
+| Assets publicados | Seis hashes correspondem ao checkout: index.html, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css. |
 | Gestão HTTPS em 16b09b6 | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
 | MariaDB nativo | Lançamento manual e checkout aprovados após remoção da edição legada, com fixtures próprias limpas. |
-| PostgreSQL | Core adaptado para a remoção; não reexecutado nesta etapa. Gates PostgreSQL/Neon anteriores preservados no histórico, sem nova migration. |
+| Origem nos bancos/HTTPS | Gates específicos aprovados nos dois bancos nativos, Neon de verificação e API publicada; fixtures próprias removidas. Migration de origem aplicada nas duas branches. |
 | Navegador em 16b09b6 | Dashboard com Chart real; pagamentos vazio e inadimplência normal de 13 dias; relatório por período com um check-in de 08/10/2026 às 23:46 em São Paulo. Sem lançamento financeiro ou atraso artificial. |
 | Capturas atuais | [37: dashboard desktop](evidence/37-gestao-dashboard-publicado.png) e [38: relatório em 375 × 812](evidence/38-relatorios-publicados-mobile.png). No relatório, clientWidth = scrollWidth = 369 pixels. Campos de data tinham 14 pixels; emulação não comprova telefone ou teclado físico. |
 
@@ -45,10 +49,9 @@ Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A 
 
 1. Configurar Mercado Pago sandbox, contas de teste, credenciais e webhook HTTPS; cartão APRO/rejeitado/CONT, Pix QR/pendente sem renovar plano. O sandbox não simula liquidação Pix; approved de Pix permanece nos testes com doubles. [Roteiro e fontes oficiais](PAGAMENTOS_SANDBOX.md).
 2. Telefone físico: instalação PWA, teclado, interrupção/retorno de rede e reconexão publicada. [Matriz M01–M14](VALIDACAO_MOBILE.md), execução pendente.
-3. Preservar proveniência do exercício escolhido no catálogo até a ficha e snapshot da sessão; não inferir identidades retrospectivamente no histórico. Contrato recomendado para nova implementação: `catalogExerciseId` nullable e snapshot de proveniência validado pelo servidor a partir do catálogo, preservando separadamente fontes/licenças/autoria da base, texto e imagem. Sem backfill por nome ou alteração retrospectiva do histórico.
+3. Correção/estorno financeiro administrativo com motivo, ator, histórico e tratamento explícito da vigência. A recusa 405 elimina edição direta, sem entregar esse recurso.
 4. Troca de senha autenticada pelo titular e revogação de sessões anteriores.
-5. Correção/estorno financeiro administrativo com motivo, ator, histórico e tratamento explícito da vigência. A recusa 405 elimina edição direta, sem entregar esse recurso.
-6. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
+5. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
 
 O Preview Git teve falhas históricas antes do build (git_info_fail em 7cf0d2b/143c228) e recuperações observadas sem mudar permissões/proteção. A causa da intermitência não foi comprovada; o status atual está aprovado. [Histórico](STATUS_ENTREGA.md#publicação-automática-pelo-github).
 

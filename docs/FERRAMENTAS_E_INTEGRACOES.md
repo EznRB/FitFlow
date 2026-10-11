@@ -1,6 +1,6 @@
 # Ferramentas, MCPs, skills e repositórios para o FitFlow
 
-Pesquisa inicial em 07/10/2026, integração revisada em 10/10/2026. Ferramenta disponível não implica conta conectada nem validação científica de suas respostas. MCPs apoiam o desenvolvimento; não precisam executar no aplicativo dos alunos.
+Pesquisa inicial em 07/10/2026, integração e código de pagamentos revisados em 11/10/2026. Ferramenta disponível não implica conta conectada nem validação científica de suas respostas. MCPs apoiam o desenvolvimento; não precisam executar no aplicativo dos alunos.
 
 ## Já usados nesta etapa
 
@@ -43,6 +43,8 @@ O guia antigo mencionava `api-patterns`, `database-design`, `auth-implementation
 Plugins Caliber, FitAI Pro e CalorieCam também apareceram no catálogo, sem conexão/instalação confirmadas. Não foram adotados: o projeto precisa de cálculos auditáveis, histórico próprio e referências primárias, e a descrição comercial desses plugins não comprova essas propriedades.
 
 ## Preparação opcional do MCP wger
+
+A avaliação de pagamentos foi aprofundada no código do [pagamentos.dev](https://github.com/pagamentosdev/pagamentos/tree/94cb8da0e6568ad54b8a70ac3257180d4b410315): a distribuição npm 0.0.1 consultada contém apenas README/package.json; o Mock do repositório é temporário, sem QR Pix real ou confirmação por um PSP. Nenhum pacote foi incorporado à produção. [Comparação e limites completos](PAGAMENTOS_SANDBOX.md#verificação-de-código-aberto--11102026). O catálogo wger agora acompanha a ficha/sessão com créditos preservados; [contrato](ARQUITETURA.md#origem-na-ficha-e-na-sessão).
 
 Use conta de desenvolvimento própria; não compartilhe perfis de alunos. A CLI preparada suporta `--transport stdio`. Exemplo para Codex, após configurar a credencial local sem commitá-la:
 

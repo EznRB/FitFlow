@@ -6,10 +6,20 @@ A entrega completa ainda depende de pagamentos, telefone físico e das melhorias
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `bb68606` (`bb6860652cc1bb9d40339e7a55835544fc177209`), deployment `dpl_88MfRq5H3ap6U5qJVkNfCiFVmxYm`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-7li23rgo7-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38178489433) e status Preview Git aprovado. Saúde HTTP 200, banco ready e API no-store; dez assets conferidos por hash, incluindo planos.js e professional.css. Suíte integral **426/426**, zero falhas e ignorados; sem migration ou dependência nova. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `8c35628` (`8c35628e3e451c4d5ca59e7dade33914c2fd28e6`), Production READY `dpl_CyiKpSB3YyuUW756mxRr1Ym9XHqU`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-d5q9wdooh-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38180298416) e Preview Git aprovado. Suíte integral **438/438**, zero falhas e ignorados; gate privado em 323 arquivos. Saúde HTTP 200, banco ready e API no-store; HTML, exercise-origin.js, treinos.js, sessoes.js, training-store.js e professional.css conferidos por hash. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-Suíte atual e CI conforme a implantação acima. Gate privado em 314 arquivos, incluindo a captura 39; não certifica segredos desconhecidos nem todo o histórico Git.
+### Origem do catálogo — 8c35628
+
+Origem do catálogo e créditos separados de base/texto/mídia preservados na ficha, na revisão, na sessão e no cache offline. Captura transacional no servidor; metadados fornecidos pelo cliente são recusados. Exercícios manuais/legados ficam sem origem, sem inferência por nome. Revisões preservam créditos anteriores e continuam com IDs de Exercise distintos; cliente antigo não pode apagar a origem silenciosamente.
+
+Migrations aditivas aplicadas nos bancos nativos e nas duas branches Neon: seis MySQL e três PostgreSQL, incluindo o CHECK de origem além dos onze anteriores. PostgreSQL passou diretamente; MariaDB recusou FK/CHECK com atualização em cascata. Somente colunas vazias da migration nova local incompleta foram removidas, a tentativa marcada como revertida e a versão com ON UPDATE RESTRICT aplicada. Nenhuma migration anterior alterada.
+
+Gate de origem passou em MariaDB, PostgreSQL nativo e Neon de verificação: captura, manual desconhecido, FK/CHECK, revisão com catálogo desativado e sessão/replay estáveis. Runtime preservou recusa de DDL, edição de séries e exclusão de histórico/financeiro. HTTPS comprovou crédito de um registro wger real, rejeição de snapshot forjado, início/replay, revisão e histórico preservados; dois logins por execução, quotas preservadas e somente fixtures UUID próprias removidas. A primeira execução falhou porque o teste consultou /sessoes em vez de /sessoes/mine; teste corrigido e gate repetido com sucesso. O código publicado não foi alterado para essa correção do teste.
+
+[Captura 40](evidence/40-catalogo-origem-local.png): detalhe local com autoria, licença e descrição do catálogo; fixture exclusiva removida. Não é captura de produção. No navegador local, IDs de catálogo/exercício anterior presentes no editor. A API publicada confirma o caminho remoto; não comprova telefone físico.
+
+Pagamentos: a API publicada retornou sandbox=true e enabled=false; integração externa continua desativada. A pesquisa de software aberto foi aprofundada em [Pagamentos sandbox](PAGAMENTOS_SANDBOX.md#verificação-de-código-aberto--11102026). Sem nova dependência instalada.
 
 ### Planos e campos mobile — bb68606
 
@@ -63,8 +73,8 @@ Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, 
 
 | Frente | Implementação e verificação |
 |---|---|
-| Banco local | MariaDB 11.8.8 nativo, loopback 3308, cinco migrations MySQL e senhas demonstrativas individuais. Smoke HTTP e concorrência real passaram. Sem Docker e sem alteração do banco antigo. |
-| Banco remoto | Neon Free, PostgreSQL 17, São Paulo; baseline preservada e migration aditiva `20261009_manual_payment_idempotency` aplicada nas duas branches e nos bancos nativos. Cinco migrations MySQL e duas PostgreSQL; onze CHECKs PostgreSQL. Três gates reais passaram pelo pooler com TLS; core foi repetido para replay, conflitos e nova constraint. `fitflow_app` recusou DDL, alteração de séries e exclusões protegidas. Cinco contas, três alunos, duas fichas e 798 exercícios demonstrativos. |
+| Banco local | MariaDB 11.8.8 nativo, loopback 3308, seis migrations MySQL e senhas demonstrativas individuais. Smoke, concorrência e gate de origem passaram. Sem Docker e sem alteração do banco antigo. |
+| Banco remoto | Neon Free, PostgreSQL 17, São Paulo; baseline preservada, idempotência manual e origem do catálogo aplicadas nas duas branches. Seis migrations MySQL e três PostgreSQL; CHECK de origem além dos onze anteriores. Gates reais pelo pooler TLS e origem/revisão/sessão aprovados. `fitflow_app` recusou DDL, alteração de séries e exclusões protegidas. Cinco contas, três alunos, duas fichas e 798 exercícios demonstrativos preservados. |
 | Login publicado | Preview e Production passaram em HTTPS: banco pronto, três perfis, cookie Secure/HttpOnly/Lax, autorização, catálogo, painel, CSRF e logout. Navegador confirmou autenticação após recarga. |
 | Login editorial | Fotografia ilustrativa da landing reutilizada como WEBP de aproximadamente 199 KB; composição de acesso, tipografia, ajuda e contraste refinados. Navegador local confirmou 1280 e 375 pixels, teclado, mostrar/ocultar senha e campos obrigatórios. Assets publicados conferidos por hash; capturas 28/29/31 documentam 1280 × 720, 375 × 812 e 768 × 1024, sem overflow horizontal. Login real do aluno aprovado em 375 pixels e sessão restaurada após recarga. |
 | Inicialização | Espera acessível e login desabilitado durante verificação; AbortController de 15 segundos somente em `/auth/me`, descarte de resposta obsoleta e proteção por geração. Logout pendente tratado em segundo plano, com login aguardando a conclusão necessária. Testes aprovados; restauração real confirmada na revisão publicada. |
@@ -102,7 +112,7 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; gestão `16b09b6` passou em 415/415 e a revisão atual `bb68606` em 426/426.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; gestão `16b09b6` passou em 415/415 e Planos `bb68606` em 426/426 e a revisão atual `8c35628` em 438/438.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
@@ -151,10 +161,8 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate. [Matriz M01–M14 e evidências necessárias](VALIDACAO_MOBILE.md), todos inicialmente NÃO FEITO.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
-4. **Proveniência dos exercícios:** preservar identidade, fonte/licença/autoria da seleção de catálogo até a ficha e o snapshot da sessão, sem atribuir retrospectivamente identidades a exercícios antigos. Contrato recomendado para nova implementação: `catalogExerciseId` nullable e snapshot de proveniência validado pelo servidor a partir do catálogo, preservando separadamente fontes/licenças/autoria da base, texto e imagem. Sem backfill por nome ou alteração retrospectiva do histórico.
+4. **Financeiro:** criar correção/estorno administrativo com motivo, ator e histórico preservado, reconciliando vigência quando cabível. A recusa 405 não implementa esse recurso. Prioridade da próxima frente, junto da avaliação de provedores abertos solicitada pelo usuário.
 5. **Conta:** implementar troca de senha autenticada pelo titular e revogação das sessões anteriores; senha inicial fornecida pelo gestor não substitui esse fluxo.
-6. **Financeiro:** criar correção/estorno administrativo com motivo, ator e histórico preservado, reconciliando vigência quando cabível. A recusa 405 não implementa esse recurso.
-7. **Planos:** concluir proteção contra respostas de conta/tela/consulta anteriores e validar a integração; frente em andamento após `16b09b6`.
 
 ## Roteiro de apresentação
 

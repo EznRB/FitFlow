@@ -16,6 +16,10 @@ async function request(route,{method='GET',body,cookie,expected=200}={}){
   for(const [i,role] of ['instructor','student'].entries())users.push(await owner.user.create({data:{name:prefix,email:emails[i],passwordHash,role}}));
   student=await owner.student.create({data:{userId:users[1].id,planEndDate:new Date('2099-11-01T00:00:00Z')}});
   const cookies=[];for(const email of emails){const login=await request('/auth/login',{method:'POST',body:{email,password}});cookies.push(login.response.headers.get('set-cookie').split(';')[0]);}
+  stage='published checkout configuration';
+  const checkout=(await request('/checkout/status',{cookie:cookies[1]})).data;
+  assert.equal(checkout.sandbox,true);assert.equal(typeof checkout.enabled,'boolean');
+  console.log('Published checkout configuration: sandbox=true, enabled='+checkout.enabled+'. This flag does not validate provider credentials.');
   stage='catalog selection';const catalog=(await request('/treinos/catalogo',{cookie:cookies[0]})).data.find(c=>c.source==='wger'&&c.sourceMetadata?.text?.author);
   assert.ok(catalog,'A credited real catalog entry is required');
   const ex={name:catalog.nome,muscleGroup:catalog.grupo_muscular,sets:2,reps:'8-12',restSeconds:90,catalogExerciseId:catalog.id};
@@ -28,7 +32,8 @@ async function request(route,{method='GET',body,cookie,expected=200}={}){
   stage='revision and previous origin ownership';
   const revised=(await request('/treinos/'+first.id,{method:'PUT',cookie:cookies[0],body:{name:prefix,exercises:[{...ex,sourceExerciseId:first.exercises[0].id,name:ex.name.slice(0,90)+' adaptado'}]}})).data;
   assert.notEqual(revised.exercises[0].id,first.exercises[0].id);assert.deepEqual(revised.exercises[0].catalogSnapshot,snapshot);
-  assert.deepEqual((await request('/sessoes',{cookie:cookies[1]})).data.sessions.find(s=>s.id===body.id).planSnapshot.exercises[0].catalogSnapshot,snapshot);
+  stage='session history after revision';
+  assert.deepEqual((await request('/sessoes/mine',{cookie:cookies[1]})).data.sessions.find(s=>s.id===body.id).planSnapshot.exercises[0].catalogSnapshot,snapshot);
   const own=(await request('/treinos/meus',{cookie:cookies[1]})).data;assert.ok(own.some(w=>w.id===revised.id));assert.ok(!own.some(w=>w.id===first.id));
   console.log('Hosted origin HTTPS PASS: real wger credit, forged metadata rejected, session/replay, stable revision snapshot and distinct Exercise IDs; two logins, quotas preserved.');
  }finally{
