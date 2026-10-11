@@ -351,6 +351,37 @@ test('falha de validação JSON do provedor não recupera geração rejeitada ne
   assert.equal(calls, 1);
 });
 
+test('diagnóstico upstream identifica etapa e tamanho sem registrar corpo, mensagem, chave ou conversa', async () => {
+  for (const stage of ['primary', 'grounded']) {
+    const events = []; let calls = 0;
+    const current = service({ onDiagnostic: event => events.push(event), fetchImpl: async () => {
+      calls++;
+      if (stage === 'grounded' && calls === 1) return upstream(valid);
+      return new Response(JSON.stringify({ error: { code: 'request_too_large', type: 'private-type',
+        message: 'private-org-key-history', failed_generation: 'private-conversation' } }), { status: 413 });
+    } });
+    await assert.rejects(current.chat(input('Pergunta privada fictícia.')), error => error.statusCode === 413
+      && /Reduza o contexto/.test(error.message) && !/indisponível|private/.test(error.message));
+    assert.deepEqual(events, [{ stage, status: 413, category: 'request_size', code: 'request_too_large' }]);
+    assert.equal(calls, stage === 'primary' ? 1 : 2);
+    assert.doesNotMatch(JSON.stringify(events), /private|fixture-private-key|Pergunta privada/);
+  }
+});
+
+test('diagnóstico limita códigos a categorias conhecidas e não muda erro quando o logger falha', async () => {
+  const events = [];
+  for (const [status, code, category, expected] of [[400, 'json_validate_failed', 'format', 502],
+    [400, 'private-key-as-code', 'invalid_request', 502], [500, 'private-key-as-code', 'upstream', 502],
+    [429, 'rate_limit_exceeded', 'quota', 429]]) {
+    await assert.rejects(service({ onDiagnostic: event => events.push(event), fetchImpl: async () =>
+      new Response(JSON.stringify({ error: { code, message: 'private' } }), { status }) }).chat(input()), error => error.statusCode === expected);
+    assert.deepEqual(events.at(-1), { stage: 'primary', status, category, code: code.startsWith('private') ? 'unknown' : code });
+  }
+  assert.doesNotMatch(JSON.stringify(events), /private/);
+  await assert.rejects(service({ onDiagnostic: () => { throw new Error('private-logger'); }, fetchImpl: async () =>
+    new Response('private', { status: 413 }) }).chat(input()), error => error.statusCode === 413);
+});
+
 test('prazo total encerra fetch que ignora abort e leitura de corpo que nunca termina', async () => {
   for (const phase of ['fetch', 'body']) {
     let signal;
