@@ -74,6 +74,7 @@ const reviewInstruction = [
 ].join('\n\n');
 const diagnosticCodes = new Set(['json_validate_failed', 'rate_limit_exceeded', 'context_length_exceeded',
   'model_not_found', 'invalid_request_error', 'request_too_large']);
+const validationCodes = new Set(['primary_shape', 'routine_context', 'answer_shape', 'answer_selection', 'answer_size']);
 function productionDiagnostic(event) {
   if (process.env.NODE_ENV === 'production') console.warn('FitFlow IA provider failure', event);
 }
@@ -141,7 +142,9 @@ function validateResult(result) {
     || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(result.message)
     || !Array.isArray(result.sourceIds) || result.sourceIds.length > sourceIds.length
     || result.sourceIds.some(id => typeof id !== 'string' || !sourceIds.includes(id))) {
-    throw new AppError('A IA retornou uma resposta fora do formato permitido. Tente reformular a pergunta.', 502);
+    const error = new AppError('A IA retornou uma resposta fora do formato permitido. Tente reformular a pergunta.', 502);
+    error.iaValidationCode = 'primary_shape';
+    throw error;
   }
   return { message: result.message.trim(), kind: result.kind, generatedByAI: true,
     sources: [...new Set(result.sourceIds)].map(id => ({ id, title: references[id].title, url: references[id].url })) };
@@ -198,7 +201,13 @@ function createIaChatService({ provider = process.env.IA_PROVIDER || 'gemini',
                     ...primaryConversation],
                 }),
               });
-              const program = validateProgram(await completionContent(routineResponse, 'routine', onDiagnostic), messages);
+              const generated = await completionContent(routineResponse, 'routine', onDiagnostic);
+              let program;
+              try { program = validateProgram(generated, messages); }
+              catch (error) {
+                if (error instanceof AppError) error.iaValidationCode = 'routine_context';
+                throw error;
+              }
               return { message: renderProgram(program), kind: 'routine_draft', generatedByAI: true, program,
                 sources: ['acsm-2026', 'split-2024', 'rir-2022', 'failure-2024', 'rest-2024']
                   .filter(id => Object.hasOwn(references, id)).map(id => ({ id, title: references[id].title, url: references[id].url })) };
@@ -241,7 +250,15 @@ function createIaChatService({ provider = process.env.IA_PROVIDER || 'gemini',
           }),
         ]);
       } catch (error) {
-        if (error instanceof AppError) throw error;
+        if (error instanceof AppError) {
+          if (validationCodes.has(error.iaValidationCode)) {
+            const stage = error.iaValidationCode === 'primary_shape' ? 'primary'
+              : error.iaValidationCode === 'routine_context' ? 'routine' : 'grounded';
+            try { onDiagnostic({ stage, status: 200, category: 'validation', code: error.iaValidationCode }); }
+            catch { /* Log não altera a resposta. */ }
+          }
+          throw error;
+        }
         if (['AbortError', 'TimeoutError'].includes(error?.name)) throw new AppError('A IA demorou a responder. Tente novamente.', 504);
         throw new AppError('Não foi possível obter uma resposta válida da IA. Tente novamente.', 502);
       } finally { clearTimeout(timer); }

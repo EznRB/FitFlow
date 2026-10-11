@@ -519,6 +519,27 @@ test('falha de validação JSON do provedor não recupera geração rejeitada ne
   assert.equal(calls, 1);
 });
 
+test('diagnóstico de validação local identifica etapa sem copiar conteúdo rejeitado', async () => {
+  for (const [stage, code] of [['primary', 'primary_shape'], ['grounded', 'answer_selection'], ['routine', 'routine_context']]) {
+    const events = []; let calls = 0;
+    const current = service({ onDiagnostic: event => events.push(event), fetchImpl: async () => {
+      calls++;
+      if (stage !== 'primary' && calls === 1) return upstream(stage === 'routine' ? routineTurn : valid);
+      return upstream(stage === 'primary' ? { ...valid, private: 'private-rejected-content' }
+        : stage === 'routine' ? { context: {}, sessions: 'private-rejected-content' }
+        : { blocks: [{ kind: 'tracking', private: 'private-rejected-content' }], kind: 'answer', program: null });
+    } });
+    await assert.rejects(current.chat(input(stage === 'routine' ? routineUserText : 'Pergunta privada fictícia.')),
+      error => error.statusCode === 502 && !error.message.includes('private-rejected-content'));
+    assert.deepEqual(events, [{ stage, status: 200, category: 'validation', code }]);
+    assert.equal(calls, stage === 'primary' ? 1 : 2);
+    assert.doesNotMatch(JSON.stringify(events), /private|fixture-private-key|Pergunta privada/);
+  }
+  await assert.rejects(service({ onDiagnostic: () => { throw new Error('private-logger'); },
+    fetchImpl: async () => upstream({ ...valid, private: 'private-rejected-content' }) }).chat(input()),
+    error => error.statusCode === 502 && error.iaValidationCode === 'primary_shape');
+});
+
 test('diagnóstico upstream identifica etapa e tamanho sem registrar corpo, mensagem, chave ou conversa', async () => {
   for (const stage of ['primary', 'grounded', 'routine']) {
     const events = []; let calls = 0;

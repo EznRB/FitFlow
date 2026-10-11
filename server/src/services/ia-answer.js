@@ -36,13 +36,22 @@ const questions = {
 };
 const exact = (value, allowed) => value && typeof value === 'object' && !Array.isArray(value)
   && Object.keys(value).length === allowed.length && Object.keys(value).every(key => allowed.includes(key));
-const invalid = () => { throw new AppError('A IA não concluiu uma seleção válida para a resposta. Tente reformular a pergunta.', 502); };
+const answerLimit = 6000;
+const countsNotice = 'Essas declarações do histórico não comprovam autoria, classificação anatômica correta ou execução; a razão individual da dose não foi documentada. Séries planejadas não comprovam séries realizadas.';
+const topicLabels = { tracking: 'Registros e tonelagem', progression: 'Critérios práticos de progressão', limits: 'Limites das fontes',
+  routine: 'Contexto da rotina', equipment: 'Equipamentos disponíveis', logging: 'Proposta ou registros realizados',
+  priority: 'Prioridades de treino', recovery: 'Descanso e calendário', sources: 'Detalhamento das referências' };
+const invalid = (code = 'answer_selection') => {
+  const error = new AppError('A IA não concluiu uma seleção válida para a resposta. Tente reformular a pergunta.', 502);
+  error.iaValidationCode = code;
+  throw error;
+};
 const enumArray = (array, allowed, max) => Array.isArray(array) && array.length <= max
-  && new Set(array).size === array.length && array.every(item => typeof item === 'string' && allowed.includes(item));
+  && array.every(item => typeof item === 'string' && allowed.includes(item));
 
 function renderAnswerSelection(selection, messages) {
   if (!exact(selection, ['blocks', 'kind', 'program']) || selection.kind !== 'answer' || selection.program !== null
-    || !Array.isArray(selection.blocks) || selection.blocks.length < 1 || selection.blocks.length > 12) invalid();
+    || !Array.isArray(selection.blocks) || selection.blocks.length < 1 || selection.blocks.length > 12) invalid('answer_shape');
   for (const block of selection.blocks) {
     const fields = block?.kind === 'evidence' ? ['kind', 'sourceIds'] : block?.kind === 'draft_counts'
       ? ['kind', 'groups'] : block?.kind === 'question' ? ['kind', 'followUp'] : ['kind'];
@@ -51,31 +60,49 @@ function renderAnswerSelection(selection, messages) {
       || (block.kind === 'draft_counts' && (!enumArray(block.groups, Object.keys(groupLabels), 10) || !block.groups.length))
       || (block.kind === 'question' && !followUps.includes(block.followUp))) invalid();
   }
-  const draft = extractDraftContext(messages), parts = [], seen = new Set(), selectedSources = new Set();
-  const append = (key, text) => { if (!seen.has(key)) { seen.add(key); parts.push(text); } };
+  const draft = extractDraftContext(messages), units = [], seen = new Set();
+  const append = (key, text, label, extra = {}) => {
+    if (!seen.has(key)) { seen.add(key); units.push({ text, label, ...extra }); }
+  };
   for (const block of selection.blocks) {
     if (block.kind === 'evidence') for (const id of block.sourceIds) {
-      selectedSources.add(id); append(`evidence:${id}`, `${references[id].title}\n${references[id].summary}`);
+      append(`evidence:${id}`, `${references[id].title}\n${references[id].summary}`, references[id].title, { sourceId: id });
     } else if (block.kind === 'draft_counts') {
+      // Não apresente um histórico fora dos limites do formato como uma
+      // contagem completa, nem o torne aceitável omitindo parte dos exercícios.
+      if (draft && (draft.exercises.length > 36 || draft.sessionEstimates.length > 6
+        || draft.sessionEstimates.some(session => draft.exercises.filter(row => row.day === session.day).length > 6))) invalid('answer_size');
       for (const group of block.groups) {
       const label = groupLabels[group], contributors = draft?.declaredContributors.find(row => row.group === label);
       if (!contributors?.classificationComplete || !contributors.exercises.length
         || contributors.exercises.some(row => /[<>]|https?:\/\/|www\.|\b(?:draftContext|directPlannedSets|declaredContributors|classificationComplete)\b/i.test(row.name))) {
-        append(`counts:${group}`, `${label}: faltam declarações completas do grupo principal por exercício no histórico para conferir a origem da contagem. Não vou inferir músculos pela anatomia ou tratar a proposta como treino realizado.`);
+        append(`counts:${group}`, `${label}: faltam declarações completas do grupo principal por exercício no histórico para conferir a origem da contagem. Não vou inferir músculos pela anatomia ou tratar a proposta como treino realizado.`, `Contagem de ${label}`, { counts: true });
         continue;
       }
       const rows = contributors.exercises;
       const sets = rows.reduce((total, row) => total + row.sets, 0), frequency = new Set(rows.map(row => row.day)).size;
-      append(`counts:${group}`, `${label}: ${sets} séries diretas planejadas em ${frequency} ${frequency === 1 ? 'sessão' : 'sessões'} semanalmente no rascunho recebido. Origem declarada: ${rows.map(row => `${row.day} — ${row.name} (${row.sets} séries)`).join('; ')}.`);
+      append(`counts:${group}`, `${label}: ${sets} séries diretas planejadas em ${frequency} ${frequency === 1 ? 'sessão' : 'sessões'} semanalmente no rascunho recebido. Origem declarada: ${rows.map(row => `${row.day} — ${row.name} (${row.sets} séries)`).join('; ')}.`, `Contagem de ${label}`, { counts: true });
       }
-      append('counts:notice', 'Essas declarações do histórico não comprovam autoria, classificação anatômica correta ou execução; a razão individual da dose não foi documentada. Séries planejadas não comprovam séries realizadas.');
-    } else if (block.kind === 'question') append(`question:${block.followUp}`, questions[block.followUp]);
-    else append(block.kind, canonical[block.kind]);
+    } else if (block.kind === 'question') append(`question:${block.followUp}`, questions[block.followUp], topicLabels[block.followUp]);
+    else append(block.kind, canonical[block.kind], topicLabels[block.kind]);
   }
-  const message = parts.join('\n\n');
-  if (message.length < 10 || message.length > 5000 || selectedSources.size > 8) invalid();
+  // Unidades são indivisíveis: nunca corte um resumo ou a origem de uma
+  // contagem. Reserve o aviso de contagens e o de tópicos omitidos no orçamento.
+  const compose = (shown, omitted) => [...shown.map(unit => unit.text),
+    ...(shown.some(unit => unit.counts) ? [countsNotice] : []),
+    ...(omitted.length ? [`Ficaram para uma próxima pergunta: ${omitted.map(unit => unit.label).join('; ')}.`] : [])].join('\n\n');
+  if (units.some(unit => unit.text.length + (unit.counts ? countsNotice.length + 2 : 0) > answerLimit)) invalid('answer_size');
+  const shown = [], skipped = [];
+  for (let index = 0; index < units.length; index++) {
+    const candidate = units[index];
+    if (compose([...shown, candidate], [...skipped, ...units.slice(index + 1)]).length <= answerLimit) shown.push(candidate);
+    else skipped.push(candidate);
+  }
+  const message = compose(shown, skipped);
+  const selectedSources = shown.filter(unit => unit.sourceId).map(unit => unit.sourceId);
+  if (!shown.length || message.length < 10 || message.length > answerLimit || selectedSources.length > 8) invalid('answer_size');
   return { message, kind: 'answer', generatedByAI: true, scientificTextFromCorpus: true,
-    sources: [...selectedSources].map(id => ({ id, title: references[id].title, url: references[id].url })) };
+    sources: selectedSources.map(id => ({ id, title: references[id].title, url: references[id].url })) };
 }
 
 module.exports = { answerSchema, answerSources, renderAnswerSelection };
