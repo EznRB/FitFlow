@@ -15,7 +15,8 @@ const { program, routineUserText } = require('./fixtures/ia-routine.cjs');
 const { validateProgram, renderProgram } = require('../src/services/ia-routine');
 
 const valid = { message: 'Full body e divisões podem funcionar: escolha a distribuição conforme dias disponíveis e adesão.',
-  sourceIds: ['split-2024'], kind: 'answer', program: null };
+  sourceIds: ['split-2024'], kind: 'answer' };
+const routineTurn = { message: 'Vou organizar um rascunho revisável para sua rotina.', sourceIds: [], kind: 'routine_draft' };
 const input = (content = 'Como escolher a divisão?') => ({ consent: true, messages: [{ role: 'user', content }] });
 const upstream = (result = valid, reason = 'stop', message = {}) => new Response(JSON.stringify({
   choices: [{ finish_reason: reason, message: { content: JSON.stringify(result), ...message } }],
@@ -25,8 +26,15 @@ const groundedResult = (result = valid) => ({ blocks: [result.sourceIds?.length
   ? block('evidence', { sourceIds: [...new Set(result.sourceIds)] }) : block('limits')],
   kind: result.kind, program: null });
 const stageUpstream = (options, result = valid) => {
-  const grounded = JSON.parse(options.body).messages[0].content.startsWith('Answer the last user question');
-  return upstream(grounded ? groundedResult(result) : result);
+  const request = JSON.parse(options.body);
+  if (request.response_format.type === 'json_object') {
+    assert.equal(request.model, 'openai/gpt-oss-120b');
+    return upstream(program());
+  }
+  const name = request.response_format.json_schema.name;
+  if (name === 'fitflow_grounded_answer') return upstream(groundedResult(result));
+  assert.equal(name, 'fitflow_chat_turn');
+  return upstream(result);
 };
 const service = options => createIaChatService({ provider: 'groq', groqApiKey: 'fixture-private-key',
   chatModel: 'openai/gpt-oss-20b', freeTierConfirmed: true, fetchImpl: async (_, options) => stageUpstream(options), ...options });
@@ -65,51 +73,86 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
   const messages = [{ role: 'user', content: 'Quero montar um treino para minha rotina.' },
     { role: 'assistant', content: 'Em quais dias e por quanto tempo você pode treinar?' },
     { role: 'user', content: routineUserText }];
-  const routine = { message: 'Aqui está um rascunho para sua rotina.',
-    kind: 'routine_draft', sourceIds: ['split-2024', 'acsm-2026'], program: program() };
+  let calls = 0; const signals = [];
   const current = service({ fetchImpl: async (url, options) => {
+    calls++; signals.push(options.signal);
     assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions');
     assert.equal(options.headers.Authorization, 'Bearer fixture-private-key');
     assert.equal(options.redirect, 'error'); assert.ok(options.signal);
     const body = JSON.parse(options.body);
-    assert.equal(body.model, 'openai/gpt-oss-20b');
+    assert.equal(body.model, calls === 1 ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b');
     assert.deepEqual(body.messages.slice(1), messages);
     assert.equal(body.messages.filter(message => message.role === 'system').length, 1);
     assert.equal(body.service_tier, 'on_demand'); assert.equal(body.stream, false);
     assert.equal(body.include_reasoning, false); assert.equal(body.tools, undefined);
-    assert.equal(body.reasoning_effort, 'medium'); assert.equal(body.temperature, 0.2);
-    assert.deepEqual(body.response_format, { type: 'json_object' });
+    assert.equal(body.reasoning_effort, 'medium'); assert.equal(body.temperature, calls === 1 ? 0.2 : 0.1);
     const schema = JSON.parse(body.messages[0].content.split('JSON Schema de referência:\n')[1]);
+    const providerSchema = calls === 1 ? body.response_format.json_schema.schema : schema;
+    if (calls === 1) {
+      assert.equal(body.response_format.type, 'json_schema');
+      assert.equal(body.response_format.json_schema.strict, true);
+      assert.equal(body.response_format.json_schema.name, 'fitflow_chat_turn');
+      assert.deepEqual(providerSchema.required, ['message', 'sourceIds', 'kind']);
+      assert.equal(providerSchema.properties.sessions, undefined); assert.equal(providerSchema.properties.program, undefined);
+      assert.equal(body.max_completion_tokens, 4000);
+    } else {
+      assert.deepEqual(body.response_format, { type: 'json_object' });
+      assert.deepEqual(providerSchema.required, ['context', 'sessions']);
+      assert.equal(providerSchema.properties.program, undefined); assert.equal(providerSchema.properties.message, undefined);
+      assert.equal(providerSchema.properties.sessions.items.type, 'object');
+      assert.equal(providerSchema.anyOf, undefined); assert.equal(body.max_completion_tokens, 6000);
+    }
+    const assertClosed = shape => {
+      if (shape.type === 'object') {
+        assert.equal(shape.additionalProperties, false);
+        assert.deepEqual(shape.required, Object.keys(shape.properties));
+        Object.values(shape.properties).forEach(assertClosed);
+      }
+      if (shape.items) assertClosed(shape.items);
+      if (shape.anyOf) shape.anyOf.forEach(assertClosed);
+    };
+    assertClosed(providerSchema);
     assert.equal(schema.additionalProperties, false);
-    assert.deepEqual(schema.properties.program.type, ['object', 'null']);
-    assert.equal(schema.properties.program.anyOf, undefined);
+    assert.deepEqual(schema.required, calls === 1 ? ['message', 'sourceIds', 'kind'] : ['context', 'sessions']);
+    if (calls === 2) {
+      assert.equal(schema.properties.sessions.maxItems, 6);
+      assert.equal(schema.properties.sessions.items.properties.exercises.items.properties.sets.maximum, 6);
+    }
     assert.ok(!options.body.includes('fixture-private-key'));
     assert.ok(!options.body.includes('access_token'));
     assert.equal(body.profile, undefined); assert.equal(body.user, undefined);
-    return upstream(routine, 'stop', { reasoning: 'fixture-private-reasoning' });
+    return upstream(calls === 1 ? routineTurn : program(), 'stop', { reasoning: 'fixture-private-reasoning' });
   } });
   const result = await current.chat({ consent: true, messages });
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão por semana/); assert.equal(result.kind, 'routine_draft');
   assert.equal(result.generatedByAI, true); assert.equal(result.reasoning, undefined);
+  assert.equal(calls, 2); assert.equal(signals[0], signals[1]);
+  assert.deepEqual(result.sources.map(source => source.id), ['acsm-2026', 'split-2024', 'rir-2022', 'failure-2024', 'rest-2024']);
   assert.deepEqual(result.sources.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title, url: references['split-2024'].url });
 });
 
-test('program ausente só equivale a null em answer/clarification, nunca cria rascunho', async () => {
+test('classificador plano sem program despacha resposta ou esclarecimento, nunca aceita plano na raiz', async () => {
   for (const kind of ['answer', 'clarification']) {
+    let calls = 0;
     const current = service({ fetchImpl: async (_, options) => {
+      calls++;
       const request = JSON.parse(options.body);
-      assert.equal(request.response_format.type, request.model === 'openai/gpt-oss-20b' ? 'json_object' : 'json_schema');
+      assert.equal(request.response_format.type, 'json_schema');
       return stageUpstream(options, { message: 'Podemos revisar a distribuição conforme sua rotina e esclarecer os limites da evidência.',
         sourceIds: kind === 'clarification' ? [] : ['split-2024'], kind });
     } });
     const result = await current.chat(input());
     assert.equal(result.kind, kind);
     assert.equal(result.program, undefined);
+    assert.equal(calls, kind === 'clarification' ? 1 : 2);
   }
-  const missing = service({ fetchImpl: async () => upstream({ message: 'Seu rascunho foi preparado.', sourceIds: ['acsm-2026'], kind: 'routine_draft' }) });
-  await assert.rejects(missing.chat(input(routineUserText)), error => error.statusCode === 502);
-  const nullRoutine = service({ fetchImpl: async () => upstream({ message: 'Seu rascunho foi preparado.', sourceIds: ['acsm-2026'], kind: 'routine_draft', program: null }) });
-  await assert.rejects(nullRoutine.chat(input(routineUserText)), error => error.statusCode === 502);
+  for (const extra of [{ program: null }, { program: program() }, { sessions: program().sessions },
+    { context: program().context }, { program: { context: program().context }, sessions: program().sessions }]) {
+    let calls = 0;
+    const malformed = service({ fetchImpl: async () => { calls++; return upstream({ ...routineTurn, ...extra }); } });
+    await assert.rejects(malformed.chat(input(routineUserText)), error => error.statusCode === 502);
+    assert.equal(calls, 1);
+  }
 });
 
 test('esclarecimento admite fontes vazias e resposta longa continua no histórico sem truncamento', async () => {
@@ -117,7 +160,7 @@ test('esclarecimento admite fontes vazias e resposta longa continua no históric
   const current = service({ fetchImpl: async (_, options) => {
     forwarded = JSON.parse(options.body).messages;
     return upstream({ message: 'Quais equipamentos você tem e quanto tempo consegue reservar em cada dia?',
-      kind: 'clarification', sourceIds: [], program: null });
+      kind: 'clarification', sourceIds: [] });
   } });
   const previousAnswer = 'Rascunho educativo. '.repeat(200);
   const result = await current.chat({ consent: true, messages: [{ role: 'user', content: 'Rascunho anterior' },
@@ -204,16 +247,21 @@ test('primeira etapa compacta só rascunho reconhecido, preserva doses e falas u
       [original.name, original.sets, original.repsMin, original.repsMax, original.rir, original.restSeconds, 'Peito']);
     assert.deepEqual(compact.weeklySummary.find(row => row.group === 'Peito'), { group: 'Peito', directPlannedSets: 5, sessionsPerWeek: 1 });
     assert.equal(compact.sessionEstimates.length, 3); assert.match(compact.provenance, /cliente/);
-    const referencesPart = body.messages[0].content.split('Referências curadas:\n')[1].split('\n\nJSON Schema de referência:')[0];
-    const sourceContext = JSON.parse(referencesPart);
-    assert.equal(sourceContext.every(source => Object.keys(source).sort().join(',') === 'id,title'), true);
-    assert.deepEqual(sourceContext.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title });
-    assert.equal(body.max_completion_tokens, 4000);
+    if (calls === 1) {
+      const referencesPart = body.messages[0].content.split('Referências curadas:\n')[1].split('\n\nJSON Schema de referência:')[0];
+      const sourceContext = JSON.parse(referencesPart);
+      assert.equal(sourceContext.every(source => Object.keys(source).sort().join(',') === 'id,title'), true);
+      assert.deepEqual(sourceContext.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title });
+      assert.equal(body.max_completion_tokens, 4000);
+    } else {
+      assert.deepEqual(body.response_format, { type: 'json_object' });
+      assert.equal(body.max_completion_tokens, 6000);
+    }
     assert.ok(options.body.length < 18000);
-    return upstream({ message: 'Segue um rascunho revisável para discutir com seu instrutor.', kind: 'routine_draft', sourceIds: ['acsm-2026'], program: program() });
+    return upstream(calls === 1 ? routineTurn : program());
   } });
   const result = await current.chat({ consent: true, messages });
-  assert.equal(calls, 1); assert.equal(result.kind, 'routine_draft');
+  assert.equal(calls, 2); assert.equal(result.kind, 'routine_draft');
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão/);
 });
 
@@ -354,34 +402,81 @@ test('seleção tipada rejeita quantidade excessiva e prosa livre mesmo com font
   }
 });
 
-test('prazo único cobre as duas gerações e também o corpo da revisão que ignora abort', async () => {
-  for (const phase of ['fetch', 'body']) {
+test('prazo único cobre fetch e corpo da segunda etapa, tanto seleção quanto rascunho', async () => {
+  for (const kind of ['answer', 'routine_draft']) for (const phase of ['fetch', 'body']) {
     let calls = 0; const signals = [];
     const current = service({ timeoutMs: 35, fetchImpl: async (_, options) => {
       calls++; signals.push(options.signal);
-      if (calls === 1) { await new Promise(resolve => setTimeout(resolve, 10)); return upstream(valid); }
+      if (calls === 1) { await new Promise(resolve => setTimeout(resolve, 10)); return upstream(kind === 'answer' ? valid : routineTurn); }
+      const format = JSON.parse(options.body).response_format;
+      if (kind === 'answer') assert.equal(format.json_schema.name, 'fitflow_grounded_answer');
+      else assert.deepEqual(format, { type: 'json_object' });
       return phase === 'fetch' ? new Promise(() => {}) : { ok: true, status: 200, json: () => new Promise(() => {}) };
     } });
-    await assert.rejects(current.chat(input()), error => error.statusCode === 504);
+    await assert.rejects(current.chat(input(routineUserText)), error => error.statusCode === 504);
     assert.equal(calls, 2); assert.equal(signals[0], signals[1]); assert.equal(signals[0].aborted, true);
   }
 });
 
-test('resposta principal atrasada após o prazo não inicia revisão adicional', async () => {
-  let calls = 0, release;
-  const current = service({ timeoutMs: 15, fetchImpl: async () => {
-    calls++;
-    return new Promise(resolve => { release = resolve; });
-  } });
-  await assert.rejects(current.chat(input()), error => error.statusCode === 504);
-  release(upstream(valid));
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(calls, 1);
+test('classificação atrasada após o prazo não inicia seleção nem geração do rascunho', async () => {
+  for (const classified of [valid, routineTurn]) {
+    let calls = 0, release;
+    const current = service({ timeoutMs: 15, fetchImpl: async () => {
+      calls++;
+      return new Promise(resolve => { release = resolve; });
+    } });
+    await assert.rejects(current.chat(input(routineUserText)), error => error.statusCode === 504);
+    release(upstream(classified));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(calls, 1);
+  }
+});
+
+test('gerador de rascunho rejeita sessions string, raiz incorreta e contexto que não veio do usuário', async () => {
+  const stringSession = program(); stringSession.sessions[1] = JSON.stringify(stringSession.sessions[1]);
+  const stringSessions = program(); stringSessions.sessions = JSON.stringify(stringSessions.sessions);
+  const assistantQuote = program(); assistantQuote.context.availabilityQuote = 'Dias disponíveis: sábado e domingo apenas.';
+  const excessiveDose = program(); excessiveDose.sessions[0].exercises[0].sets = 99;
+  const wrongRoot = { context: program().context, sessions: program().sessions, message: 'provider-private-message' };
+  for (const result of [null, {}, [program()], JSON.stringify(program()), stringSession, stringSessions, { program: program() },
+    assistantQuote, excessiveDose, wrongRoot]) {
+    let calls = 0;
+    const current = service({ fetchImpl: async (_, options) => {
+      calls++;
+      if (calls === 1) return upstream(routineTurn);
+      assert.deepEqual(JSON.parse(options.body).response_format, { type: 'json_object' });
+      return upstream(result);
+    } });
+    await assert.rejects(current.chat({ consent: true, messages: [{ role: 'user', content: routineUserText },
+      { role: 'assistant', content: assistantQuote.context.availabilityQuote }, { role: 'user', content: 'Organize a rotina.' }] }),
+    error => error.statusCode === 502 && !/provider-private|Vou organizar/.test(error.message));
+    assert.equal(calls, 2);
+  }
+});
+
+test('falha upstream, truncamento e recusa do gerador não liberam introdução nem tentam outra geração', async () => {
+  const rejectedJson = () => new Response(JSON.stringify({ error: { code: 'json_validate_failed',
+    failed_generation: JSON.stringify(program()), message: 'provider-private-message' } }), { status: 400 });
+  for (const [respond, expected] of [
+    ...[[401, 503], [403, 503], [429, 429], [413, 413], [500, 502], [400, 502]]
+      .map(([status, expected]) => [() => new Response('provider-private-message', { status }), expected]),
+    [rejectedJson, 502], [() => upstream(program(), 'length'), 502],
+    [() => upstream(program(), 'stop', { refusal: 'provider-private-refusal' }), 502],
+    [() => upstream(program(), 'stop', { content: '{' }), 502],
+  ]) {
+    let calls = 0;
+    const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(routineTurn) : respond() });
+    await assert.rejects(current.chat(input(routineUserText)), error => error.statusCode === expected
+      && !/provider-private|Vou organizar/.test(error.message));
+    assert.equal(calls, 2);
+  }
 });
 
 test('rascunho usa aritmética/orientação revisada, não as métricas livres inventadas pelo modelo', async () => {
-  const current = service({ fetchImpl: async () => upstream({ message: 'A ficha garante doze séries para peito e duas exposições mínimas por grupo.',
-    sourceIds: ['acsm-2026'], kind: 'routine_draft', program: program() }) });
+  let calls = 0;
+  const current = service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, {
+    message: 'A ficha garante doze séries para peito e duas exposições mínimas por grupo.',
+    sourceIds: ['acsm-2026'], kind: 'routine_draft' }); } });
   const result = await current.chat(input(routineUserText));
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão por semana/);
   assert.doesNotMatch(result.message, /garante doze séries|duas exposições mínimas/);
@@ -389,6 +484,7 @@ test('rascunho usa aritmética/orientação revisada, não as métricas livres i
   assert.match(result.message, /não estabelece noventa segundos como teto/);
   assert.match(result.message, /Não há aumento obrigatório por calendário ou percentual fixo/);
   assert.equal(result.program.weeklySummary.find(row => row.group === 'chest').directPlannedSets, 5);
+  assert.equal(calls, 2);
 });
 
 test('truncamento, recusa e JSON inválido não chegam ao cliente como sucesso', async () => {
@@ -424,11 +520,11 @@ test('falha de validação JSON do provedor não recupera geração rejeitada ne
 });
 
 test('diagnóstico upstream identifica etapa e tamanho sem registrar corpo, mensagem, chave ou conversa', async () => {
-  for (const stage of ['primary', 'grounded']) {
+  for (const stage of ['primary', 'grounded', 'routine']) {
     const events = []; let calls = 0;
     const current = service({ onDiagnostic: event => events.push(event), fetchImpl: async () => {
       calls++;
-      if (stage === 'grounded' && calls === 1) return upstream(valid);
+      if (stage !== 'primary' && calls === 1) return upstream(stage === 'routine' ? routineTurn : valid);
       return new Response(JSON.stringify({ error: { code: 'request_too_large', type: 'private-type',
         message: 'private-org-key-history', failed_generation: 'private-conversation' } }), { status: 413 });
     } });
@@ -501,6 +597,20 @@ test('HTTP exige sessão, role atual e consentimento antes de gastar quota e nã
   assert.equal(response.headers.get('Cache-Control'), 'no-store');
   assert.equal(JSON.stringify(await response.json()).includes('account-private'), false);
   assert.equal(hits, 1); assert.equal(calls, 1);
+});
+
+test('HTTP cobra quota uma vez pelo rascunho com duas etapas do provedor', async t => {
+  let hits = 0, calls = 0;
+  const current = await serve(t, {
+    chatService: service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, routineTurn); } }),
+    quotaStore: { async increment() { hits++; return { totalHits: hits, resetTime: new Date(Date.now() + 900000) }; } },
+  });
+  const response = await current.post(input(routineUserText));
+  assert.equal(response.status, 200); assert.equal(hits, 1); assert.equal(calls, 2);
+  const payload = await response.json();
+  assert.equal(payload.data.kind, 'routine_draft');
+  assert.equal(payload.data.generatedByAI, true);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
 });
 
 test('quota de chat é compartilhada por usuário e isolada da explicação', async t => {
