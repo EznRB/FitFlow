@@ -1,15 +1,15 @@
 # Estado da entrega — 11/10/2026
 
-A entrega completa ainda depende dos gates de pagamentos e telefone físico. O login publicado foi recuperado com Neon; aplicativo e landing têm evidências públicas. Código enviado aos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum merge à branch principal foi realizado.
+A entrega completa ainda depende de pagamentos, telefone físico e das melhorias funcionais listadas adiante. O login publicado foi recuperado com Neon; aplicativo e landing têm evidências públicas. Código enviado aos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum merge à branch principal foi realizado.
 
 ## Implantação atual
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app) | `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`. Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `16b09b6` (`16b09b63fca441243907e0d713e5592fc0664984`), deployment `dpl_4nh2HxowzwdhEfoMi2yaiTv6v2Vd`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-hndm88opa-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38148855631) e status do Preview Git aprovados. Saúde HTTP 200, banco ready e API no-store; hashes de index.html, app.js, pagamentos.js, relatorios.js, api.js, evidencias.js, science.js e ia-chat.css coincidem com o checkout. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-[CI GitHub da revisão atual 943d495](https://github.com/EznRB/FitFlow/actions/runs/38147855767): sucesso. Suíte integral local **401/401**, zero falhas e ignorados; revisão independente de contrato aprovada. Gate privado em 307 arquivos. Nenhuma migration ou dependência nova no chat.
+[CI GitHub da revisão atual 16b09b6](https://github.com/EznRB/FitFlow/actions/runs/38148855631): sucesso; status do Preview Git aprovado. Suíte integral local **415/415**, zero falhas e ignorados. Gate privado em 310 arquivos antes das capturas 37/38; não certifica segredos desconhecidos nem todo o histórico Git. Sem migration ou dependência nova nesta revisão.
 
 Revisão de gestão/login `3adf5c1`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38054589595), 304/304, revisão independente focada 29/29 e backend focado 48/48. Os subconjuntos não são contagens adicionais à suíte. Login editorial, correção de contraste, corridas de alunos, edição parcial e cancelamento atômico de presença não exigiram nova migration.
 
@@ -38,6 +38,16 @@ Sete novos testes controlados integram a suíte 316/316. Revisão independente 1
 Carregamento, falha/offline e ausência confirmada têm mensagens próprias; o cache permanece disponível enquanto o servidor é consultado. O botão mostra Atualizando… somente durante a operação corrente. Respostas de leituras iniciais antigas não sobrescrevem uma atualização mais recente. O formulário preserva texto digitado e UUID; falha inicial de armazenamento permite tentar novamente. Cores usam os tokens laranja/navy ativos, painéis têm raio de 8 pixels e inputs de 16 pixels.
 
 Doze novos testes controlados cobrem consultas parciais, armazenamento, identidade, navegação e concorrência da atualização; integram o total 328/328. Revisão independente aprovada. Navegador publicado confirmou mensagens durante a consulta, cache visível e término normal, captura 34. Os testes de timing não são evidência de reconexão física.
+
+### Gestão e integridade financeira — 16b09b6
+
+Dashboard (4 casos) e pagamentos/relatórios (10 casos) passaram por testes controlados RED → GREEN: identidade, geração, epoch, navegação, requisição e elemento de origem protegem renderização e erros. Chart é criado após a resposta válida, sem temporizador de desenho.
+
+A edição financeira legada sem chamador no cliente foi removida de rota/controller/service. PUT/PATCH/DELETE de `/api/pagamentos/:id` recebem 405 para administrador autenticado, com `Allow: GET`; GET e POST permanecem. Isso elimina alteração direta do recebimento, sem implementar correção/estorno auditado nem prometer imutabilidade de todo o banco. Conciliação do checkout permanece separada.
+
+Gestão HTTPS repetida após este deploy passou em perfis, CRUD, nutrição JSONB consentida/isolada, presença/auditoria, filtros, duas renovações concorrentes, replay, conflitos e recusa 405 dos três métodos. GET confirmou valor/status/data e vigência inalterados. Três logins; somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins de UUID próprios removidos; quotas preservadas. Gates nativos de lançamento manual e checkout passaram; o script PostgreSQL core foi adaptado para a remoção, mas não reexecutado nesta etapa.
+
+Navegador autenticado confirmou dashboard com Chart real, pagamentos em estado vazio e inadimplência de 13 dias, além do relatório de check-ins por período com um registro de 08/10/2026 às 23:46 em São Paulo. Capturas 37 (desktop) e 38 (375 × 812); no relatório, clientWidth e scrollWidth foram 369 pixels. Não houve lançamento financeiro pelo navegador nem atraso artificial. Emulação não comprova telefone ou teclado físico; campos de data ainda tinham 14 pixels nesta publicação.
 
 ### Chat contextual de treinamento — 943d495
 
@@ -88,11 +98,11 @@ node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs
 ```
 
-Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. A revisão atual `943d495` passou em 401/401, conforme registrado acima.
+Suíte integral da baseline `f9ac83d`: **309 aprovados, zero falhas e zero ignorados**; revisão IA focada 19/19, sem somar ao total. Gate privado em 293 arquivos e audit de dependências de produção sem vulnerabilidades conhecidas naquela revisão. Os testes HTTP conferem glossário sem inferência/quota de IA, autenticação 401, autorização 403 e quota dos temas gerados. O chat `943d495` passou em 401/401; a revisão atual `16b09b6` passou em 415/415, conforme registrado acima.
 
 Revisão anterior `9e1b5c5`: 307/307 e revisão IA 15/15. Reforçar o contexto não evitou a segunda imprecisão pública de volume; o resultado factual reprovado motivou substituir inferência por texto revisado.
 
-Revisão publicada `3adf5c1`: 304/304, incluindo quatorze testes novos de alunos e três backend. Revisão independente focada 29/29; backend focado 48/48. Gate nativo guardado `checkins-dates-local.integration.cjs` aprovado e limpo. Gate de gestão HTTPS aprovado nessa implantação, com três logins e remoção exclusiva de quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins sintéticos; quotas não foram resetadas.
+Revisão histórica `3adf5c1`: 304/304, incluindo quatorze testes novos de alunos e três backend. Revisão independente focada 29/29; backend focado 48/48. Gate nativo guardado `checkins-dates-local.integration.cjs` aprovado e limpo. Gate de gestão HTTPS aprovado nessa implantação, com três logins e remoção exclusiva de quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins sintéticos; quotas não foram resetadas.
 
 Revisão anterior `7b856e0`: 287/287, oito testes novos de Groq/rota/UI e revisão independente IA 9/9. Status autenticado confirmou geração desativada/groq naquela versão; captura 27 documenta esse estado histórico.
 
@@ -137,6 +147,11 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate. [Matriz M01–M14 e evidências necessárias](VALIDACAO_MOBILE.md), todos inicialmente NÃO FEITO.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
+4. **Proveniência dos exercícios:** preservar identidade, fonte/licença/autoria da seleção de catálogo até a ficha e o snapshot da sessão, sem atribuir retrospectivamente identidades a exercícios antigos. Contrato recomendado para nova implementação: `catalogExerciseId` nullable e snapshot de proveniência validado pelo servidor a partir do catálogo, preservando separadamente fontes/licenças/autoria da base, texto e imagem. Sem backfill por nome ou alteração retrospectiva do histórico.
+5. **Conta:** implementar troca de senha autenticada pelo titular e revogação das sessões anteriores; senha inicial fornecida pelo gestor não substitui esse fluxo.
+6. **Financeiro:** criar correção/estorno administrativo com motivo, ator e histórico preservado, reconciliando vigência quando cabível. A recusa 405 não implementa esse recurso.
+7. **Planos:** concluir proteção contra respostas de conta/tela/consulta anteriores e validar a integração; frente em andamento após `16b09b6`.
+
 ## Roteiro de apresentação
 
 1. Abrir a [landing pública](https://fitflow-lp.vercel.app) e seguir ao [aplicativo](https://fit-flow-indol.vercel.app). Alternativa local: portas 3108 e 3107.
@@ -179,5 +194,8 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 
 - [Conversa publicada no desktop](evidence/35-chat-treinamento-vercel.png): pergunta e resposta contextual na revisão `943d495`; rotina gerada em 5e4ec38 e continuação atendida em 943d495, com interface idêntica.
 - [Conversa em viewport de celular](evidence/36-chat-treinamento-mobile.png): mesma revisão, 375 × 812, campo de 16 pixels e sem overflow horizontal; não substitui telefone físico.
+
+- [Dashboard de gestão publicado](evidence/37-gestao-dashboard-publicado.png): revisão `16b09b6`, conta administrativa e Chart real no desktop.
+- [Relatório publicado em viewport mobile](evidence/38-relatorios-publicados-mobile.png): revisão `16b09b6`, 375 × 812, check-in de 08/10/2026 às 23:46 em São Paulo; documento com clientWidth/scrollWidth de 369 pixels. Emulação, sem teclado físico ou escrita financeira.
 
 Capturas registram versões e fluxos descritos; não comprovam automaticamente mudanças posteriores.

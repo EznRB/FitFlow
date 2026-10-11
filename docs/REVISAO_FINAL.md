@@ -1,57 +1,52 @@
 # Revisão de entrega — 11/10/2026
 
-Revisão publicada `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38147855767). A entrega completa depende de pagamentos reais em sandbox e telefone físico; este marco não declara conclusão do projeto.
+Código publicado **16b09b6** (`16b09b63fca441243907e0d713e5592fc0664984`), deployment `dpl_4nh2HxowzwdhEfoMi2yaiTv6v2Vd`, READY em Production: [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-hndm88opa-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38148855631) e status do Preview Git aprovado. Este marco não declara conclusão da meta; há gates externos e melhorias funcionais em aberto.
 
-## Alterações
+## Alterações desta revisão
 
-- Chat real em Fundamentos com histórico contextual, consentimento, fontes curadas, seleção de conteúdo curado e rascunhos estruturados; contagens calculadas no servidor. Sem aplicação automática de ficha.
-
-- Estados explícitos para consulta, cache, falha e ausência confirmada; atualizações antigas não sobrescrevem as novas e falha de armazenamento permite retry. Formulário digitado e UUID preservados.
-- Sessões alinhadas aos tokens laranja/navy, inputs de 16 pixels e painéis de 8 pixels. Três propostas Prisma obsoletas removidas após conferir os modelos/migrations ativos.
-
-- Prazo de 15 segundos por requisição idempotente de treino e consulta de atualização, incluindo corpo. Timeout preserva registros e UUID; resposta tardia não confirma fila nem encerra sessão. Não comprova rollback no servidor, nem limita a atualização inteira a 15 segundos.
-- Roteiro de telefone físico com 14 casos, todos inicialmente NÃO FEITO. Emulação e testes controlados permanecem evidências separadas.
-
-- Login com composição editorial, fotografia ilustrativa otimizada em WEBP, contraste corrigido, ajuda acessível e controles por teclado.
-- Lista, formulário e modal de alunos protegidos contra respostas de conta/tela anteriores.
-- Edição parcial preservando os campos omitidos; cancelamento de presença atômico e bloqueio de presença de aluno inativo.
-- IA educativa GPT-OSS 120B via Groq Free: plano confirmado no console, chave privada no backend e sem troca automática para provedor pago.
-- Indicadores no código `f9ac83d`: glossário revisado fixo, sem inferência, com rótulo explícito e fontes separando produto/contexto científico. Prompt nutricional distingue repouso e basal.
+- Dashboard e pagamentos/relatórios descartam respostas e erros de conta, geração, epoch, navegação, requisição ou elemento de origem anteriores. Chart é criado após resposta válida, sem temporizador de desenho. Quatro casos de dashboard e dez de pagamentos/relatórios passaram por RED → GREEN em testes controlados.
+- Edição financeira legada sem chamador no cliente removida da rota/controller/service. PUT/PATCH/DELETE de `/api/pagamentos/:id` recebem 405 para administrador autenticado, com `Allow: GET`; GET e POST permanecem. Valor, status, data e vigência foram conferidos após essas recusas. Conciliação do checkout permanece separada.
+- Não foi implementada correção/estorno administrativo auditado. A recusa HTTP não promete imutabilidade de todo o banco: atualização operacional de pendente para vencido permanece.
+- Scripts integrados passaram a conferir o recebimento original e o replay sem depender da edição removida. Nenhuma migration ou dependência nova.
 
 ## Gates confirmados
 
 | Gate | Evidência |
 |---|---|
-| Suíte integral local | 401/401 em `943d495`; zero falhas e ignorados. |
-| Consultas de sessões | 12/12 testes controlados; revisão independente aprovada após correções de timing. Cache, falhas iniciais, conta/tela e precedência de atualização verificados. |
-| Revisão do prazo de treino | 12/12 focados, sem novo defeito concreto. Transporte/corpo parados, respostas tardias, cancelamento, limpeza, UUID e reenvio verificados em ambiente controlado. |
-| Revisão independente | IA 19/19 em `f9ac83d`; gestão/login 29/29 e backend 48/48 em `3adf5c1`. Subconjuntos não somados à suíte. |
-| Gate privado/dependências | 307 arquivos, sem segredo local conhecido. Nenhuma dependência nova; não equivale a auditoria completa de segurança. |
-| Banco nativo | Datas/presenças no destino guardado, aprovado e fixture própria removida. |
-| Login local | 1280 e 375 pixels, teclado, mostrar/ocultar senha, campos obrigatórios e ajuda. |
-| Publicação | `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`; CI aprovada, saúde/banco e cinco assets conferidos. |
-| Navegador na revisão atual | Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. |
-| Gestão HTTPS | Em `3adf5c1`: três logins, fluxos aprovados, somente fixtures UUID próprias removidas; quotas preservadas. |
-| Navegador publicado | Login real do aluno em 375 pixels e sessão restaurada após recarga; capturas 28/29/31 em 1280 × 720, 375 × 812 e 768 × 1024, sem overflow horizontal. |
-| IA real local | Explicação de divisões em aproximadamente 1,2 segundo; amostra conferida contra Ramos-Campo (2024)/ACSM (2026). |
-| IA real HTTPS/divisões | Amostra gerada no aplicativo e conferida contra fontes primárias. Não generaliza aprovação para outros temas. |
-| IA real HTTPS/nutrição | Geração em `9e1b5c5`, captura 30; amostra inspecionada com limitação terminológica basal/repouso. Sem prescrição/cálculo individual ou certificação factual integral. |
-| Indicadores sem inferência | Glossário publicado em `f9ac83d`, navegador autenticado e captura 32 confirmados; texto revisado sem IA, definições do produto separadas do contexto científico. |
+| Suíte integral local | 415/415 em `16b09b6`; zero falhas e ignorados. Os 14 casos de timing estão incluídos, sem somar subconjuntos. |
+| Gate privado | 310 arquivos antes das capturas 37/38; sem segredo local conhecido. Não certifica segredos desconhecidos nem todo o histórico Git. |
+| Publicação | Deployment READY, CI e status Preview Git aprovados; saúde HTTP 200, banco ready e API no-store. |
+| Assets publicados | Hashes de index.html, app.js, pagamentos.js, relatorios.js, api.js, evidencias.js, science.js e ia-chat.css coincidem com o checkout. |
+| Gestão HTTPS após deploy | Três logins, CRUD/perfis, nutrição JSONB consentida/isolada, presença/auditoria, filtros e duas renovações concorrentes; replay sem terceiro registro, conflito 409 e conta divergente 403. PUT/PATCH/DELETE 405 com Allow GET; recebimento e vigência preservados por GET. Somente quatro usuários, dois alunos, um plano, dois pagamentos e dois check-ins UUID próprios removidos; quotas preservadas. |
+| MariaDB nativo | Lançamento manual e checkout aprovados após remoção da edição legada, com fixtures próprias limpas. |
+| PostgreSQL | Core adaptado para a remoção; não reexecutado nesta etapa. Gates PostgreSQL/Neon anteriores preservados no histórico, sem nova migration. |
+| Navegador em 16b09b6 | Dashboard com Chart real; pagamentos vazio e inadimplência normal de 13 dias; relatório por período com um check-in de 08/10/2026 às 23:46 em São Paulo. Sem lançamento financeiro ou atraso artificial. |
+| Capturas atuais | [37: dashboard desktop](evidence/37-gestao-dashboard-publicado.png) e [38: relatório em 375 × 812](evidence/38-relatorios-publicados-mobile.png). No relatório, clientWidth = scrollWidth = 369 pixels. Campos de data tinham 14 pixels; emulação não comprova telefone ou teclado físico. |
 
-## Gates em aberto
+## Funcionalidades e evidências preservadas
 
-O commit documental `7cf0d2b` passou na [CI](https://github.com/EznRB/FitFlow/actions/runs/38056127829). Seu Preview Git falhou antes do build (`git_info_fail`); Preview CLI ficou READY. No commit seguinte `89ba731`, a publicação automática pelo GitHub voltou a funcionar: `dpl_8xdgivRXVBJ6TvXC3J688xX69QNP` READY, SHA e `source: git` conferidos, [CI](https://github.com/EznRB/FitFlow/actions/runs/38056482679) e status Vercel aprovados, banco pronto. Nenhuma permissão ou proteção alterada. A causa da falha anterior permanece desconhecida; não há bloqueio atual da integração. [Histórico e próximos passos](STATUS_ENTREGA.md#publicação-automática-pelo-github).
+Login editorial, ajuda e contraste foram conferidos localmente com teclado e publicados em `3adf5c1`; capturas 28/29/31 registram 1280, 768 e 375 pixels. Gestão de alunos protege lista/formulário/modal contra respostas obsoletas; edição parcial preserva campos omitidos. Cancelamento de presença é atômico e aluno inativo não registra presença.
 
-1. Criar/configurar conta e credenciais Mercado Pago sandbox, webhook HTTPS; cartão `APRO`/rejeitado/`CONT`, Pix QR/pendente sem renovar plano. Não exigir liquidação Pix em sandbox; `approved` de Pix fica nos testes com doubles. [Roteiro de configuração e fontes oficiais](PAGAMENTOS_SANDBOX.md).
-2. Telefone físico: instalação PWA, teclado, interrupção de rede e retorno; reconexão na publicação. [Matriz M01–M14](VALIDACAO_MOBILE.md), execução pendente.
-3. Revisão e merge dos PRs draft do aplicativo e da landing; nenhum merge realizado.
+Treinos e consultas têm estados de carregamento, cache, falha e ausência confirmada, UUIDs preservados e prazo de 15 segundos por requisição idempotente, incluindo corpo. Respostas tardias não confirmam fila nem encerram sessão. Consultas de sessões tiveram 12 casos controlados; revisão do prazo teve 12 focados. Esses gates não comprovam transporte real interrompido em telefone.
 
-Fontes, limites, revisões anteriores e capturas em [Estado da entrega](STATUS_ENTREGA.md). Configuração privada da IA em [IA gratuita](IA_GRATUITA.md). As credenciais antigas Aiven não foram recuperadas; a demonstração publicada usa banco e contas novos.
+A IA educativa usa GPT-OSS 120B via Groq Free, chave privada e sem fallback pago. Indicadores usam glossário revisado determinístico publicado em `f9ac83d`, sem inferência/quota externa, captura 32. Nutrição real em `9e1b5c5` foi inspecionada com limitação basal/repouso registrada, captura 30; prompt ajustado. Fórmulas locais e consentimento permanecem separados das explicações.
 
-Atualização da integração Git: o Preview automático de `143c228` voltou a falhar antes do build com `git_info_fail`, em `dpl_4UHk4jkPh6zFAEp9CxSvDYNvHNNL`. A recuperação de `89ba731` foi temporária; causa específica ainda desconhecida. A CI GitHub e a publicação Production pelo CLI estão aprovadas. Nenhuma permissão ou proteção foi alterada.
+### Limite factual e histórico do chat
 
-Atualização em `2d74840`: CI e status do Preview Git aprovados novamente; Production READY e banco pronto. Sem alteração de permissões/proteção. O histórico acima não representa um bloqueio atual.
+As capturas [35: conversa desktop](evidence/35-chat-treinamento-vercel.png) e [36: viewport emulada](evidence/36-chat-treinamento-mobile.png) pertencem a `943d495`, não ao novo gate de gestão. A rotina inicial foi gerada em `5e4ec38`; a primeira continuação foi recusada e a repetição manual em `943d495` respondeu usando contexto/referências. Assets de interface idênticos; causa específica da recusa não comprovada. Limites agregados/diagnósticos foram corrigidos.
 
-### Limite factual do chat
+Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A amostra final foi inspecionada contra o rascunho/corpus, sem generalizar correção para futuras respostas ou adequação individual. A IA seleciona e ordena blocos; resumos científicos curados são renderizados integralmente pelo servidor. A origem curada está identificada. Conversa somente em memória; recarga/logout/troca de sessão a remove. Perfil e ficha não são anexados automaticamente, e o gate não aplicou fichas ou séries.
 
-Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A amostra final foi inspecionada contra o rascunho/corpus, sem generalizar correção para o futuro. A IA seleciona e ordena blocos; resumos científicos curados são renderizados integralmente pelo servidor. Isso não certifica a classificação dos exercícios ou a adequação individual. Conversas são temporárias em memória; fichas e registros existentes têm persistência separada.
+## Etapas em aberto
+
+1. Configurar Mercado Pago sandbox, contas de teste, credenciais e webhook HTTPS; cartão APRO/rejeitado/CONT, Pix QR/pendente sem renovar plano. O sandbox não simula liquidação Pix; approved de Pix permanece nos testes com doubles. [Roteiro e fontes oficiais](PAGAMENTOS_SANDBOX.md).
+2. Telefone físico: instalação PWA, teclado, interrupção/retorno de rede e reconexão publicada. [Matriz M01–M14](VALIDACAO_MOBILE.md), execução pendente.
+3. Preservar proveniência do exercício escolhido no catálogo até a ficha e snapshot da sessão; não inferir identidades retrospectivamente no histórico. Contrato recomendado para nova implementação: `catalogExerciseId` nullable e snapshot de proveniência validado pelo servidor a partir do catálogo, preservando separadamente fontes/licenças/autoria da base, texto e imagem. Sem backfill por nome ou alteração retrospectiva do histórico.
+4. Troca de senha autenticada pelo titular e revogação de sessões anteriores.
+5. Correção/estorno financeiro administrativo com motivo, ator, histórico e tratamento explícito da vigência. A recusa 405 elimina edição direta, sem entregar esse recurso.
+6. Corridas da tela de Planos: correção em frente posterior, ainda não integrante deste marco publicado.
+7. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
+
+O Preview Git teve falhas históricas antes do build (git_info_fail em 7cf0d2b/143c228) e recuperações observadas sem mudar permissões/proteção. A causa da intermitência não foi comprovada; o status atual está aprovado. [Histórico](STATUS_ENTREGA.md#publicação-automática-pelo-github).
+
+Fontes, limitações, revisões anteriores e capturas em [Estado da entrega](STATUS_ENTREGA.md); configuração da IA em [IA gratuita](IA_GRATUITA.md). Aiven não foi recuperado; a demonstração publicada usa banco e contas novos.

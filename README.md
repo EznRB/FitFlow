@@ -30,7 +30,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 ## Recursos implementados
 
 - Gestão de alunos, planos, fichas, presença, pagamentos manuais e relatórios.
-- Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão.
+- Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão. A API recusa PUT/PATCH/DELETE do recebimento com 405; correção ou estorno auditado ainda não está disponível.
 - Autenticação em cookie httpOnly; autorização considera o usuário ativo e seu papel atual no banco. Escritas protegidas por origem, API sem cache e quotas de login/IA compartilhadas no banco em produção.
 - A inicialização mostra verificação acessível da sessão e impede envio prematuro do login; `/auth/me` tem timeout de 15 segundos, incluindo espera pelo lock. Login/logout/retry coordenam o cookie entre abas com Web Locks e marcador de sessão opaco.
 - Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
@@ -56,7 +56,7 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado: **401 testes aprovados, zero falhas e zero ignorados** na revisão `943d495`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado: **415 testes aprovados, zero falhas e zero ignorados** na revisão `16b09b6`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
 
 ## Publicação e limites atuais
 
@@ -66,11 +66,11 @@ Checkout Pix/cartão está implementado exclusivamente em sandbox, com concilia�
 
 A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
 
-A revisão atual `943d495`, deployment `dpl_4hnNwf6gPddfDpBo4SdRQgpBBEfV`, READY em Production com alias canônico. URL exata: `https://fit-flow-o1lujjapz-eznrbs-projects.vercel.app`, com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38147855767). Saúde HTTP 200, banco ready e API no-store; index.html, api.js, evidencias.js, science.js e ia-chat.css conferidos por hash. O navegador autenticado gerou uma rotina real em 5e4ec38. A primeira continuação foi recusada; preservada a conversa e a interface, a repetição manual em 943d495 respondeu usando o contexto e as referências. Os assets da interface permaneceram idênticos. A causa exata da recusa anterior não foi comprovada; os limites agregados e diagnósticos foram corrigidos. A interface identifica a origem curada do conteúdo científico. Capturas 35/36, desktop e viewport 375 × 812 sem overflow horizontal. Não comprova telefone físico, adequação individual ou toda resposta futura. Chat contextual de treinamento, fontes curadas, rascunho com contagens calculadas e seleção contextual de conteúdo científico curado. Suíte integral **401/401**, revisão independente de contrato aprovada. [Evidências e histórico](docs/STATUS_ENTREGA.md).
+A revisão atual `16b09b6` (`16b09b63fca441243907e0d713e5592fc0664984`), deployment `dpl_4nh2HxowzwdhEfoMi2yaiTv6v2Vd`, READY em Production, [alias canônico](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-hndm88opa-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38148855631) e status do Preview Git aprovados. Saúde HTTP 200, banco ready e API no-store; hashes de index.html, app.js, pagamentos.js, relatorios.js, api.js, evidencias.js, science.js e ia-chat.css coincidem com o checkout. Suíte integral **415/415** e gate privado de 310 arquivos antes das capturas 37/38. Gestão HTTPS repetida após o deploy: perfis, CRUD, nutrição consentida, presença, renovação/replay e recusa 405 de edição/exclusão financeira, com registros e vigência preservados. Dashboard, pagamentos e relatórios descartam respostas obsoletas; 14 casos controlados de timing passaram. [Dashboard publicado](docs/evidence/37-gestao-dashboard-publicado.png) e [relatório em viewport mobile](docs/evidence/38-relatorios-publicados-mobile.png). [Evidências e histórico](docs/STATUS_ENTREGA.md).
 
 A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
 
-Mercado Pago real de teste, telefone físico/instalação, reconexão publicada e revisão/merge dos PRs continuam pendentes. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
+Mercado Pago real de teste, telefone físico/instalação, reconexão publicada e revisão/merge dos PRs continuam pendentes. Proveniência do catálogo na ficha/snapshot, troca de senha pelo titular com revogação de sessões e correções/estornos financeiros auditados continuam pendentes. Corridas da tela de Planos estão em correção numa frente posterior; não integram este marco publicado. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 ## Documentação
 
