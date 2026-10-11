@@ -24,7 +24,7 @@ const EvidenciasView = {
           <label class="ia-consent"><input type="checkbox" id="ia-consent"><span id="ia-consent-copy">Concordo em enviar minhas mensagens e a rotina que informar à Groq para esta conversa. Evitarei nomes e informações de saúde.</span></label></form>
           <div class="ia-status-row"><p class="ia-status" id="ia-chat-status" role="status" aria-live="polite">Verificando disponibilidade do assistente…</p><button class="ia-check-service" type="button" id="ia-check-service" hidden>Verificar disponibilidade</button></div>
         </div>
-        <footer class="ia-workspace-footnote">Para adultos saudáveis. Respostas podem conter erros; confira as fontes. Propostas de rotina são rascunhos para discutir com seu instrutor e não alteram sua ficha.</footer>
+        <footer class="ia-workspace-footnote">Para adultos saudáveis. O corpus cobre princípios de treinamento; dúvidas fora dessas fontes têm limites explícitos. A IA pode interpretar errado: confira o contexto. Propostas são rascunhos para revisar com seu instrutor e não alteram sua ficha.</footer>
       </section>
       <details class="ia-principles"><summary>Consultar os princípios e as fontes do FitFlow <span>Conteúdo revisado, disponível sem IA</span></summary><div class="ia-principles-body"><h3>Divisão, exercícios e progressão</h3><p>Full body e divisões podem produzir resultados semelhantes quando o volume é igualado. Disponibilidade, adesão, execução e recuperação orientam a escolha. Registre carga e repetições realmente realizadas; o sistema não aplica um percentual de progressão a todos os alunos.</p><div id="split-sources"></div><h3>Volume previsto ≠ executado</h3><p>A ficha registra o planejado. O histórico registra o informado. Tonelagem é carga × repetições dos registros completos; não é uma medida direta de hipertrofia. Aquecimentos ficam separados das séries de trabalho, e finalizar uma sessão não comprova que todas as séries foram executadas.</p><div id="volume-sources"></div><div id="volume-ai"></div><p class="science-note">Aplicação a reabilitação, gestação e condições clínicas exige avaliação profissional e evidências específicas. O catálogo descreve movimentos, músculos e equipamentos; não valida cada prescrição.</p></div></details>
     </section>`;
@@ -122,7 +122,7 @@ const EvidenciasView = {
       const intro = document.createElement('div'); intro.className = 'ia-welcome';
       const kicker = document.createElement('span'); kicker.className = 'ia-welcome-kicker'; kicker.textContent = 'Um bom treino começa com boas perguntas';
       const heading = document.createElement('h3'); heading.textContent = 'O que vamos entender hoje?';
-      const copy = document.createElement('p'); copy.textContent = 'Você pode tirar uma dúvida, comparar exercícios ou construir uma proposta de rotina. O assistente conversa com você para entender o contexto.';
+      const copy = document.createElement('p'); copy.textContent = 'Comece com uma dúvida sobre hipertrofia ou com seus dias de treino. O assistente usa o contexto para organizar uma proposta e consultar as referências do FitFlow.';
       intro.appendChild(kicker); intro.appendChild(heading); intro.appendChild(copy);
       const suggestions = document.createElement('div'); suggestions.className = 'ia-suggestions';
       for (const [title, text] of [['Organizar minha semana', 'Quero montar uma divisão de treino. Quais informações da minha rotina você precisa?'], ['Entender hipertrofia', 'Preciso ir até a falha em todas as séries para ganhar massa muscular?'], ['Comparar exercícios', 'Como escolher entre máquinas e pesos livres para hipertrofia?']]) {
@@ -143,6 +143,9 @@ const EvidenciasView = {
       article.appendChild(label); article.appendChild(body);
       if (message.kind === 'routine_draft') {
         const note = document.createElement('p'); note.className = 'ia-draft-note'; note.textContent = 'Rascunho educativo — revise com seu instrutor. Sua ficha não foi alterada.'; article.appendChild(note);
+      }
+      if (message.scientificTextFromCorpus) {
+        const note = document.createElement('p'); note.className = 'ia-draft-note'; note.textContent = 'A IA organiza a resposta. O conteúdo científico vem das referências do FitFlow; escolhas práticas exigem revisão com seu instrutor.'; article.appendChild(note);
       }
       if (message.sources?.length) {
         const sources = document.createElement('details'); sources.className = 'ia-message-sources';
@@ -173,9 +176,12 @@ const EvidenciasView = {
       const data = response.data;
       if (typeof data?.message !== 'string' || !data.message.trim() || data.message.length > 6000 || data.generatedByAI !== true) throw new Error('A resposta não pôde ser confirmada. Tente novamente.');
       const sources = [...new Set((Array.isArray(data.sources) ? data.sources : []).map(s => s.id))].filter(id => Object.hasOwn(FitFlowScience.references, id));
-      state.messages.push({ role: 'assistant', content: data.message, sources, kind: data.kind });
+      state.messages.push({ role: 'assistant', content: data.message, sources, kind: data.kind,
+        ...(data.scientificTextFromCorpus === true ? { scientificTextFromCorpus: true } : {}) });
       state.draft = ''; context.input.value = ''; state.pending = false;
-      this.drawChat(context); context.status.textContent = 'Resposta gerada por IA. Fontes associadas oferecem contexto; não verificam automaticamente cada frase.';
+      this.drawChat(context); context.status.textContent = data.scientificTextFromCorpus === true
+        ? 'Resposta organizada pela IA com conteúdo das referências do FitFlow. Sua ficha não foi alterada.'
+        : 'Resposta gerada por IA. Fontes associadas oferecem contexto; não verificam automaticamente cada frase.';
     } catch (error) {
       if (!this.ownsChat(context)) return;
       state.pending = false; state.failed = true;

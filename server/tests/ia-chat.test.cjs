@@ -20,11 +20,13 @@ const input = (content = 'Como escolher a divisão?') => ({ consent: true, messa
 const upstream = (result = valid, reason = 'stop', message = {}) => new Response(JSON.stringify({
   choices: [{ finish_reason: reason, message: { content: JSON.stringify(result), ...message } }],
 }));
-const claims = (ids = valid.sourceIds, message = valid.message) => [...new Set(ids)].map(sourceId => ({ sourceId,
-  claim: message.split('\n')[0].slice(0, 400), supportQuote: references[sourceId].summary.slice(0, 200) }));
+const block = (kind, options = {}) => ({ kind, ...options });
+const groundedResult = (result = valid) => ({ blocks: [result.sourceIds?.length
+  ? block('evidence', { sourceIds: [...new Set(result.sourceIds)] }) : block('limits')],
+  kind: result.kind, program: null });
 const stageUpstream = (options, result = valid) => {
   const grounded = JSON.parse(options.body).messages[0].content.startsWith('Answer the last user question');
-  return upstream(grounded ? { ...result, program: null, factualClaims: claims(result.sourceIds, result.message) } : result);
+  return upstream(grounded ? groundedResult(result) : result);
 };
 const service = options => createIaChatService({ provider: 'groq', groqApiKey: 'fixture-private-key',
   chatModel: 'openai/gpt-oss-20b', freeTierConfirmed: true, fetchImpl: async (_, options) => stageUpstream(options), ...options });
@@ -83,7 +85,7 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
     assert.equal(schema.properties.program.anyOf, undefined);
     assert.ok(!options.body.includes('fixture-private-key'));
     assert.ok(!options.body.includes('access_token'));
-    assert.ok(!options.body.includes('profile'));
+    assert.equal(body.profile, undefined); assert.equal(body.user, undefined);
     return upstream(routine, 'stop', { reasoning: 'fixture-private-reasoning' });
   } });
   const result = await current.chat({ consent: true, messages });
@@ -138,7 +140,7 @@ test('fontes inventadas, links/HTML, extra keys e resposta inconsistente são re
 });
 
 test('formatação Markdown inofensiva vira texto legível sem perder contagens, distinções ou cabeçalhos da tabela', async () => {
-  const current = service({ fetchImpl: async (_, options) => stageUpstream(options, { ...valid, sourceIds: ['acsm-2026'],
+  const current = service({ fetchImpl: async (_, options) => stageUpstream(options, { ...valid, kind: 'clarification', sourceIds: ['acsm-2026'],
     message: '### Séries planejadas\n**Peito tem 9 séries diretas; posteriores têm 3.**\nDez séries não são mínimo universal. [acsm-2026; split-2024]\n\n| Indicador | Significado |\n|---|---|\n| Séries diretas | Contagem planejada, não execução |\n| Tonelagem | Carga externa × repetições registradas |' }) });
   const result = await current.chat(input('Por que peito tem nove séries?'));
   assert.match(result.message, /^Séries planejadas\nPeito tem 9 séries diretas; posteriores têm 3\./);
@@ -149,15 +151,14 @@ test('formatação Markdown inofensiva vira texto legível sem perder contagens,
   assert.doesNotMatch(result.message, /\[acsm-2026/);
 });
 
-test('comparações numéricas viram texto e seguem revisão obrigatória, sem liberar HTML', async () => {
+test('comparações numéricas em esclarecimento viram texto sem liberar HTML', async () => {
   let calls = 0;
   const current = service({ fetchImpl: async (_, options) => {
     calls++;
-    if (calls === 2) assert.equal(JSON.parse(JSON.parse(options.body).messages[1].content).candidate, undefined);
-    return stageUpstream(options, { ...valid, message: 'Comparações do exemplo: descanso > 60 s; valor < 90. Estes sinais não são limites científicos universais.' });
+    return stageUpstream(options, { ...valid, kind: 'clarification', message: 'Comparações do exemplo: descanso > 60 s; valor < 90. Estes sinais não são limites científicos universais.' });
   } });
   const result = await current.chat(input());
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   assert.match(result.message, /maior que 60 s; valor menor que 90/);
   for (const message of ['Não executar <script>1</script>.', 'Não executar <img src=x onerror=1>.']) {
     let rejectedCalls = 0;
@@ -166,21 +167,15 @@ test('comparações numéricas viram texto e seguem revisão obrigatória, sem l
   }
 });
 
-test('seguimento do rascunho fornece histórico e limites específicos das falhas científicas observadas', async () => {
+test('histórico fora do formato reconhecido permanece intacto em ambas as etapas', async () => {
   const current = service({ fetchImpl: async (_, options) => {
     const body = JSON.parse(options.body), rules = body.messages[0].content;
     if (body.model === 'openai/gpt-oss-20b') {
-      assert.match(rules, /não sustenta que qualidade de execução ou esforço compensem qualquer redução de volume/);
-      assert.match(rules, /Não classifique posteriores da coxa como músculos menores/);
-      assert.match(rules, /Não forneça percentual ou calendário quantitativo de progressão/);
-      assert.match(rules, /escolhas práticas iniciais da IA, não doses ideais verificadas/);
       assert.equal(body.messages.at(-1).content, 'Por que peito tem nove séries e posteriores três?');
       assert.match(body.messages[2].content, /Peito: 9 séries diretas em 3 sessões/);
     } else {
       const context = JSON.parse(body.messages[1].content);
       assert.match(context.conversation[1].content, /Peito: 9 séries diretas em 3 sessões/);
-      assert.match(rules, /Logistics estimates and available time do not explain dose or safety/);
-      assert.match(rules, /without diagnosing a cause or automatically treating it by dose changes/);
     }
     return stageUpstream(options, { ...valid, message: 'São hipóteses iniciais do rascunho, não doses ideais comprovadas. Podemos revisar a distribuição conforme sua prioridade e o tempo disponível.' });
   } });
@@ -190,7 +185,39 @@ test('seguimento do rascunho fornece histórico e limites específicos das falha
   assert.equal(result.kind, 'answer');
 });
 
-test('revisão obrigatória devolve só a resposta corrigida e recebe contexto consentido, sem dados implícitos', async () => {
+test('primeira etapa compacta só rascunho reconhecido, preserva doses e falas user e valida o plano original', async () => {
+  const plan = validateProgram(program(), [{ role: 'user', content: routineUserText }]);
+  const rendered = renderProgram(plan);
+  const messages = [{ role: 'user', content: routineUserText }, { role: 'assistant', content: rendered },
+    { role: 'user', content: 'Reorganize este rascunho nos mesmos três dias e equipamentos, para revisão com meu instrutor.' }];
+  let calls = 0;
+  const current = service({ fetchImpl: async (_, options) => {
+    calls++;
+    const body = JSON.parse(options.body), forwarded = body.messages.slice(1);
+    assert.deepEqual(forwarded.filter(message => message.role === 'user'), messages.filter(message => message.role === 'user'));
+    const compact = JSON.parse(forwarded[1].content).routineDraft;
+    assert.ok(forwarded[1].content.length < rendered.length);
+    assert.match(compact.interpretation, /50 min disponíveis/);
+    assert.equal(compact.exercises.length, plan.sessions.reduce((total, session) => total + session.exercises.length, 0));
+    const first = compact.exercises[0], original = plan.sessions[0].exercises[0];
+    assert.deepEqual([first.name, first.sets, first.repsMin, first.repsMax, first.rir, first.restSeconds, first.primaryGroup],
+      [original.name, original.sets, original.repsMin, original.repsMax, original.rir, original.restSeconds, 'Peito']);
+    assert.deepEqual(compact.weeklySummary.find(row => row.group === 'Peito'), { group: 'Peito', directPlannedSets: 5, sessionsPerWeek: 1 });
+    assert.equal(compact.sessionEstimates.length, 3); assert.match(compact.provenance, /cliente/);
+    const referencesPart = body.messages[0].content.split('Referências curadas:\n')[1].split('\n\nJSON Schema de referência:')[0];
+    const sourceContext = JSON.parse(referencesPart);
+    assert.equal(sourceContext.every(source => Object.keys(source).sort().join(',') === 'id,title'), true);
+    assert.deepEqual(sourceContext.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title });
+    assert.equal(body.max_completion_tokens, 4000);
+    assert.ok(options.body.length < 18000);
+    return upstream({ message: 'Segue um rascunho revisável para discutir com seu instrutor.', kind: 'routine_draft', sourceIds: ['acsm-2026'], program: program() });
+  } });
+  const result = await current.chat({ consent: true, messages });
+  assert.equal(calls, 1); assert.equal(result.kind, 'routine_draft');
+  assert.match(result.message, /Peito: 5 séries diretas em 1 sessão/);
+});
+
+test('seleção obrigatória usa corpus integral e descarta prosa candidata sem enviar dados implícitos', async () => {
   let calls = 0;
   const candidate = { ...valid, message: 'RIR dois garante segurança e carga maior compensa qualquer redução de séries.' };
   const revised = { ...valid, message: 'RIR não garante segurança. Não há equivalência demonstrada entre maior carga e menor volume; a dose do rascunho é uma hipótese prática revisável.' };
@@ -205,9 +232,17 @@ test('revisão obrigatória devolve só a resposta corrigida e recebe contexto c
     assert.equal(body.response_format.json_schema.strict, true);
     assert.equal(body.response_format.json_schema.schema.additionalProperties, false);
     const schema = body.response_format.json_schema.schema;
-    assert.equal(Object.keys(schema.properties)[0], 'factualClaims');
-    assert.match(schema.properties.factualClaims.items.properties.claim.description, /Exact continuous substring/);
-    assert.match(schema.properties.factualClaims.items.properties.supportQuote.description, /summary of sourceId/);
+    assert.equal(Object.keys(schema.properties)[0], 'blocks');
+    assert.deepEqual(schema.required, ['blocks', 'kind', 'program']);
+    const variants = schema.properties.blocks.items.anyOf;
+    assert.equal(variants.length, 6);
+    for (const variant of variants) {
+      assert.equal(variant.additionalProperties, false);
+      assert.deepEqual(variant.required, Object.keys(variant.properties));
+    }
+    const evidence = variants.find(variant => variant.properties.kind.enum[0] === 'evidence');
+    assert.deepEqual(evidence.required, ['kind', 'sourceIds']);
+    assert.deepEqual(variants.find(variant => variant.properties.kind.enum[0] === 'tracking').required, ['kind']);
     assert.equal(body.include_reasoning, false); assert.equal(body.service_tier, 'on_demand');
     const context = JSON.parse(body.messages[1].content);
     assert.deepEqual(Object.keys(context).sort(), ['conversation', 'draftContext', 'intent', 'sources']);
@@ -218,26 +253,32 @@ test('revisão obrigatória devolve só a resposta corrigida e recebe contexto c
     assert.equal(JSON.stringify(context).includes('private-reasoning'), false);
     assert.equal(options.body.includes('fixture-private-key'), false);
     assert.equal(context.sources[0].url, undefined);
-    return upstream({ ...revised, factualClaims: claims(revised.sourceIds, revised.message) });
+    assert.deepEqual(evidence.properties.sourceIds.items.enum, context.sources.map(source => source.id));
+    for (const source of context.sources) {
+      assert.equal(source.summary, references[source.id].summary);
+      assert.equal(source.excerpts, undefined);
+    }
+    return upstream(groundedResult(revised));
   } });
   const result = await current.chat(input());
-  assert.equal(calls, 2); assert.equal(result.groundedByAI, true);
-  assert.equal(result.message, revised.message);
-  assert.equal(result.factualClaims, undefined);
+  assert.equal(calls, 2); assert.equal(result.scientificTextFromCorpus, true);
+  assert.equal(result.message, `${references['split-2024'].title}\n${references['split-2024'].summary}`);
+  assert.equal(result.blocks, undefined); assert.equal(result.support, undefined);
   assert.doesNotMatch(result.message, /RIR dois garante segurança|compensa qualquer/);
 });
 
-test('falha, quota ou formato inválido da revisão não devolvem candidata nem tentam outra geração', async () => {
+test('falha, quota ou seleção inválida não devolvem candidata nem tentam outra geração', async () => {
   for (const [reviewResponse, expected] of [[() => new Response('private', { status: 429 }), 429],
-    [() => new Response('private', { status: 500 }), 502], [() => upstream({ ...valid, factualClaims: claims(), sourceIds: ['inventada'] }), 502],
-    [() => upstream({ ...valid, factualClaims: claims(), kind: 'clarification' }), 502], [() => upstream(valid, 'length'), 502],
-    [() => upstream(valid), 502], [() => upstream({ ...valid, factualClaims: [{ ...claims()[0], claim: 'x'.repeat(401) }] }), 502],
-    [() => upstream({ ...valid, factualClaims: [{ ...claims()[0], claim: '<script>private</script>' }] }), 502],
-    [() => upstream({ ...valid, factualClaims: claims(), program: program() }), 502],
-    [() => upstream({ ...valid, factualClaims: [{ ...claims()[0], supportQuote: 'Citação inventada sem suporte no corpus.' }] }), 502],
-    [() => upstream({ ...valid, factualClaims: [{ ...claims()[0], sourceId: 'rir-2022' }] }), 502],
-    [() => upstream({ ...valid, factualClaims: [{ ...claims()[0], claim: 'Uma afirmação científica ausente da resposta final.' }] }), 502],
-    [() => upstream({ ...valid, factualClaims: [] }), 502]]) {
+    [() => new Response('private', { status: 500 }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [block('evidence', { sourceIds: ['inventada'] })] }), 502],
+    [() => upstream({ ...groundedResult(), kind: 'clarification' }), 502], [() => upstream(valid, 'length'), 502],
+    [() => upstream(valid), 502],
+    [() => upstream({ ...groundedResult(), program: program() }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [block('tracking', { text: 'RIR dois garante segurança.' })] }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [block('evidence', { sourceIds: ['split-2024:999'] })] }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [] }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [block('limits', { groups: ['chest'] })] }), 502],
+    [() => upstream({ ...groundedResult(), blocks: [block('draft_counts', { groups: ['unknown'] })] }), 502]]) {
     let calls = 0;
     const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(valid) : reviewResponse() });
     await assert.rejects(current.chat(input()), error => error.statusCode === expected && !error.message.includes(valid.message));
@@ -266,9 +307,11 @@ test('revisão recebe contribuições explícitas do rascunho e não certifica a
     assert.equal(chest.exercises.reduce((sum, row) => sum + row.sets, 0), 5);
     assert.equal(chest.exercises.every(row => row.day === 'Segunda'), true);
     assert.equal(context.draftContext.weeklySummary.find(row => row.group === 'Peito').sessionsPerWeek, 1);
-    return upstream({ ...valid, factualClaims: claims() });
+    return upstream({ blocks: [block('draft_counts', { groups: ['chest'] })], kind: 'answer', program: null });
   } });
-  assert.equal((await current.chat({ consent: true, messages: history })).groundedByAI, true);
+  const result = await current.chat({ consent: true, messages: history });
+  assert.equal(result.scientificTextFromCorpus, true);
+  assert.match(result.message, /Peito: 5 séries diretas planejadas em 1 sessão/);
   assert.equal(calls, 2);
 });
 
@@ -278,8 +321,37 @@ test('lacuna no corpus permite conversa útil sem fontes decorativas nem claims 
   const current = service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, answer); } });
   const result = await current.chat(input('Qual é a técnica mais segura de uma variação de exercício pouco estudada?'));
   assert.equal(calls, 2); assert.deepEqual(result.sources, []);
-  assert.equal(result.groundedByAI, true); assert.equal(result.factualClaims, undefined);
-  assert.match(result.message, /corpus disponível não descreve/);
+  assert.equal(result.scientificTextFromCorpus, true); assert.equal(result.blocks, undefined);
+  assert.match(result.message, /corpus não aborda/);
+});
+
+test('ordem conversacional é selecionada pela IA, texto e fontes vêm somente do servidor', async () => {
+  let calls = 0;
+  const blocks = [block('tracking'), block('evidence', { sourceIds: ['split-2024'] }),
+    block('progression'), block('evidence', { sourceIds: ['split-2024'] })];
+  const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(valid)
+    : upstream({ blocks, kind: 'answer', program: null }) });
+  const result = await current.chat(input());
+  assert.ok(result.message.indexOf('Séries previstas') < result.message.indexOf(references['split-2024'].summary));
+  assert.ok(result.message.indexOf(references['split-2024'].summary) < result.message.indexOf('Como critério prático'));
+  assert.equal(result.message.split(references['split-2024'].summary).length, 2);
+  assert.deepEqual(result.sources, [{ id: 'split-2024', title: references['split-2024'].title, url: references['split-2024'].url }]);
+  assert.equal(result.blocks, undefined); assert.equal(result.sourceIds, undefined);
+  assert.equal(result.scientificTextFromCorpus, true); assert.equal(calls, 2);
+});
+
+test('seleção tipada rejeita quantidade excessiva e prosa livre mesmo com fontes válidas', async () => {
+  for (const blocks of [Array.from({ length: 13 }, () => block('tracking')),
+    [block('evidence', { sourceIds: ['split-2024'], text: 'RIR um garante segurança.' })],
+    [block('evidence', { sourceIds: ['split-2024'], url: 'https://untrusted.invalid' })],
+    [block('tracking', { sourceIds: ['split-2024'] })],
+    [block('question')], [block('question', { followUp: 'diagnosis' })]]) {
+    let calls = 0;
+    const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(valid)
+      : upstream({ blocks, kind: 'answer', program: null }) });
+    await assert.rejects(current.chat(input()), error => error.statusCode === 502 && !error.message.includes(valid.message));
+    assert.equal(calls, 2);
+  }
 });
 
 test('prazo único cobre as duas gerações e também o corpo da revisão que ignora abort', async () => {

@@ -197,14 +197,15 @@ function extractDraftContext(messages) {
   for (const message of [...messages].reverse()) {
     if (message.role !== 'assistant' || !message.content.startsWith('Rascunho interpretado da conversa — revise com seu instrutor.')) continue;
     const exercises = [], weeklySummary = [], sessionEstimates = [];
-    let day;
+    let day, declarationsComplete = true;
     for (const line of message.content.split('\n')) {
       const session = line.match(/^(Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo) — logística estimada: (\d{1,3}) min$/);
       if (session) { day = session[1]; sessionEstimates.push({ day, estimatedMinutes: Number(session[2]) }); continue; }
       const movement = line.match(/^• (.{3,100}): ([1-6]) séries × (\d{1,2})–(\d{1,2}) repetições; RIR ([0-5]); descanso inicial (\d{2,3}) s(?:; grupo principal: (Peito|Costas|Ombros|Quadríceps|Posteriores da coxa|Glúteos|Panturrilhas|Bíceps|Tríceps|Abdômen))?\.$/);
+      if (/^• .*:.*séries\s*×/.test(line) && (!movement || !day)) declarationsComplete = false;
       if (movement && day) {
         const [name, sets, repsMin, repsMax, rir, restSeconds, primaryGroup] = movement.slice(1);
-        if (Number(repsMin) < 1 || Number(repsMax) > 30 || Number(repsMax) < Number(repsMin) || Number(restSeconds) < 30 || Number(restSeconds) > 300) continue;
+        if (Number(repsMin) < 1 || Number(repsMax) > 30 || Number(repsMax) < Number(repsMin) || Number(restSeconds) < 30 || Number(restSeconds) > 300) { declarationsComplete = false; continue; }
         exercises.push({ day, name, sets: Number(sets), repsMin: Number(repsMin), repsMax: Number(repsMax), rir: Number(rir), restSeconds: Number(restSeconds), ...(primaryGroup ? { primaryGroup } : {}) });
       }
       const summary = line.match(/^• (Peito|Costas|Ombros|Quadríceps|Posteriores da coxa|Glúteos|Panturrilhas|Bíceps|Tríceps|Abdômen): (\d{1,3}) séries diretas em ([1-6]) sess(?:ão|ões) por semana\.$/);
@@ -213,15 +214,16 @@ function extractDraftContext(messages) {
     if (!exercises.length || !weeklySummary.length) continue;
     return {
       provenance: 'Campos explícitos em texto assistant enviado pelo cliente; sem comprovação de autoria, execução ou precisão da classificação.',
+      interpretation: message.content.split('\n').find(line => line.startsWith('Interpretação:')) || null,
       individualDoseRationale: 'Não documentada; não inferir necessidade, equilíbrio, preencher tempo, segurança ou dose ideal.',
       exercises, weeklySummary, sessionEstimates,
       declaredContributors: weeklySummary.map(row => ({ group: row.group,
         exercises: exercises.filter(exercise => exercise.primaryGroup === row.group).map(({ day, name, sets }) => ({ day, name, sets })),
-        classificationComplete: exercises.every(exercise => Boolean(exercise.primaryGroup)),
+        classificationComplete: declarationsComplete && exercises.every(exercise => Boolean(exercise.primaryGroup)),
       })),
     };
   }
   return null;
 }
 
-module.exports = { programSchema, validateProgram, renderProgram, extractDraftContext };
+module.exports = { programSchema, validateProgram, renderProgram, extractDraftContext, groupLabels };
