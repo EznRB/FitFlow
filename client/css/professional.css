@@ -20,6 +20,7 @@
 .topbar-title { font-size: 17px; font-weight: 600; }
 .topbar { background: var(--bg-base); }
 .input-with-icon input { min-height: 48px; font-size: 16px; background: var(--bg-base); }
+.form-group[hidden] { display: none; }
 /* O conteúdo rola sem tirar o título e as ações da área visível. */
 .modal { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .modal-header, .modal-footer { flex: 0 0 auto; background: var(--bg-surface); }
@@ -54,6 +55,9 @@
   .admin-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width:768px) {
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="date"], input[type="tel"],
+  input[type="search"], select, textarea, .form-control, .form-select { font-size: 16px; }
   .admin-page-header { align-items: stretch; gap: 18px; }
   .admin-page-header > div:first-child { flex-basis: auto; }
   .admin-page-actions { width: 100%; }

@@ -19,7 +19,7 @@ function browser(globals = {}) {
 function safe(html) { assert.ok(!html.includes('<img src=x')); assert.ok(!html.includes('onclick=')); }
 test('planos escapam campos do card, edição e confirmação e não prometem cobrança automática', () => {
   let modal, confirm;
-  const { context, node } = browser({ Modal: { open: (title, html) => { modal = html; }, confirm: html => { confirm = html; } } });
+  const { context, node } = browser({ Modal: { open: (title, html) => { if (title === 'Inativar plano') confirm = html; else modal = html; } } });
   const plan = { id: 3, name: evil, description: evil, price: '365.00', durationDays: 365, active: true };
   const html = context.plans.renderCard(plan); safe(html); assert.ok(html.includes('&lt;img')); assert.ok(html.includes('R$') && html.includes('30 dias'));
   assert.equal(context.plans.equivalente('365.00', 365), 30);
