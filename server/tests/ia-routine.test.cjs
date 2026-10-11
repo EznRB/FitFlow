@@ -5,6 +5,50 @@ const { program, exercise, routineUserText } = require('./fixtures/ia-routine.cj
 const messages = [{ role: 'user', content: routineUserText }];
 const rejected = plan => assert.throws(() => validateProgram(plan, messages), error => error.statusCode === 502);
 
+test('supino com pesos livres exige banco declarado; chão e máquina com apoio próprio não inferem banco', () => {
+  for (const [name, equipment] of [['Supino inclinado com halteres', ['dumbbells']],
+    ['Supino reto com barra', ['barbell']], ['Supino no Smith', ['machines']]]) {
+    const raw = program();
+    raw.sessions[0].exercises = [exercise(name, 'chest', 3, equipment)];
+    rejected(raw);
+    raw.sessions[0].exercises[0].equipment.push('bench');
+    assert.equal(validateProgram(raw, messages).weeklySummary[0].directPlannedSets, 3);
+    raw.context.equipment = raw.context.equipment.filter(item => item !== 'bench');
+    rejected(raw);
+  }
+  for (const [name, equipment] of [['Supino com halteres no chão', ['dumbbells']],
+    ['Bench press com halteres no chão', ['dumbbells']],
+    ['Supino inclinado na máquina', ['machines']]]) {
+    const raw = program();
+    raw.context.equipment = raw.context.equipment.filter(item => item !== 'bench');
+    raw.sessions[0].exercises = [exercise(name, 'chest', 3, equipment)];
+    assert.equal(validateProgram(raw, messages).weeklySummary[0].directPlannedSets, 3);
+  }
+});
+
+test('menção genérica à academia não inventa banco fora da lista explícita de equipamentos', () => {
+  const raw = program();
+  raw.context.equipmentQuote = 'Tenho máquinas, halteres, barra e polias na academia';
+  const declared = [{ role: 'user', content: routineUserText + ' ' + raw.context.equipmentQuote }];
+  assert.throws(() => validateProgram(raw, declared), error => error.statusCode === 502);
+  raw.context.equipment = raw.context.equipment.filter(item => item !== 'bench');
+  assert.ok(validateProgram(raw, declared));
+  raw.context.equipmentQuote = 'na academia';
+  assert.throws(() => validateProgram(raw, [{ role: 'user', content: routineUserText + ' na academia' }]), error => error.statusCode === 502);
+});
+
+test('barra guiada exclusiva não confirma recurso de barra livre no contexto', () => {
+  const raw = program();
+  raw.context.equipmentQuote = 'Somente barra guiada e banco';
+  raw.context.equipment = ['barbell', 'machines', 'bench'];
+  raw.sessions = [{ day: 'monday', exercises: [exercise('Agachamento com barra', 'quads', 3, ['barbell'])] }];
+  const declared = [{ role: 'user', content: routineUserText + ' Somente barra guiada e banco' }];
+  assert.throws(() => validateProgram(raw, declared), error => error.statusCode === 502);
+  raw.context.equipment = ['machines', 'bench'];
+  raw.sessions[0].exercises = [exercise('Agachamento no Smith', 'quads', 3, ['machines'])];
+  assert.ok(validateProgram(raw, declared));
+});
+
 test('séries diretas e frequência são calculadas do plano e não deduzidas do nome da divisão', () => {
   const plan = validateProgram(program(), messages);
   assert.deepEqual(plan.weeklySummary.find(row => row.group === 'chest'), { group: 'chest', directPlannedSets: 5, sessionsPerWeek: 1 });
@@ -103,6 +147,9 @@ test('nomes com equipamento explícito não contradizem os equipamentos declarad
   cable.sessions[0].exercises[0].equipment = ['cables'];
   assert.ok(validateProgram(cable, messages));
   const guided = program(); guided.sessions[0].exercises[0].name = 'Supino na barra guiada';
+  guided.sessions[0].exercises[0].equipment = ['barbell', 'bench'];
+  rejected(guided);
+  guided.sessions[0].exercises[0].equipment = ['machines', 'bench'];
   assert.ok(validateProgram(guided, messages));
   const machineBench = program(); machineBench.sessions[0].exercises[0].name = 'Machine bench press';
   assert.ok(validateProgram(machineBench, messages));

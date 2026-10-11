@@ -48,13 +48,18 @@ const dayPatterns = { monday: /\b(?:seg(?:unda(?:-feira)?)?|mon(?:day)?)\b/,
   tuesday: /\b(?:ter(?:ca(?:-feira)?)?|tue(?:sday)?)\b/, wednesday: /\b(?:qua(?:rta(?:-feira)?)?|wed(?:nesday)?)\b/,
   thursday: /\b(?:qui(?:nta(?:-feira)?)?|thu(?:rsday)?)\b/, friday: /\b(?:sex(?:ta(?:-feira)?)?|fri(?:day)?)\b/,
   saturday: /\b(?:sab(?:ado)?|sat(?:urday)?)\b/, sunday: /\b(?:dom(?:ingo)?|sun(?:day)?)\b/ };
-const equipmentPatterns = { dumbbells: /halter|dumbbell/, barbell: /barra|barbell/, machines: /maquina|machine|smith/,
+const equipmentPatterns = { dumbbells: /halter|dumbbell/, barbell: /barbell|barra(?!\s+(?:guiada|fixa|paralela|(?:do |de )?smith))/,
+  machines: /maquina|machine|smith|barra guiada/,
   cables: /polia|cabo|cable|pulley|crossover|cross-over/, bands: /elastic|band/, kettlebell: /kettlebell/, bench: /banco|bench/ };
 function equipmentHints(text) { return Object.entries(equipmentPatterns).filter(([, pattern]) => pattern.test(text)).map(([item]) => item); }
 function exerciseEquipmentConsistent(exercise) {
   const name = normalized(exercise.name);
   const hints = equipmentHints(name).filter(item => (item !== 'barbell' || !/barra fixa|barra paralela|barra guiada|smith/.test(name))
-    && (item !== 'bench' || !/maquina|machine/.test(name)));
+    && (item !== 'bench' || !/maquina|machine|chao|floor/.test(name)));
+  // Supino com pesos livres usa banco/suporte, salvo a variação explicitamente
+  // no chão. A máquina de supino tem apoio próprio; Smith requer banco separado.
+  if (/supino|bench press/.test(name) && !/chao|floor/.test(name)
+    && (!/maquina|machine/.test(name) || /smith/.test(name))) hints.push('bench');
   return hints.every(item => exercise.equipment.includes(item));
 }
 function repetitionsRepresentable(name) {
@@ -94,7 +99,9 @@ function checkExplicitContext(context) {
 
   const equip = normalized(context.equipmentQuote);
   const allowed = new Set(['bodyweight']);
-  if (/academia|gym|ginasio/.test(equip)) ['machines', 'dumbbells', 'barbell', 'cables', 'bench'].forEach(item => allowed.add(item));
+  if (/(?:academia|ginasio)\s+complet[ao]|(?:full|fully equipped)\s+gym/.test(equip)) {
+    ['machines', 'dumbbells', 'barbell', 'cables', 'bench'].forEach(item => allowed.add(item));
+  }
   equipmentHints(equip).forEach(item => allowed.add(item));
   const denied = new Set();
   const negativeClauses = equip.match(/(?:nao\s+(?:tenho|possuo|ha|disponho(?:\s+de)?)|sem(?:\s+acesso\s+a)?)\s+[^;,.]+/g) || [];
@@ -111,8 +118,7 @@ function checkExplicitContext(context) {
     }
   }
   if (context.equipment.some(item => denied.has(item))) invalid();
-  if ((allowed.size > 1 || /peso corporal|bodyweight|sem equipamento/.test(equip))
-    && context.equipment.some(item => !allowed.has(item))) invalid();
+  if (context.equipment.some(item => !allowed.has(item))) invalid();
 }
 
 function validateProgram(program, messages) {
