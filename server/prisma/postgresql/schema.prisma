@@ -35,6 +35,7 @@ model User {
   student           Student?
   createdWorkouts   Workout[]          @relation("InstructorWorkouts")
   nutritionScenario NutritionScenario?
+  paymentAdjustments PaymentAdjustment[]
 
   @@index([email])
   @@index([role])
@@ -98,6 +99,8 @@ model Student {
   workoutLogs     WorkoutLog[]
   payments        Payment[]
   checkins        Checkin[]
+
+  membershipRevision Int @default(0) @map("membership_revision")
 
   @@index([planId])
   @@index([status])
@@ -219,12 +222,39 @@ model Payment {
   student Student        @relation(fields: [studentId], references: [id], onDelete: Restrict)
   plan    Plan?          @relation(fields: [planId], references: [id], onDelete: SetNull)
   intent  PaymentIntent?
+  adjustments PaymentAdjustment[]
+
+  membershipGrant Json? @map("membership_grant") @db.JsonB
 
   @@index([studentId])
   @@index([status])
   @@index([dueDate])
   @@index([paymentDate])
   @@map("payments")
+}
+
+// Eventos financeiros permanentes; o recibo original permanece intacto.
+model PaymentAdjustment {
+  id String @id @db.Char(36)
+  requestHash String @map("request_hash") @db.Char(64)
+  paymentId Int @map("payment_id")
+  actorId Int @map("actor_id")
+  actorName String @map("actor_name") @db.VarChar(100)
+  kind String @db.VarChar(30)
+  amount Decimal @db.Decimal(10, 2)
+  reason String @db.VarChar(1000)
+  effectiveDate DateTime @map("effective_date") @db.Date
+  membershipEffect String @map("membership_effect") @db.VarChar(20)
+  membershipBefore Json @map("membership_before") @db.JsonB
+  membershipAfter Json @map("membership_after") @db.JsonB
+  providerRefundPerformed Boolean @default(false) @map("provider_refund_performed")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@index([paymentId, createdAt])
+  @@index([effectiveDate])
+  @@index([actorId])
+  @@map("payment_adjustments")
 }
 
 enum PaymentStatus {

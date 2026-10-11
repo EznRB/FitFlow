@@ -243,7 +243,7 @@ const PagamentosView = {
               <div style="font-weight:600">${nomeAluno}</div>
               <div style="font-size:0.75rem; color:var(--text-muted)">${nomePlano}</div>
             </td>
-            <td style="font-weight:600; color:var(--primary-400)">${valor}</td>
+            <td style="font-weight:600; color:var(--primary-400)">${valor}${p.adjustmentSummary?.adjustedAmount > 0 ? `<small style="display:block;color:var(--text-muted)">Ajustes R$ ${Number(p.adjustmentSummary.adjustedAmount).toFixed(2).replace('.', ',')}</small>` : ''}</td>
             <td>${metodo}</td>
             <td>${dataPgto}</td>
             <td>${dataVenc}</td>
@@ -619,10 +619,13 @@ const PagamentosView = {
             <p style="margin-top:0.25rem; color:var(--text-secondary)">${FitFlowSecurity.escapeHtml(p.notes)}</p>
           </div>` : ''}
         </div>
+        ${PaymentAdjustments.historyHtml(p)}
       `;
 
       Modal.open('Detalhes do Pagamento', bodyHTML, [
         { text: 'Fechar', class: 'btn-secondary', action: () => { if (this.modalAtual(context)) Modal.close(); } },
+        ...((PaymentAdjustments.canAdjust(p) || PaymentAdjustments.hasPending()) ? [{ text: 'Registrar ajuste', class: 'btn-primary',
+          action: () => { if (this.modalAtual(context)) return PaymentAdjustments.open(p, this); } }] : []),
       ]);
       this.vincularModal(context);
     } catch (error) {

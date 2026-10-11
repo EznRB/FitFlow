@@ -92,7 +92,7 @@ test('resumo inclui primeiro e último dia civil, exclui mês seguinte e indepen
           return { _sum: { amount: filtered.reduce((sum, row) => sum + row.amount, 0) }, _count: filtered.length };
         },
         count: async () => 0
-      }, student: { count: async () => 0 }
+      }, paymentAdjustment: { groupBy: async () => [] }, paymentIntent: { count: async () => 0 }, student: { count: async () => 0 }
     } });
     service.resumoFinanceiro().then(result => console.log(JSON.stringify({ period, amount: result.receitaMesAtual, count: result.pagamentosMes })));
   `;

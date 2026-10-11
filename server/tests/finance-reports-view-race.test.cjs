@@ -16,7 +16,8 @@ function fixture({ get = async () => ({ data: [] }), post = async () => ({ data:
     Modal: { isOpen: () => open, open: (title, html) => { open = true; node('modal-body').firstElementChild = {}; modals.push({ title, html }); }, close: () => { open = false; node('modal-body').firstElementChild = null; } },
     Toast: { success: message => toasts.push(['success', message]), error: message => toasts.push(['error', message]) }
   });
-  for (const file of ['security', 'pagamentos', 'relatorios']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', `${file}.js`), 'utf8'), context);
+  for (const file of ['security', 'payment-adjustments', 'pagamentos', 'relatorios']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', `${file}.js`), 'utf8'), context);
+  context.PaymentAdjustments = context.window.PaymentAdjustments;
   vm.runInContext('this.payments = PagamentosView; this.reports = RelatoriosView;', context);
   return { context, payments: context.payments, reports: context.reports, node, nodes, events, timers, toasts, modals,
     move(pageName) { context.App.currentPage = pageName; },
@@ -76,6 +77,17 @@ test('detalhes atuais continuam abrindo e escapando campos armazenados', async (
   const f = fixture({ get: async () => ({ data: value }) });
   await f.payments.verDetalhes(1);
   assert.equal(f.modals.length, 1); assert.match(f.modals[0].html, /&lt;img/); assert.ok(!f.modals[0].html.includes('<script>'));
+});
+
+test('critério financeiro fica visível e troca de relatório restaura texto de situação atual', async () => {
+  const f = fixture({ page: 'relatorios', get: async url => ({ data: url.startsWith('/relatorios/financeiro')
+    ? { items: [], resumo: { criterio: 'Recebimentos por pagamento; ajustes pela data efetiva.' } } : [] }) });
+  f.node('filtro-data-inicio').value = '2026-10-01'; f.node('filtro-data-fim').value = '2026-10-11';
+  await f.reports.carregarRelatorio('pagamentos');
+  assert.equal(f.node('aviso-filtro-data').style.display, 'block'); assert.match(f.node('aviso-filtro-data').textContent, /data efetiva/);
+  await f.reports.carregarRelatorio('inadimplencia');
+  assert.equal(f.node('aviso-filtro-data').style.display, 'block'); assert.match(f.node('aviso-filtro-data').textContent, /situação atual/);
+  assert.doesNotMatch(f.node('aviso-filtro-data').textContent, /data efetiva/);
 });
 
 test('verificação administrativa já enviada mantém resultado real sem consultar nova conta nem abrir modal obsoleto', async () => {

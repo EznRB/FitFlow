@@ -8,6 +8,8 @@ GRANT SELECT, INSERT, UPDATE ON
   workout_sessions, nutrition_scenarios, rate_limit_buckets, payment_intents
   TO fitflow_app;
 GRANT SELECT, INSERT ON workout_logs, workout_sets TO fitflow_app;
+GRANT SELECT, INSERT ON payment_adjustments TO fitflow_app;
+REVOKE UPDATE, DELETE ON payment_adjustments FROM fitflow_app;
 GRANT DELETE ON nutrition_scenarios, rate_limit_buckets TO fitflow_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO fitflow_app;
 -- Each future migration must review and grant any newly required privileges.

@@ -7,11 +7,11 @@ const { createCheckinsRepository } = require('../src/repositories/checkins.repos
 test('editar só telefone não restaura status e campos antigos após renovação concorrente', async () => {
   const row = { id: 11, userId: 7, status: 'blocked', phone: 'old', cpf: null, address: 'Old address', notes: 'Old note',
     birthDate: null, planId: 2, user: { name: 'Old name', email: 'fixture@example.invalid' } };
-  const snapshot = structuredClone(row); let releaseRead; const writes = [];
+  const snapshot = structuredClone(row); let releaseRead, reads = 0; const writes = [];
   const db = {
-    student: { findUnique: () => new Promise(resolve => { releaseRead = () => resolve(snapshot); }),
+    student: { findUnique: () => ++reads === 1 ? new Promise(resolve => { releaseRead = () => resolve(snapshot); }) : Promise.resolve(row),
       update: async ({ data }) => { writes.push(data); return Object.assign(row, data); } },
-    user: { update: async ({ data }) => Object.assign(row.user, data) }, $transaction: async operations => Promise.all(operations),
+    user: { update: async ({ data }) => Object.assign(row.user, data) }, $queryRaw: async () => [], $transaction: async callback => callback(db),
   };
   const editing = createAlunosService({ db }).atualizar(11, { phone: 'new' });
   Object.assign(row, { status: 'active', address: 'New address', notes: 'New note', birthDate: new Date('1990-01-01'),

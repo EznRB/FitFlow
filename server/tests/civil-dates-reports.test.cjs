@@ -92,6 +92,7 @@ test('dashboard às 00–03 UTC agrupa matrículas por instante BRT e pagamentos
       return [{ createdAt: date('2026-09-30T02:30:00Z') }, { createdAt: date('2026-10-01T00:30:00Z') }];
     } },
     workout: { count: async () => 1 },
+    paymentAdjustment: { groupBy: async () => [], findMany: async () => [] }, paymentIntent: { count: async () => 0 },
     payment: { aggregate: async args => { month = args.where.paymentDate; return { _sum: { amount: 123 } }; }, findMany: async args => args.select ? [{ paymentDate: date('2026-09-30T00:00:00Z'), amount: 123 }] : [] },
     checkin: { findMany: async args => { if (!args.select) return []; attendance = args.where.checkinDate; return [{ checkinDate: date('2026-09-30T00:00:00Z') }]; } }
   } });

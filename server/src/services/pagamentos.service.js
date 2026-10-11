@@ -20,6 +20,8 @@ const { validatePaymentMethod } = require('../utils/paymentMethod');
 const { paymentId, moneyCents, paymentDate: validateDate, brazilDate, validateNotes, paymentStatus } = require('../utils/paymentValidation');
 const { lockStudent, renewalDates } = require('../utils/membershipRenewal');
 const { manualRequestId, manualRequestHash, sameManualRequest } = require('../utils/manualPaymentRequest');
+const { membershipGrant } = require('../utils/membershipSnapshot');
+const { totalsByPeriod } = require('../utils/financialTotals');
 
 /** Dias de carência antes de bloquear o aluno por inadimplência. */
 const GRACE_DAYS = 5;
@@ -49,8 +51,10 @@ class PagamentosService {
     return this.db.payment.findMany({
       where,
       include: {
-        student: { include: { user: { select: { name: true, email: true } } } },
+        student: { include: { user: { select: { name: true, email: true, active: true } } } },
         plan: { select: { id: true, name: true, price: true, durationDays: true } },
+        adjustments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+        intent: { select: { id: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -63,8 +67,10 @@ class PagamentosService {
     const pagamento = await this.db.payment.findUnique({
       where: { id: paymentId(id, 'ID do pagamento') },
       include: {
-        student: { include: { user: { select: { name: true, email: true } } } },
+        student: { include: { user: { select: { name: true, email: true, active: true } } } },
         plan: { select: { id: true, name: true, price: true, durationDays: true } },
+        adjustments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+        intent: { select: { id: true } },
       },
     });
 
@@ -87,6 +93,8 @@ class PagamentosService {
       where: { studentId: idValue },
       include: {
         plan: { select: { name: true, price: true, durationDays: true } },
+        adjustments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] },
+        intent: { select: { id: true } },
       },
       orderBy: { paymentDate: 'desc' },
     });
@@ -162,6 +170,8 @@ class PagamentosService {
           registeredBy: actorId,
           manualRequestId: requestId,
           manualRequestHash: requestHash,
+          membershipGrant: membershipGrant(aluno, { planId: planoId || null, planStartDate: startDate,
+            planEndDate: dataVencimento, status: aluno.status === 'blocked' ? 'active' : aluno.status }, plano ? plano.durationDays : 30),
         },
         include: {
           student: { include: { user: { select: { name: true } } } },
@@ -173,6 +183,7 @@ class PagamentosService {
       const updateData = {
         planStartDate: startDate,
         planEndDate: dataVencimento,
+        membershipRevision: { increment: 1 },
       };
 
       // Se o plano informado é diferente do atual, atualiza também
@@ -248,7 +259,7 @@ class PagamentosService {
         await lockStudent(tx, aluno.id);
         const current = await tx.student.findUnique({ where: { id: aluno.id } });
         if (!current || current.status !== 'active' || !current.planEndDate || !isOverdue(current.planEndDate, GRACE_DAYS, agora)) return false;
-        await tx.student.update({ where: { id: aluno.id }, data: { status: 'blocked' } });
+        await tx.student.update({ where: { id: aluno.id }, data: { status: 'blocked', membershipRevision: { increment: 1 } } });
         return true;
       });
       if (blocked) bloqueados++;
@@ -315,17 +326,10 @@ class PagamentosService {
     const inicioMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), 1));
     const inicioProximoMes = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() + 1, 1));
 
-    const [receitaMes, totalPagos, totalPendentes, totalOverdue, inadimplentes] =
+    const [receitaMes, totalPagos, totalPendentes, totalOverdue, inadimplentes, conferenciasProvedor] =
       await Promise.all([
         // Receita do mês atual
-        this.db.payment.aggregate({
-          where: {
-            status: 'paid',
-            paymentDate: { gte: inicioMes, lt: inicioProximoMes },
-          },
-          _sum: { amount: true },
-          _count: true,
-        }),
+        totalsByPeriod(this.db, { gte: inicioMes, lt: inicioProximoMes }),
         // Total de pagamentos "paid"
         this.db.payment.count({ where: { status: 'paid' } }),
         // Total pendentes
@@ -334,11 +338,14 @@ class PagamentosService {
         this.db.payment.count({ where: { status: 'overdue' } }),
         // Total de alunos bloqueados
         this.db.student.count({ where: { status: 'blocked' } }),
+        this.db.paymentIntent.count({ where: { state: 'review' } }),
       ]);
 
     return {
-      receitaMesAtual: receitaMes._sum.amount || 0,
-      pagamentosMes: receitaMes._count,
+      receitaMesAtual: receitaMes.netAmount,
+      financeiroMes: receitaMes,
+      pagamentosMes: receitaMes.paymentCount,
+      conferenciasProvedor,
       totalPagos,
       totalPendentes,
       totalOverdue,

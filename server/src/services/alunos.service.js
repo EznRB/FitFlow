@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const planosService = require('./planos.service');
 const { validateAccount } = require('../utils/accountValidation');
 const { brazilDate, paymentDate } = require('../utils/paymentValidation');
+const { lockStudent } = require('../utils/membershipRenewal');
 
 function optionalCpf(value) {
   if (value === undefined || value === null) return value;
@@ -156,53 +157,31 @@ class AlunosService {
       if (cpfEmUso) throw new AppError('CPF já cadastrado para outro aluno.', 400);
     }
 
-    // Verificação de alteração de plano
-    let updatePlanData = {};
-    if (planId && Number(planId) !== alunoAlvo.planId) {
-      const plano = await this.plans.buscarPorId(planId);
-      if (!plano.active) throw new AppError('Não é possível alterar para um plano inativo.', 400);
-      
-      const startDate = brazilDate(this.now());
-      updatePlanData = {
-        planId: Number(planId),
-        planStartDate: startDate,
-        planEndDate: this.plans.calcularVencimento(plano.durationDays, startDate)
-      };
-    } else if (planId === null) {
-      // Se mandar null explícito, removemos o plano e as datas.
-      updatePlanData = {
-        planId: null,
-        planStartDate: null,
-        planEndDate: null
-      };
-    }
-
-    // Como as informações estão distribuídas, faremos um update encadeado ($transaction).
-    const resultado = await this.db.$transaction([
-      this.db.user.update({
-        where: { id: alunoAlvo.userId },
-        data: {
-          ...(name != null ? { name } : {}),
-          ...(email != null ? { email } : {}),
-        },
-      }),
-      this.db.student.update({
-        where: { id: studentId },
-        data: {
-          // Omitir um campo preserva seu valor atual no banco, inclusive quando
-          // uma renovação ou outra edição ocorreu após a leitura acima.
-          ...(cpf !== undefined ? { cpf } : {}),
-          ...(phone !== undefined ? { phone } : {}),
-          ...(address !== undefined ? { address } : {}),
-          ...(notes !== undefined ? { notes } : {}),
-          ...(status != null ? { status } : {}),
-          ...(birthDate !== undefined ? { birthDate } : {}),
-          ...updatePlanData // Propaga as datas de plano, se houver alteração
-        },
-      }),
-    ]);
-
-    return resultado[1]; // Retorna a entidade Student atualizada
+    return this.db.$transaction(async tx => {
+      await lockStudent(tx, studentId);
+      const current = await tx.student.findUnique({ where: { id: studentId }, include: { user: true } });
+      if (!current) throw new AppError('Aluno não encontrado.', 404);
+      let updatePlanData = {};
+      if (planId && Number(planId) !== current.planId) {
+        const plano = await tx.plan.findUnique({ where: { id: Number(planId) } });
+        if (!plano?.active) throw new AppError('Não é possível alterar para um plano inativo.', 400);
+        const startDate = brazilDate(this.now());
+        updatePlanData = { planId: Number(planId), planStartDate: startDate,
+          planEndDate: this.plans.calcularVencimento(plano.durationDays, startDate) };
+      } else if (planId === null) {
+        updatePlanData = { planId: null, planStartDate: null, planEndDate: null };
+      }
+      const membershipChanged = Object.keys(updatePlanData).length > 0 || (status != null && status !== current.status);
+      if (membershipChanged && (!Number.isSafeInteger(data.expectedMembershipRevision) || data.expectedMembershipRevision < 0 ||
+          data.expectedMembershipRevision !== current.membershipRevision)) throw new AppError('A matrícula mudou ou sua revisão não foi informada. Recarregue antes de alterar o plano ou a situação.', 409);
+      await tx.user.update({ where: { id: current.userId }, data: {
+        ...(name != null ? { name } : {}), ...(email != null ? { email } : {}) } });
+      return tx.student.update({ where: { id: studentId }, data: {
+        ...(cpf !== undefined ? { cpf } : {}), ...(phone !== undefined ? { phone } : {}),
+        ...(address !== undefined ? { address } : {}), ...(notes !== undefined ? { notes } : {}),
+        ...(status != null ? { status } : {}), ...(birthDate !== undefined ? { birthDate } : {}),
+        ...updatePlanData, ...(membershipChanged ? { membershipRevision: { increment: 1 } } : {}) } });
+    });
   }
 
   /**
@@ -210,18 +189,13 @@ class AlunosService {
    * de apagar de vez usando DELETE e perdendo relatórios financeiros de meses atrás.
    */
   async desativar(id) {
-    const aluno = await this.db.student.findUnique({ where: { id: Number(id) } });
-    if (!aluno) throw new AppError('Aluno não encontrado.', 404);
-
-    // Update atômico no User desativando seu acesso de auth e transmutando sua status
-    await this.db.user.update({
-      where: { id: aluno.userId },
-      data: { active: false },
-    });
-
-    return this.db.student.update({
-      where: { id: Number(id) },
-      data: { status: 'inactive' },
+    const studentId = Number(id);
+    return this.db.$transaction(async tx => {
+      await lockStudent(tx, studentId);
+      const aluno = await tx.student.findUnique({ where: { id: studentId } });
+      if (!aluno) throw new AppError('Aluno não encontrado.', 404);
+      await tx.user.update({ where: { id: aluno.userId }, data: { active: false } });
+      return tx.student.update({ where: { id: studentId }, data: { status: 'inactive', membershipRevision: { increment: 1 } } });
     });
   }
 }

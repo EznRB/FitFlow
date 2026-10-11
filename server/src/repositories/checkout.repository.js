@@ -3,6 +3,7 @@ const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const { moneyCents, brazilDate } = require('../utils/paymentValidation');
 const { lockStudent, renewalDates } = require('../utils/membershipRenewal');
+const { membershipGrant } = require('../utils/membershipSnapshot');
 
 function createCheckoutRepository(db = prisma) {
   return {
@@ -63,12 +64,15 @@ function createCheckoutRepository(db = prisma) {
         const student = await tx.student.findUnique({ where: { id: intent.studentId }, include: { user: { select: { active: true } } } });
         const paidDate = brazilDate(new Date(payment.date_approved));
         const dates = renewalDates(student.planEndDate, paidDate, intent.durationDays);
+        const applied = student.user.active && student.status !== 'inactive';
         const ledger = await tx.payment.create({ data: { studentId: student.id, planId: intent.planId, amount: intent.amount,
           paymentMethod: method, paymentDate: paidDate, dueDate: dates.endDate, status: 'paid', registeredBy: null,
+          membershipGrant: membershipGrant(student, { planId: intent.planId, planStartDate: dates.startDate,
+            planEndDate: dates.endDate, status: student.status === 'blocked' ? 'active' : student.status }, intent.durationDays, applied),
           notes: `[SANDBOX MERCADO PAGO] Compra ${intent.id}; confirmação ${String(payment.id)}.` } });
         if (student.user.active && student.status !== 'inactive') {
           await tx.student.update({ where: { id: student.id }, data: { planId: intent.planId, planStartDate: dates.startDate,
-            planEndDate: dates.endDate, ...(student.status === 'blocked' ? { status: 'active' } : {}) } });
+            planEndDate: dates.endDate, membershipRevision: { increment: 1 }, ...(student.status === 'blocked' ? { status: 'active' } : {}) } });
         }
         return tx.paymentIntent.update({ where: { id }, data: { state: student.user.active && student.status !== 'inactive' ? 'paid' : 'review',
           providerPaymentId: String(payment.id), paymentId: ledger.id, lastProviderStatus: 'approved', settledAt: new Date() } });

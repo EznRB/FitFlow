@@ -32,10 +32,26 @@ async function deny(sql) {
     await deny('UPDATE workout_sets SET notes = notes WHERE false');
     await deny('DELETE FROM workout_logs WHERE false');
     await deny('DELETE FROM payments WHERE false');
+    await deny('UPDATE payment_adjustments SET reason = reason WHERE false');
+    await deny('DELETE FROM payment_adjustments WHERE false');
+    await assert.rejects(db.$transaction(async tx => {
+      const actor = await tx.user.findFirst({ where: { role: 'admin', active: true }, select: { id: true, name: true } });
+      assert.ok(actor);
+      const user = await tx.user.create({ data: { name: 'Runtime adjustment probe', email: randomUUID() + '@example.invalid', passwordHash: randomUUID(), role: 'student' } });
+      const student = await tx.student.create({ data: { userId: user.id } });
+      const date = new Date('2026-10-11T00:00:00Z');
+      const receipt = await tx.payment.create({ data: { studentId: student.id, amount: '1.00', paymentDate: date, dueDate: date, status: 'paid' } });
+      const snapshot = { planId: null, planStartDate: null, planEndDate: null, status: 'active', membershipRevision: 0, userActive: true };
+      const event = await tx.paymentAdjustment.create({ data: { id: randomUUID(), requestHash: '0'.repeat(64), paymentId: receipt.id,
+        actorId: actor.id, actorName: actor.name, kind: 'correction', amount: '0.01', reason: 'Synthetic runtime permission probe',
+        effectiveDate: date, membershipEffect: 'preserve', membershipBefore: snapshot, membershipAfter: snapshot } });
+      assert.equal((await tx.paymentAdjustment.findUnique({ where: { id: event.id } })).providerRefundPerformed, false);
+      throw rollback;
+    }), error => error === rollback);
     await deny('DELETE FROM users WHERE false');
     const [role] = await db.$queryRaw`SELECT rolcreatedb, rolcreaterole, rolbypassrls,
       pg_has_role(current_user,'neon_superuser','member') AS privileged FROM pg_roles WHERE rolname=current_user`;
     assert.ok(role); assert.ok(Object.values(role).every(value => value === false));
-    console.log('Runtime TLS pooled: leitura, INSERT/UPDATE confirmados; DDL, edição de séries e exclusão de histórico/financeiro negados. Fixture revertida.');
+    console.log('Runtime TLS pooled: leitura, INSERT/UPDATE confirmados; ajustes SELECT/INSERT confirmados e UPDATE/DELETE negados; DDL, edição de séries e exclusão de histórico/financeiro negados. Fixtures revertidas.');
   } finally { await db.$disconnect(); }
 })().catch(error => { console.error('Runtime não validado:', error.code || error.name, String(error.meta?.code || 'none')); process.exitCode=1; });

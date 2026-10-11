@@ -82,10 +82,14 @@ const Modal = {
 
     this.overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    this.bodyEl.scrollTop = 0;
 
     // Foca no primeiro input se existir
     const firstInput = this.bodyEl.querySelector('input:not([disabled]), select:not([disabled]), textarea:not([disabled])');
-    (firstInput || this.closeBtn).focus();
+    // Long forms start with their instructions visible and without opening the
+    // mobile keyboard before the user selects a field.
+    if (this.bodyEl.scrollHeight > this.bodyEl.clientHeight) this.closeBtn.focus({ preventScroll: true });
+    else (firstInput || this.closeBtn).focus();
   },
 
   /**

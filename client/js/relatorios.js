@@ -25,8 +25,9 @@ const RelatoriosView = {
   },
   count(value) { const number = this.number(value); return Number.isSafeInteger(number) ? String(number) : '—'; },
   formatMoney(value) {
-    const number = this.number(value);
-    return number === null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(number);
+    const valid = typeof value === 'number' || (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value));
+    const number = valid ? Number(value) : NaN;
+    return !Number.isFinite(number) ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(number);
   },
   validDate(value) {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -45,7 +46,7 @@ const RelatoriosView = {
     return Number.isFinite(date.getTime()) ? date.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) : '—';
   },
   getStatusBadge(status) {
-    const statuses = { active: ['success', 'Ativo'], inactive: ['warning', 'Inativo'], blocked: ['danger', 'Bloqueado'], paid: ['success', 'Pago'], pending: ['warning', 'Pendente'], overdue: ['danger', 'Vencido'], present: ['success', 'Presente'], cancelled: ['danger', 'Cancelado'] };
+    const statuses = { active: ['success', 'Ativo'], inactive: ['warning', 'Inativo'], blocked: ['danger', 'Bloqueado'], paid: ['success', 'Pago'], pending: ['warning', 'Pendente'], overdue: ['danger', 'Vencido'], present: ['success', 'Presente'], cancelled: ['danger', 'Cancelado'], correction: ['warning', 'Correção'], refund_recorded: ['warning', 'Devolução informada'] };
     const entry = Object.hasOwn(statuses, status) ? statuses[status] : null;
     return entry ? `<span class="badge badge-${entry[0]}">${entry[1]}</span>` : `<span class="badge">${this.escape(status)}</span>`;
   },
@@ -126,7 +127,11 @@ const RelatoriosView = {
     const methods = { inadimplencia: 'carregarInadimplencia', frequencia: 'carregarFrequencia', checkins: 'carregarCheckins', pagamentos: 'carregarPagamentos', alunos: 'carregarAlunos' };
     if (!Object.hasOwn(methods, type)) return;
     const dated = !['inadimplencia', 'alunos'].includes(type);
-    document.getElementById('aviso-filtro-data').style.display = dated ? 'none' : 'block';
+    const notice = document.getElementById('aviso-filtro-data');
+    notice.style.display = !dated || type === 'pagamentos' ? 'block' : 'none';
+    notice.textContent = type === 'pagamentos'
+      ? 'Recebimentos por data de pagamento; ajustes por data efetiva. Líquido registrado, sem confirmação bancária.'
+      : 'Inadimplência e situação dos alunos mostram a situação atual, sem filtro de datas.';
     const start = document.getElementById('filtro-data-inicio'), end = document.getElementById('filtro-data-fim');
     start.disabled = end.disabled = !dated;
     this.mostrarLoading();
@@ -165,7 +170,9 @@ const RelatoriosView = {
     if (!this.atual(context)) return;
     const { data } = await API.get('/relatorios/financeiro' + query);
     if (version !== this.requestVersion || !this.atual(context)) return;
-    this.table('Registros financeiros no período', [['Data do pagamento', r => this.formatDate(r.dataPagamento)], ['Aluno', r => r.aluno], ['Plano', r => r.plano], ['Situação', r => r.status, 'badge'], ['Valor', r => this.formatMoney(r.valor)]], data?.items, [['Receita confirmada', this.formatMoney(data?.resumo?.totalReceita)], ['Pendentes', this.formatMoney(data?.resumo?.totalPendente)], ['Vencidos', this.formatMoney(data?.resumo?.totalVencido)]]);
+    this.table('Movimentações registradas no período', [['Data efetiva', r => this.formatDate(r.dataPagamento)], ['Aluno', r => r.aluno], ['Recibo', r => '#' + r.paymentId], ['Situação', r => r.status, 'badge'], ['Valor', r => this.formatMoney(r.valor)], ['Motivo / responsável', r => r.tipo === 'recebimento' ? 'Recebimento original' : (r.motivo || '') + ' · ' + (r.responsavel || '')]], data?.items,
+      [['Recebimentos brutos', this.formatMoney(data?.resumo?.totalBruto)], ['Correções internas', this.formatMoney(data?.resumo?.totalCorrecoes)], ['Devoluções informadas', this.formatMoney(data?.resumo?.totalDevolucoesInformadas)], ['Líquido registrado', this.formatMoney(data?.resumo?.totalReceita)], ['Pendentes', this.formatMoney(data?.resumo?.totalPendente)], ['Vencidos', this.formatMoney(data?.resumo?.totalVencido)], ['Checkout em conferência (atual)', this.count(data?.resumo?.conferenciasProvedor)]]);
+    document.getElementById('aviso-filtro-data').textContent = data?.resumo?.criterio || 'Recebimentos e ajustes pela data efetiva; valores registrados, sem confirmação bancária.';
   },
   async carregarAlunos(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;

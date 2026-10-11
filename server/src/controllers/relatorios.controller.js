@@ -8,6 +8,7 @@
 
 const { sendSuccess } = require('../utils/helpers');
 const { prisma } = require('../config/prisma');
+const { financialCents, financialSummary, totalsByPeriod } = require('../utils/financialTotals');
 const checkinsRepository = require('../repositories/checkins.repository');
 const { brazilDate, addDays, dateKey, civilRange, brazilDayStartInstant } = require('../utils/civil-date');
 
@@ -28,7 +29,7 @@ return {
       const newStudentsEnd = brazilDayStartInstant(tomorrow);
 
       // Executa todas as queries em paralelo para performance
-      const [totalAlunos, alunosAtivos, alunosInadimplentes, treinosAtivos, checkinsHoje, receitaMes, checkins7dias, recentesCheckins, recentesAlunos, pagamentos7dias, alunos7dias, recentesPagamentos] = await Promise.all([
+      const [totalAlunos, alunosAtivos, alunosInadimplentes, treinosAtivos, checkinsHoje, receitaMes, checkins7dias, recentesCheckins, recentesAlunos, pagamentos7dias, alunos7dias, recentesPagamentos, ajustes7dias, conferenciasProvedor] = await Promise.all([
         db.student.count(),
         db.student.count({ where: { status: 'active' } }),
         db.student.count({ where: { status: 'blocked' } }),
@@ -36,13 +37,7 @@ return {
         // Check-ins reais do dia (apenas status 'present')
         repository.countToday(),
         // Receita do mês via pagamentos confirmados
-        db.payment.aggregate({
-          where: {
-            status: 'paid',
-            paymentDate: { gte: firstOfMonth, lt: firstOfNextMonth },
-          },
-          _sum: { amount: true },
-        }),
+        totalsByPeriod(db, { gte: firstOfMonth, lt: firstOfNextMonth }),
         // Tendencias: check-ins dos ultimos 7 dias
         db.checkin.findMany({
           where: {
@@ -85,7 +80,9 @@ return {
           orderBy: { createdAt: 'desc' },
           take: 5,
           include: { student: { include: { user: true } } }
-        })
+        }),
+        db.paymentAdjustment.findMany({ where: { effectiveDate: { gte: sevenDaysAgo, lt: tomorrow } }, select: { effectiveDate: true, amount: true, kind: true } }),
+        db.paymentIntent.count({ where: { state: 'review' } })
       ]);
 
       // Processando tendências
@@ -115,8 +112,13 @@ return {
         const d = new Date(pag.paymentDate);
         const key = dateKey(d);
         if (receitaMap[key] !== undefined) {
-           receitaMap[key].amount += parseFloat(pag.amount);
+           receitaMap[key].amount += financialCents(pag.amount);
         }
+      });
+
+      ajustes7dias.forEach(event => {
+        const key = dateKey(new Date(event.effectiveDate));
+        if (receitaMap[key]) receitaMap[key].amount -= financialCents(event.amount);
       });
 
       alunos7dias.forEach(aluno => {
@@ -160,9 +162,6 @@ return {
       atividades.sort((a, b) => new Date(b.data) - new Date(a.data));
       atividades = atividades.slice(0, 5);
 
-      const receitaValor = receitaMes && receitaMes._sum && receitaMes._sum.amount
-        ? parseFloat(receitaMes._sum.amount)
-        : 0;
 
       sendSuccess(res, 200, 'Dashboard KPIs', {
         totalAlunos: totalAlunos || 0,
@@ -170,7 +169,9 @@ return {
         alunosInadimplentes: alunosInadimplentes || 0,
         treinosAtivos: treinosAtivos || 0,
         checkinsHoje: checkinsHoje || 0,
-        receitaEstimada: receitaValor,
+        receitaEstimada: receitaMes.netAmount,
+        financeiroMes: receitaMes,
+        conferenciasProvedor,
         tendencias: {
           labels: Object.values(tendenciasMap).map(i => i.label),
           data: Object.values(tendenciasMap).map(i => i.count)
@@ -178,7 +179,7 @@ return {
         historico: {
           labels: Object.values(tendenciasMap).map(i => i.label),
           checkins: Object.values(tendenciasMap).map(i => i.count),
-          receita: Object.values(receitaMap).map(i => i.amount),
+          receita: Object.values(receitaMap).map(i => i.amount / 100),
           alunos: Object.values(novosAlunosMap).map(i => i.count)
         },
         atividades,
@@ -259,36 +260,35 @@ return {
         orderBy: { paymentDate: 'desc' }
       });
 
-      let totalReceita = 0;
-      let totalPendente = 0;
-      let totalVencido = 0;
-
+      const ajustes = await db.paymentAdjustment.findMany({
+        where: period ? { effectiveDate: period } : {},
+        include: { payment: { include: { student: { include: { user: { select: { name: true } } } }, plan: { select: { name: true } } } } },
+        orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }]
+      });
+      let grossCents = 0, pendingCents = 0, overdueCents = 0;
       const items = pagamentos.map(p => {
-        const valor = parseFloat(p.amount);
-        if (p.status === 'paid') totalReceita += valor;
-        else if (p.status === 'pending') totalPendente += valor;
-        else if (p.status === 'overdue') totalVencido += valor;
-
-        return {
-          id: p.id,
-          aluno: p.student?.user?.name || `Aluno #${p.studentId}`,
-          plano: p.plan?.name || 'Avulso',
-          valor: valor,
-          dataPagamento: p.paymentDate,
-          vencimento: p.dueDate,
-          status: p.status,
-          metodo: p.paymentMethod
-        };
+        const cents = financialCents(p.amount);
+        if (p.status === 'paid') grossCents += cents;
+        else if (p.status === 'pending') pendingCents += cents;
+        else if (p.status === 'overdue') overdueCents += cents;
+        return { id: p.id, paymentId: p.id, tipo: 'recebimento', aluno: p.student?.user?.name || 'Aluno #' + p.studentId,
+          plano: p.plan?.name || 'Avulso', valor: cents / 100, dataPagamento: p.paymentDate,
+          vencimento: p.dueDate, status: p.status, metodo: p.paymentMethod };
       });
-
-      sendSuccess(res, 200, 'Relatório financeiro', {
-        resumo: {
-          totalReceita,
-          totalPendente,
-          totalVencido
-        },
-        items
-      });
+      for (const event of ajustes) items.push({ id: event.id, paymentId: event.paymentId,
+        tipo: event.kind === 'correction' ? 'correction' : 'refund_recorded', aluno: event.payment.student?.user?.name || 'Aluno #' + event.payment.studentId,
+        plano: event.payment.plan?.name || 'Avulso', valor: -financialCents(event.amount) / 100,
+        dataPagamento: event.effectiveDate, vencimento: event.payment.dueDate, status: event.kind,
+        metodo: 'Registro administrativo', motivo: event.reason, responsavel: event.actorName, providerRefundPerformed: false });
+      items.sort((a,b) => new Date(b.dataPagamento) - new Date(a.dataPagamento));
+      const totals = financialSummary((grossCents / 100).toFixed(2), ajustes);
+      const conferenciasProvedor = await db.paymentIntent.count({ where: { state: 'review' } });
+      sendSuccess(res, 200, 'Relatório financeiro', { resumo: {
+        totalReceita: totals.netAmount, totalBruto: totals.grossAmount, totalCorrecoes: totals.correctionAmount,
+        totalDevolucoesInformadas: totals.refundRecordedAmount, totalAjustes: totals.adjustedAmount,
+        totalPendente: pendingCents / 100, totalVencido: overdueCents / 100, conferenciasProvedor,
+        criterio: 'Recebimentos por data de pagamento; ajustes por data efetiva. Líquido registrado, sem confirmação bancária.'
+      }, items });
     } catch (error) {
       next(error);
     }

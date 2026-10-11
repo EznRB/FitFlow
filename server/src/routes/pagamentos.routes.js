@@ -31,6 +31,17 @@ router.post('/verificar-inadimplencia', pagamentosController.verificarInadimplen
 
 // Rotas com sub-recurso
 router.get('/solicitacoes/:requestId', pagamentosController.buscarPorSolicitacao);
+router.get('/ajustes/solicitacoes/:requestId', pagamentosController.buscarAjustePorSolicitacao);
+router.get('/:id/ajustes', pagamentosController.listarAjustes);
+router.post('/:id/ajustes', pagamentosController.registrarAjuste);
+router.all('/:id/ajustes', (req, res, next) => {
+  if (!['PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  res.set('Allow', 'GET, POST').status(405).json({ status: 'fail', message: 'Ajustes são eventos preservados; alteração ou exclusão não é permitida.' });
+});
+router.all('/ajustes/:requestId', (req, res, next) => {
+  if (!['PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  res.set('Allow', 'GET').status(405).json({ status: 'fail', message: 'Ajustes são eventos preservados; alteração ou exclusão não é permitida.' });
+});
 router.get('/aluno/:alunoId', pagamentosController.buscarPorAluno);
 
 // CRUD principal

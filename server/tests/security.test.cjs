@@ -174,13 +174,14 @@ test('recebimentos validam método em criação antes do banco', async () => {
 function browser(files, globals = {}, exports = '') {
   const context = vm.createContext({ window: {}, console, AbortController, setTimeout, clearTimeout, ...globals });
   for (const file of files) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', file), 'utf8'), context);
+  if (context.window.PaymentAdjustments) context.PaymentAdjustments = context.window.PaymentAdjustments;
   vm.runInContext(exports, context); return context;
 }
 test('dados armazenados de pagamento são escapados na lista, modal e mensalidade', async () => {
   const evil = '<img src=x onerror=alert(1)>"';
   const payment = { id: 1, amount: 25, paymentMethod: evil, notes: evil, status: evil, student: { user: { name: evil } }, plan: { name: evil } };
   const tbody = {}; let modal;
-  const context = browser(['security.js', 'pagamentos.js', 'aluno-painel.js'], {
+  const context = browser(['security.js', 'payment-adjustments.js', 'pagamentos.js', 'aluno-painel.js'], {
     document: { getElementById: () => tbody }, API: { get: async url => ({ data: url === '/pagamentos' ? [payment] : payment }) },
     Modal: { open: (title, html) => { modal = html; } }, Toast: { error: message => { throw new Error(message); } }
   }, 'this.payments = PagamentosView; this.monthly = AlunoMensalidadeView;');

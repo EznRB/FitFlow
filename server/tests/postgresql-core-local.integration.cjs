@@ -161,7 +161,7 @@ async function run() {
     console.log('PASS PostgreSQL financial transactions: two renewals preserve balance, intent deduplication, four reconciliations create one ledger, ownership and refund review.');
 
     stage = 'eleven database CHECK constraints';
-    await checkRejects('payments_manual_request_pair_check', () => db.payment.update({ where: { id: receipts[0].id }, data: { manualRequestHash: null } }));
+    await checkRejects('payments_manual_request_pair_check', () => db.payment.create({ data: { studentId: student.id, amount: '1.00', paymentDate: new Date('2099-10-08T00:00:00Z'), dueDate: new Date('2099-10-09T00:00:00Z'), manualRequestId: randomUUID(), manualRequestHash: null } }));
     await checkRejects('workout_sessions_status_check', () => db.workoutSession.update({ where: { id: start.id }, data: { status: 'invalid' } }));
     for (const [name, data] of [
       ['workout_sets_kind_check', { kind: 'invalid' }], ['workout_sets_weight_check', { weightKg: -1 }],

@@ -40,7 +40,7 @@ const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
     assert.equal(await db.payment.count({ where: { studentId } }), 1);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), addDays(originalEnd, 30).toISOString());
     assert.match(repeats[0].manualRequestHash, /^[a-f0-9]{64}$/);
-    await assert.rejects(db.payment.update({ where: { id: repeats[0].id }, data: { manualRequestHash: null } }), error => /payments_manual_request_pair_check/.test(error.message));
+    await assert.rejects(db.payment.create({ data: { studentId, amount: '1.00', paymentDate: new Date('2099-10-08T00:00:00Z'), dueDate: new Date('2099-10-09T00:00:00Z'), manualRequestId: randomUUID(), manualRequestHash: null } }), error => /payments_manual_request_pair_check/.test(error.message));
     await Promise.all([first.registrar({ ...payload, idempotencyKey: randomUUID() }, actor), second.registrar({ ...payload, idempotencyKey: randomUUID() }, actor)]);
     assert.equal(await db.payment.count({ where: { studentId } }), 3);
     const finalEnd = addDays(originalEnd, 90);

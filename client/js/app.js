@@ -299,8 +299,9 @@ const App = {
                 </div>
               </div>
               <div class="kpi-card-body">
-                <span class="kpi-card-label">Recebido no mês</span>
+                <span class="kpi-card-label">Líquido registrado no mês</span>
                 <span class="kpi-card-value" id="kpi-receita-estimada">—</span>
+                <span class="kpi-card-label" id="kpi-receita-detalhe">Bruto menos ajustes registrados</span>
               </div>
             </button>
 
@@ -869,6 +870,11 @@ const DashboardView = {
           maximumFractionDigits: 1,
           notation: 'compact'
         }).format(stats.receitaEstimada || 0);
+      }
+      const financialDetail = document.getElementById('kpi-receita-detalhe');
+      if (financialDetail && stats.financeiroMes) {
+        const money = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        financialDetail.textContent = `Bruto ${money(stats.financeiroMes.grossAmount)} · ajustes ${money(stats.financeiroMes.adjustedAmount)} · ${stats.conferenciasProvedor || 0} checkout(s) em conferência`;
       }
 
       // Proporção atual de matrículas ativas; não representa retenção longitudinal.

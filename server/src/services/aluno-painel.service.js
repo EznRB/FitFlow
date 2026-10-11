@@ -19,6 +19,7 @@
  */
 
 const { prisma } = require('../config/prisma');
+const { adjustmentSummary } = require('../utils/paymentAdjustment');
 const AppError = require('../utils/AppError');
 const businessRules = require('../utils/businessRules');
 const { brazilDate, positiveInteger } = require('../utils/civil-date');
@@ -203,6 +204,7 @@ class AlunoPainelService {
       take: 5,
       include: {
         plan: { select: { name: true, price: true } },
+        adjustments: { select: { kind: true, amount: true } },
       },
     });
 
@@ -224,6 +226,7 @@ class AlunoPainelService {
         status: p.status,
         metodo: p.paymentMethod,
         plano: p.plan?.name || '—',
+        resumoAjustes: adjustmentSummary(p, p.adjustments || []),
       })),
     };
   }

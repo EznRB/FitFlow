@@ -8,13 +8,30 @@
 
 const { sendSuccess } = require('../utils/helpers');
 const pagamentosService = require('../services/pagamentos.service');
+const paymentAdjustmentsService = require('../services/payment-adjustments.service');
 const AppError = require('../utils/AppError');
+const { publicAdjustment, adjustmentSummary } = require('../utils/paymentAdjustment');
 const publicPayment = payment => {
-  const { manualRequestId, manualRequestHash, ...safe } = payment;
-  return safe;
+  const { manualRequestId, manualRequestHash, intent, adjustments, ...safe } = payment;
+  return { ...safe, ...(adjustments ? { adjustments: adjustments.map(publicAdjustment), adjustmentSummary: adjustmentSummary(payment, adjustments) } : {}),
+    ...(intent !== undefined ? { checkout: Boolean(intent) } : {}) };
 };
 
 const pagamentosController = {
+  async registrarAjuste(req, res, next) {
+    try {
+      const event = await paymentAdjustmentsService.registrar(req.params.id, req.body, req.user.id);
+      sendSuccess(res, 201, 'Ajuste interno registrado. Nenhuma devolução foi executada no provedor de pagamentos.', event);
+    } catch (error) { next(error); }
+  },
+  async listarAjustes(req, res, next) {
+    try { sendSuccess(res, 200, 'Histórico de ajustes preservado.', await paymentAdjustmentsService.listar(req.params.id, req.user.id)); }
+    catch (error) { next(error); }
+  },
+  async buscarAjustePorSolicitacao(req, res, next) {
+    try { sendSuccess(res, 200, 'Ajuste já registrado.', await paymentAdjustmentsService.buscarPorSolicitacao(req.params.requestId, req.user.id)); }
+    catch (error) { next(error); }
+  },
   /**
    * GET /api/pagamentos
    * Lista todos os pagamentos com filtros opcionais via query string.

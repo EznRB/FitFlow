@@ -75,3 +75,28 @@
   .admin-checkin-metrics { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .btn, .btn-icon { min-height: 44px; }
 }
+/* Receipt history and adjustments share the management typography and spacing. */
+.payment-adjustments { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+.payment-adjustments-heading h3 { margin: 0 0 .5rem; font-size: 1.2rem; }
+.payment-adjustments-heading p, .payment-adjustment-notice { color: var(--text-secondary); line-height: 1.6; }
+.payment-adjustments-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: .75rem; margin: 1.25rem 0; }
+.payment-adjustments-totals > div { padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md, 8px); }
+.payment-adjustments-totals dt { font-size: .8rem; color: var(--text-muted); line-height: 1.4; }
+.payment-adjustments-totals dd { margin: .5rem 0 0; font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.payment-adjustments-history { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+.payment-adjustments-event { padding: 1rem; border-left: 3px solid var(--primary-400); background: var(--bg-tertiary, rgba(255,255,255,.025)); }
+.payment-adjustments-event-heading { display: flex; justify-content: space-between; gap: 1rem; }
+.payment-adjustments-event p { margin: .5rem 0 0; line-height: 1.5; color: var(--text-secondary); font-size: .9rem; }
+.payment-adjustments-reason { white-space: pre-wrap; overflow-wrap: anywhere; }
+.payment-adjustment-form { display: grid; gap: 1rem; }
+.payment-adjustment-form .form-group { display: grid; gap: .5rem; margin: 0; }
+.payment-adjustment-form .form-input { width: 100%; font-size: 16px; min-height: 44px; }
+.payment-adjustment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.payment-adjustment-form small { color: var(--text-muted); line-height: 1.4; }
+.payment-adjustment-form [hidden] { display: none !important; }
+.payment-adjustment-notice { padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md, 8px); margin: 0; }
+#adjustment-pending-notice, #adjustment-feedback { line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 540px) {
+  .payment-adjustments-totals, .payment-adjustment-fields { grid-template-columns: 1fr; }
+  .payment-adjustments-event-heading { flex-wrap: wrap; }
+}
