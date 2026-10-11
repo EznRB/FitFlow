@@ -1,6 +1,7 @@
 'use strict';
 const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
+const { captureCatalogExercises } = require('../utils/exerciseOrigin');
 // Ficha responses expose names, not enrollment, contact or payment details.
 const identity = { instructor: { select: { id: true, name: true } },
   student: { select: { id: true, user: { select: { name: true } } } } };
@@ -16,9 +17,10 @@ function createTreinosRepository(db = prisma) {
       catch (error) { if (error.code !== 'P2034' || attempt >= 2) throw error; }
     }
   }
-  async function create(tx, fields, exercises) {
+  async function create(tx, fields, exercises, sourceWorkoutId = null) {
+    const captured = await captureCatalogExercises(tx, exercises, sourceWorkoutId);
     const workout = await tx.workout.create({ data: { ...fields, active: true } });
-    await tx.exercise.createMany({ data: exercises.map(ex => ({ ...ex, workoutId: workout.id })) });
+    await tx.exercise.createMany({ data: captured.map(ex => ({ ...ex, workoutId: workout.id })) });
     return tx.workout.findUnique({ where: { id: workout.id }, include: plan });
   }
   return {
@@ -38,7 +40,7 @@ function createTreinosRepository(db = prisma) {
         // first session reaches the server. Never replace exercise identities
         // under an existing workout ID, even when no server logs exist yet.
         await tx.workout.update({ where: { id }, data: { active: false } });
-        const revision = await create(tx, { ...fields, studentId: current.studentId, instructorId: current.instructorId }, exercises);
+        const revision = await create(tx, { ...fields, studentId: current.studentId, instructorId: current.instructorId }, exercises, current.id);
         return { ...revision, _replacedWorkoutId: id, _historyPreserved: true };
       });
     },

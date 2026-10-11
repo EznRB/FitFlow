@@ -8,7 +8,8 @@
     return { id: workout.id, name: workout.name, description: workout.description || null, notes: workout.notes || null,
       exercises: workout.exercises.map(e => ({ id: e.id, name: e.name, muscleGroup: e.muscleGroup || null,
         sets: e.sets, reps: e.reps, restSeconds: e.restSeconds ?? null, suggestedLoad: e.suggestedLoad || null,
-        notes: e.notes || null, orderIndex: e.orderIndex ?? 0 })) };
+        notes: e.notes || null, orderIndex: e.orderIndex ?? 0, catalogExerciseId: e.catalogExerciseId ?? null,
+        catalogSnapshot: e.catalogSnapshot == null ? null : JSON.parse(JSON.stringify(e.catalogSnapshot)) })) };
   }
   function createIndexedDbStorage(indexedDB = globalThis.indexedDB) {
     if (!indexedDB) throw new Error('Este navegador não oferece armazenamento persistente para a fila.');

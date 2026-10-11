@@ -18,6 +18,23 @@ const createRepository = load('repositories/treinos.repository.js').createTreino
 const admin = { id: 1, role: 'admin' }, owner = { id: 2, role: 'instructor' }, other = { id: 3, role: 'instructor' };
 const valid = { studentId: 11, name: 'Ficha A', exercises: [{ name: 'Supino', muscleGroup: 'Peito', sets: 2, reps: '8-12', restSeconds: 0 }] };
 
+test('origem aceita somente IDs válidos e recusa snapshot/créditos enviados pelo cliente', async () => {
+  let captured;
+  const service = createService({ db: { student: { findUnique: async () => ({ id: 11, status: 'active', user: { active: true } }) } },
+    repo: { createWithExercises: async (fields, exercises) => { captured = exercises; return fields; } } });
+  for (const extra of [{ catalogSnapshot: { version: 1 } }, { sourceMetadata: {} }, { catalogExerciseId: 0 }, { catalogExerciseId: true }, { sourceExerciseId: '9oops' }]) {
+    await assert.rejects(service.criar({ ...valid, exercises: [{ ...valid.exercises[0], ...extra }] }, admin), e => e.statusCode === 400);
+  }
+  await service.criar({ ...valid, exercises: [{ ...valid.exercises[0], catalogExerciseId: '9' }] }, admin);
+  assert.equal(captured[0].catalogExerciseId, 9); assert.equal(captured[0].sourceExerciseId, null); assert.equal(captured[0].catalogSnapshot, undefined);
+});
+
+test('cliente anterior não remove silenciosamente origem de uma ficha já vinculada ao catálogo', async () => {
+  let writes=0; const service=createService({repo:{findById:async()=>({id:5,studentId:11,instructorId:2,active:true,exercises:[{catalogExerciseId:9}]}),updateWithExercises:async()=>{writes++;}}});
+  await assert.rejects(service.atualizar(5,valid,owner),e=>e.statusCode===409); assert.equal(writes,0);
+  await service.atualizar(5,{...valid,exercises:[{...valid.exercises[0],catalogExerciseId:null}]},owner); assert.equal(writes,1);
+});
+
 test('instrutor lista apenas sua autoria; somente admin pode consultar e editar outras fichas', async () => {
   let filters, updateScope; let writes = 0;
   const repo = { findAll: async value => { filters = value; return []; },

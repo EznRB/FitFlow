@@ -21,6 +21,11 @@
 .topbar { background: var(--bg-base); }
 .input-with-icon input { min-height: 48px; font-size: 16px; background: var(--bg-base); }
 .form-group[hidden] { display: none; }
+.exercise-origin, .exercise-origin-editor { margin-top: 12px; color: var(--text-secondary); font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.exercise-origin summary { cursor: pointer; color: var(--text-primary); padding: 8px 0; }
+.exercise-origin-credit { border-left: 2px solid var(--border-subtle); padding-left: 12px; margin-top: 12px; }
+.exercise-origin-instructions { white-space: pre-wrap; }
+.exercise-origin-note { color: var(--text-muted); font-size: 13px; }
 /* O conteúdo rola sem tirar o título e as ações da área visível. */
 .modal { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 .modal-header, .modal-footer { flex: 0 0 auto; background: var(--bg-surface); }

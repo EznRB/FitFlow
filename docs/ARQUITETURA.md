@@ -59,6 +59,18 @@ O service worker possui allowlist de recursos públicos do fallback offline, man
 
 wger é conteúdo descritivo. Identidade é `source + externalId`; nome parecido não mistura exercícios. O adaptador pagina, aplica limites, timeout e licenças/autoria. Tradução portuguesa elegível é preferida; fallback inglês é informado. Curadoria local preserva edição/desativação e seus créditos; atualização externa é armazenada separadamente.
 
+### Origem na ficha e na sessão
+
+`Exercise.catalogExerciseId` é uma referência opcional ao catálogo e `catalogSnapshot` registra a origem usada: versão, nome/grupo originais, fonte/identidade externa, conteúdo, equipamentos e créditos separados de base/texto/mídia. O servidor consulta e captura o catálogo na mesma transação de criação. O cliente envia somente o ID da origem; créditos e snapshots fornecidos pelo cliente são recusados. Metadados `upstream` de conteúdo ainda não incorporado pela curadoria não substituem os créditos utilizados.
+
+Ao revisar uma ficha, `sourceExerciseId` deve pertencer à ficha revisada. A mesma referência conserva o snapshot anterior, incluindo quando o catálogo foi desativado; uma nova seleção exige catálogo ativo. Nome/grupo da prescrição podem ser adaptados, com a origem original apresentada separadamente. Cada revisão mantém novos IDs de Exercise; não reúne automaticamente progressão de exercícios diferentes.
+
+O início da sessão copia a origem da ficha. Snapshot do servidor, replay, cache e fila offline preservam créditos; não consultam catálogo atual para reconstruir sessões antigas. Registros legados e exercícios manuais permanecem sem origem registrada. Não há backfill por nome.
+
+A migration aditiva `20261011_exercise_catalog_origin` adiciona FK restritiva à exclusão, índice e CHECK de par completo/objeto JSON nos dois bancos. MariaDB usa `ON UPDATE RESTRICT` para compatibilidade entre FK e CHECK; PostgreSQL mantém a ação padrão de atualização em cascata. Não há API que renumere identidades. As permissões runtime das tabelas existentes permanecem; nenhuma permissão de edição/exclusão de séries ou DDL é ampliada.
+
+Créditos, links de licença e indicação de adaptações são exibidos com a ficha e a sessão. O código do FitFlow não redefine licenças do catálogo: conteúdo CC-BY/CC-BY-SA/CC0 e mídia conservam seus termos individuais. [Termos CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) e [limitação de FK/CHECK documentada pelo MariaDB](https://jira.mariadb.org/browse/MDEV-31769).
+
 A importação local de 08/10/2026 avaliou 919 entradas em dez páginas: 795 incorporadas e 124 ignoradas pelos critérios do importador. Esse resultado descreve aquela importação, não uma quantidade garantida para consultas futuras.
 
 ## Calendário operacional

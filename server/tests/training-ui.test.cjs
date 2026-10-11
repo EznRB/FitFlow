@@ -31,7 +31,7 @@ test('interface usa seleção mínima e escapa nomes/descrições no aluno, list
 });
 test('catálogo não preenche dose automaticamente e editor preserva zero de pausa com valores escapados', () => {
   let added;
-  const row = { innerHTML: '' };
+  const row = { innerHTML: '', dataset: {} };
   const label = { textContent: '' };
   const container = { querySelectorAll: () => [], querySelector: () => null, appendChild: () => {} };
   const context = browser({ document: { createElement: () => row, getElementById: id => id === 'qtd-exercicios' ? label : container },
@@ -40,7 +40,7 @@ test('catálogo não preenche dose automaticamente e editor preserva zero de pau
   const original = context.view.adicionarExercicio;
   context.view.adicionarExercicio = data => { added = data; };
   context.view.adicionarExercicioFromCatalogo(9);
-  assert.equal(added.name, 'Remada'); assert.equal(added.sets, undefined); assert.equal(added.reps, undefined); assert.equal(added.restSeconds, undefined);
+  assert.equal(added.name, 'Remada'); assert.equal(added.catalogExerciseId, 9); assert.equal(added.sets, undefined); assert.equal(added.reps, undefined); assert.equal(added.restSeconds, undefined);
   const evil = '"><svg onload=alert(1)>';
   original.call(context.view, { name: evil, muscleGroup: evil, sets: 2, reps: '8-12', restSeconds: 0, notes: evil });
   assert.ok(!row.innerHTML.includes('<svg onload'));
@@ -55,6 +55,17 @@ test('cadastro exige pausa explícita e não troca campo vazio por um valor padr
     Toast: { warning: message => { warning = message; } } });
   context.view.coletarExercicios = () => [{ name: 'Remada', sets: '3', reps: '8-12', restSeconds: '' }];
   await context.view.salvarTreino(); assert.equal(writes, 0); assert.ok(warning.includes('pausa'));
+});
+
+test('editor envia IDs de catálogo e exercício anterior, sem aceitar créditos do navegador', () => {
+  const row = { dataset: { catalogExerciseId: '9', sourceExerciseId: '42' }, catalogSnapshot: { author: 'forged' },
+    querySelector: selector => ({ value: ({ '.ex-nome': 'Adaptado', '.ex-grupo': 'Costas', '.ex-series': '2', '.ex-reps': '8-12', '.ex-pausa': '0', '.ex-carga': '', '.ex-obs': '' })[selector] }) };
+  const context = browser({ document: { getElementById: () => ({ querySelectorAll: () => [row] }) } });
+  const [payload] = context.view.coletarExercicios();
+  assert.equal(payload.catalogExerciseId,9); assert.equal(payload.sourceExerciseId,42); assert.equal(payload.name,'Adaptado');
+  assert.equal(payload.catalogSnapshot,undefined); assert.equal(payload.sourceMetadata,undefined);
+  row.dataset.catalogExerciseId = ''; row.dataset.sourceExerciseId = '';
+  assert.equal(context.view.coletarExercicios()[0].catalogExerciseId,null);
 });
 
 test('catálogo amplo tem páginas limitadas e busca encontra exercícios fora da primeira página', () => {

@@ -98,7 +98,8 @@ function createSessoesService(repo, { now = () => new Date() } = {}) {
         if (workout.studentId !== owner.id) throw new AppError('Esta ficha não pertence à sua conta.', 403);
         if (!workout.active) throw new AppError('Esta ficha está inativa.', 409);
         if (!workout.exercises.length) throw new AppError('A ficha não contém exercícios.', 409);
-        const planSnapshot = { workoutId: workout.id, name: workout.name, description: workout.description || null, notes: workout.notes || null, exercises: workout.exercises.map(e => ({ id: e.id, name: e.name, muscleGroup: e.muscleGroup || null, sets: e.sets, reps: e.reps, restSeconds: e.restSeconds ?? null, suggestedLoad: e.suggestedLoad || null, notes: e.notes || null, orderIndex: e.orderIndex })) };
+        const planSnapshot = { workoutId: workout.id, name: workout.name, description: workout.description || null, notes: workout.notes || null, exercises: workout.exercises.map(e => ({ id: e.id, name: e.name, muscleGroup: e.muscleGroup || null, sets: e.sets, reps: e.reps, restSeconds: e.restSeconds ?? null, suggestedLoad: e.suggestedLoad || null, notes: e.notes || null, orderIndex: e.orderIndex,
+          catalogExerciseId: e.catalogExerciseId ?? null, catalogSnapshot: e.catalogSnapshot == null ? null : JSON.parse(JSON.stringify(e.catalogSnapshot)) })) };
         return present(await tx.createSession({ id: request.id, studentId: owner.id, workoutId: request.workoutId, clientStartedAt: new Date(request.clientStartedAt), startRequest: request, planSnapshot, status: 'active' }));
       });
     },

@@ -154,14 +154,18 @@ model Exercise {
   suggestedLoad String? @map("suggested_load") @db.VarChar(50)
   notes        String?  @db.Text
   orderIndex   Int      @default(0) @map("order_index")
+    catalogExerciseId Int? @map("catalog_exercise_id")
+    catalogSnapshot Json? @map("catalog_snapshot")
   createdAt    DateTime @default(now()) @map("created_at")
 
   // Relacionamentos
   workout     Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   workoutLogs WorkoutLog[]
+    catalogExercise CatalogoExercicio? @relation(fields: [catalogExerciseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([workoutId])
   @@index([workoutId, orderIndex])
+    @@index([catalogExerciseId])
   @@map("exercises")
 }
 
@@ -281,6 +285,7 @@ model CatalogoExercicio {
   locale         String   @default("pt") @db.VarChar(10)
   curated        Boolean  @default(true)
   sourceMetadata Json?    @map("source_metadata")
+  workoutExercises Exercise[]
 
   @@unique([source, externalId])
 

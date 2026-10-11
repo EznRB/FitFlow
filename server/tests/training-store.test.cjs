@@ -11,6 +11,18 @@ function memoryStorage() {
 }
 const workout = { id: 2, name: 'A', exercises: [{ id: 3, name: 'Supino', sets: 3, reps: '8–12' }] };
 const entry = { exerciseId: 3, weightKg: 20, reps: 10, rir: null, kind: 'working', notes: '' };
+
+test('início offline conserva origem no snapshot local e restauração não depende do catálogo atual', async () => {
+  const storage = memoryStorage(), input = structuredClone(workout);
+  input.exercises[0].catalogExerciseId = 9;
+  input.exercises[0].catalogSnapshot = { version: 1, catalogExerciseId: 9, sourceMetadata: { text: { author: 'Original' } } };
+  const first = queue(storage, 1, async () => {}); await first.start(input); first.dispose();
+  input.exercises[0].catalogSnapshot.sourceMetadata.text.author = 'Alterado';
+  const restored = queue(storage, 1, async () => {}), state = await restored.state();
+  assert.equal(state.sessions[0].planSnapshot.exercises[0].catalogExerciseId, 9);
+  assert.equal(state.sessions[0].planSnapshot.exercises[0].catalogSnapshot.sourceMetadata.text.author, 'Original');
+  assert.equal(state.sessions[0].recordedPlanSnapshot.exercises[0].catalogSnapshot.sourceMetadata.text.author, 'Original');
+});
 function queue(storage, userId, send, online = () => false, isCurrentUser = () => true) {
   let id = 0;
   return createTrainingStore({ storage, userId, send, isOnline: online, isCurrentUser,

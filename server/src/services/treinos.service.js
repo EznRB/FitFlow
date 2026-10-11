@@ -40,7 +40,10 @@ function exercises(value) {
   if (!Array.isArray(value) || value.length < 1 || value.length > 100) throw new AppError('Informe entre 1 e 100 exercícios.', 400);
   return value.map((raw, index) => {
     const ex = body(raw);
+    if (Object.hasOwn(ex, 'catalogSnapshot') || Object.hasOwn(ex, 'sourceMetadata')) throw new AppError('A origem e seus créditos são definidos pelo servidor.', 400);
     return { name: text(ex.name, `Nome do exercício ${index + 1}`, 100, true),
+      catalogExerciseId: ex.catalogExerciseId == null ? null : id(ex.catalogExerciseId, 'Exercício do catálogo'),
+      sourceExerciseId: ex.sourceExerciseId == null ? null : id(ex.sourceExerciseId, 'Exercício anterior'),
       muscleGroup: text(ex.muscleGroup, 'Grupo muscular', 50),
       sets: numeric(ex.sets, 'Séries', 1, 100, true), reps: repetitions(ex.reps),
       restSeconds: numeric(ex.restSeconds, 'Descanso em segundos', 0, 3600, true),
@@ -113,7 +116,11 @@ function createTreinosService({ repo = repository, db = prisma, rules = business
       const user = manager(actor); const current = await owned(workoutId, user); const data = body(input);
       if (!current.active) throw new AppError('Ficha arquivada: crie uma nova ficha para preservar o histórico.', 409);
       if (data.studentId !== undefined && id(data.studentId, 'Aluno') !== current.studentId) throw new AppError('Uma ficha não pode ser transferida para outro aluno.', 400);
-      return repo.updateWithExercises(current.id, workoutData(data), exercises(data.exercises), scope(user));
+      const plan = exercises(data.exercises);
+      if (current.exercises?.some(ex => ex.catalogExerciseId != null) && data.exercises.some(ex => !Object.hasOwn(ex, 'catalogExerciseId'))) {
+        throw new AppError('Atualize a página e preserve a seleção de origem dos exercícios ao revisar esta ficha.', 409);
+      }
+      return repo.updateWithExercises(current.id, workoutData(data), plan, scope(user));
     },
     async desativar(workoutId, actor) {
       const user = manager(actor); const current = await owned(workoutId, user);

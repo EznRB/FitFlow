@@ -112,8 +112,9 @@ const TreinosView = {
       <strong>${index + 1}. ${this.escapar(ex.name)}</strong><p>${this.escapar(ex.muscleGroup || 'Grupo não informado')}</p>
       <p>${this.escapar(ex.sets)} séries · ${this.escapar(ex.reps)} repetições · Pausa: ${ex.restSeconds == null ? 'não informada' : `${this.escapar(ex.restSeconds)} s`}</p>
       <p>Carga sugerida: ${this.escapar(ex.suggestedLoad || 'não informada')} · Última carga registrada: ${ex.workoutLogs?.[0] ? `${this.escapar(ex.workoutLogs[0].weight)} kg` : 'não informada'}</p>
-      ${ex.notes ? `<p>${this.escapar(ex.notes)}</p>` : ''}</article>`).join('');
+      ${ex.notes ? `<p>${this.escapar(ex.notes)}</p>` : ''}${this.origemExercicio(ex)}</article>`).join('');
   },
+  origemExercicio(exercise) { return typeof FitFlowExerciseOrigin === 'undefined' ? '' : FitFlowExerciseOrigin.render(exercise, value => this.escapar(value)); },
   async abrirModalDetalhe(id) {
     const request = this.solicitar('modal', 'treinos-table-body');
     if (!this.atual(request)) return;
@@ -234,13 +235,15 @@ const TreinosView = {
   filtrarCatalogo(term) { this.renderizarCatalogoLista(term); },
   adicionarExercicioFromCatalogo(id) {
     const item = this.catalogoCache.find(c => c.id === id);
-    if (item) this.adicionarExercicio({ name: item.nome, muscleGroup: item.grupo_muscular });
+    if (item) this.adicionarExercicio({ name: item.nome, muscleGroup: item.grupo_muscular, catalogExerciseId: item.id });
   },
   adicionarExercicio(data = {}) {
     const container = document.getElementById('exercicios-container'); if (!container) return;
     if (container.querySelectorAll('.exercicio-item').length >= 100) { Toast.warning('Limite de 100 exercícios por ficha.'); return; }
     container.querySelector('.empty-routine')?.remove();
     const row = document.createElement('div'); row.className = 'exercicio-item workout-exercise-editor';
+    row.dataset.catalogExerciseId = this.idValido(data.catalogExerciseId) ? String(data.catalogExerciseId) : '';
+    row.dataset.sourceExerciseId = this.idValido(data.id) ? String(data.id) : '';
     const field = (label, name, key, type = 'text', attributes = '', full = false) => `<label class="${full ? 'full-width' : ''}">${label}<input class="${name}" type="${type}" value="${this.escapar(data[key])}" ${attributes}></label>`;
     row.innerHTML = `<div class="workout-exercise-head"><span class="exercicio-numero"></span>
       <span class="grip-handle" title="Arrastar para reordenar"><i data-lucide="grip-vertical"></i></span>
@@ -255,7 +258,7 @@ const TreinosView = {
         ${field('Pausa em segundos', 'ex-pausa', 'restSeconds', 'number', 'min="0" max="3600" step="1" placeholder="Definir" required')}
         ${field('Carga / orientação (opcional)', 'ex-carga', 'suggestedLoad', 'text', 'maxlength="50"')}
         ${field('Observações de execução e adaptação', 'ex-obs', 'notes', 'text', 'maxlength="10000"', true)}
-      </div>`;
+      </div><div class="exercise-origin-editor">${data.catalogSnapshot ? this.origemExercicio(data) : data.catalogExerciseId ? '<p>Exercício selecionado do catálogo. A origem e os créditos serão registrados ao salvar; nome e grupo podem ser adaptados pelo instrutor.</p>' : '<p>Exercício manual ou anterior: origem não registrada.</p>'}</div>`;
     container.appendChild(row); this.icones(row); this.atualizarIndices();
   },
   atualizarIndices() {
@@ -270,6 +273,8 @@ const TreinosView = {
     return [...document.getElementById('exercicios-container').querySelectorAll('.exercicio-item')].map(row => {
       const value = className => row.querySelector(`.${className}`).value.trim();
       return { name: value('ex-nome'), muscleGroup: value('ex-grupo') || null, sets: value('ex-series'),
+        catalogExerciseId: row.dataset.catalogExerciseId ? Number(row.dataset.catalogExerciseId) : null,
+        sourceExerciseId: row.dataset.sourceExerciseId ? Number(row.dataset.sourceExerciseId) : null,
         reps: value('ex-reps'), restSeconds: value('ex-pausa'), suggestedLoad: value('ex-carga') || null, notes: value('ex-obs') || null };
     });
   },

@@ -29,6 +29,17 @@ function fixture({ roundtripJson = false } = {}) {
 const start = { id: SESSION, workoutId: 2, clientStartedAt: '2026-10-07T10:00:00.000Z' };
 const entry = { id: SET, exerciseId: 3, weightKg: 20, reps: 10, rir: 2, kind: 'working', performedAt: '2026-10-07T10:05:00.000Z', notes: 'Sem ajuda' };
 const rejectsStatus = (fn, status) => assert.rejects(fn, e => e.statusCode === status);
+
+test('sessão captura origem da ficha e replay não a substitui por metadados atualizados', async () => {
+  const f = fixture();
+  f.workout.exercises[0].catalogExerciseId = 9;
+  f.workout.exercises[0].catalogSnapshot = { version: 1, catalogExerciseId: 9, sourceMetadata: { text: { author: 'Original' } } };
+  const created = await f.service.start(1, start);
+  assert.equal(created.planSnapshot.exercises[0].catalogExerciseId, 9);
+  f.workout.exercises[0].catalogSnapshot.sourceMetadata.text.author = 'Alterado';
+  const replay = await f.service.start(1, start);
+  assert.equal(replay.planSnapshot.exercises[0].catalogSnapshot.sourceMetadata.text.author, 'Original');
+});
 test('retry de início aceita JSON reordenado pelo banco e rejeita valor diferente', async () => {
   const f = fixture({ roundtripJson: true });
   await f.service.start(1, start);
