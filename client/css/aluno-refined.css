@@ -50,7 +50,27 @@
 .ff-student-prescription { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin: 20px 0 8px; }
 .ff-student-prescription dt { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 6px; }
 .ff-student-prescription dd { font-size: 16px; margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.ff-student-prescription dd small { display: block; color: var(--text-secondary); font-size: 13px; margin-top: 6px; }
+.ff-student .aluno-exercicio > .ff-student-prescription { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 20px; background: #f3efe6; color: #182332; border-radius: 6px; gap: 20px; }
+.ff-student .aluno-exercicio > .ff-student-prescription dt { color: #4b535b; font-size: 13px; }
+.ff-student .aluno-exercicio > .ff-student-prescription dd { color: #182332; font: 600 1.4rem/1.2 var(--font-heading); }
+.ff-student .aluno-exercicio > .ff-student-prescription dd small { color: #4b535b; font: 400 13px/1.5 var(--font-family); }
+.ff-student-last-log { grid-column: 1 / -1; border-top: 1px solid #cec8bc; padding-top: 16px; }
+.ff-student .aluno-exercicio-nome h4 { font-family: var(--font-heading); font-size: 25px; text-transform: none; line-height: 1.15; }
+.ff-student .aluno-exercicio-numero { width: 36px; height: 36px; background: #1c2838; font-family: var(--font-heading); font-size: 20px; flex-shrink: 0; }
+.ff-student-membership { background: #f3efe6; color: #182332; }
+.ff-student-membership :is(h3, dd) { color: #182332; }
+.ff-student-membership :is(p, dt) { color: #4b535b; }
+.ff-student-membership .ff-student-status { border-color: #bdb6a9; color: #182332; }
+.ff-student-membership .ff-student-payment-action { border-color: #cec8bc; }
+.ff-student-membership [data-checkout-status] { font-weight: 600; font-size: 14px; }
+.ff-student-membership [data-checkout-status][data-state="configuration"], .ff-student-membership [data-checkout-status][data-state="unknown"] { border-left: 3px solid #96512e; padding-left: 12px; }
+.ff-student-membership .btn { min-height: 46px; }
 .ff-student .aluno-exercicio-notas { font-size: 14px; padding: 0; background: transparent; color: var(--text-secondary); margin: 14px 0 0; line-height: 1.5; }
+.ff-student-origin { margin-top: 16px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; }
+.ff-student-origin summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+.ff-student-origin a { color: var(--primary-400); }
+.ff-student-origin summary:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
 .ff-student-load-form { display: grid; gap: 18px; }
 .ff-student-load-form p, .ff-student-load-form small { color: var(--text-secondary); line-height: 1.6; }
 .ff-student-section-top { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -76,6 +96,9 @@
   .ff-student-start > div { flex-basis: 100%; }
   .ff-student-start .btn { width: 100%; }
   .ff-student-prescription { grid-template-columns: 1fr; gap: 16px; }
+  .ff-student .aluno-exercicio > .ff-student-prescription { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; gap: 18px; }
+  .ff-student .aluno-exercicio > .ff-student-prescription > div:first-child { grid-column: 1 / -1; }
+  .ff-student-membership .ff-student-payment-action .btn { width: 100%; }
   .ff-student .aluno-exercicio-top { flex-direction: column; align-items: flex-start; }
   .ff-student .aluno-treino-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .ff-student .aluno-treino-body { padding-inline: 20px; }

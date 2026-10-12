@@ -107,3 +107,46 @@ test('vigência de hoje não aparece vencida; negativos e ausência têm rótulo
   }
 });
 
+test('ficha distingue carga zero, repetições ausentes e a data real do registro avulso', () => {
+  const h = browser();
+  const exercise = { id: 3, nome: 'Exercício', series: 2, reps: '8–12', descansoSegundos: 0,
+    ultimaCarga: { peso: 0, reps: null, data: '2026-10-08T15:00:00.000Z' } };
+  const html = h.context.workouts._renderExercicio(exercise, 0);
+  assert.ok(html.includes('0 kg')); assert.ok(html.includes('repetições não informadas'));
+  assert.ok(html.includes('08/10/2026')); assert.ok(html.includes('0 s'));
+  for (const data of [null, 'inválida']) {
+    exercise.ultimaCarga.data = data;
+    assert.ok(h.context.workouts._renderExercicio(exercise, 0).includes('Data não informada'));
+  }
+  delete exercise.ultimaCarga;
+  assert.ok(h.context.workouts._renderExercicio(exercise, 0).includes('Sem registro avulso'));
+});
+
+test('leitura do aluno não começa nem renderiza sob epoch de outra aba ou papel alterado', async () => {
+  const pending = deferred(); let reads = 0;
+  const h = browser({ get: () => { reads++; return pending.promise; } });
+  h.context.Auth.sessionEpoch = 'original'; let shared = 'original';
+  h.context.Auth.getSessionEpoch = () => shared;
+  const container = h.node('aluno-painel-container');
+  const request = h.context.panel.inicializar(); shared = 'outra-aba';
+  pending.resolve({ data: panel('Obsoleta') }); await request;
+  assert.ok(!container.innerHTML.includes('Olá, Obsoleta'));
+  await h.context.panel.inicializar(); assert.equal(reads, 1);
+  shared = 'original';
+  const current = h.context.ui.capture(h.context.panel, container);
+  h.context.Auth.user.role = 'admin'; assert.equal(current(), false);
+});
+
+test('ficha do aluno apresenta o snapshot de origem com créditos e mantém manual como desconhecido', () => {
+  const h = browser(); h.context.FitFlowExerciseOrigin = require('../../client/js/exercise-origin');
+  const exercise = { id: 3, nome: 'Nome adaptado', grupoMuscular: 'Peito', series: 2, reps: '8–12', catalogSnapshot: {
+    version: 1, catalogExerciseId: 75, originalName: 'Nome da fonte', originalMuscleGroup: 'Peito', source: 'wger', locale: 'pt',
+    sourceMetadata: { text: { author: 'Autor <teste>', license: { code: 'CC-BY-SA-4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0/' } } }
+  } };
+  const html = h.context.workouts._renderExercicio(exercise, 0);
+  assert.ok(html.includes('Nome da fonte')); assert.ok(html.includes('Autor &lt;teste&gt;'));
+  assert.ok(html.includes('CC-BY-SA-4.0')); assert.ok(html.includes('Nome ou grupo adaptado'));
+  delete exercise.catalogSnapshot;
+  assert.ok(h.context.workouts._renderExercicio(exercise, 0).includes('Origem não registrada'));
+});
+

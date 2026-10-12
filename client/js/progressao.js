@@ -57,9 +57,30 @@
   }
   function createView() {
     return {
-      container: null, generation: 0, ownerId: null, data: null, history: null, chart: null, selectedId: null, loading: false,
+      container: null, generation: 0, ownerId: null, scope: null, request: null, controls: null, hasSelection: false,
+      data: null, history: null, chart: null, selectedId: null, loading: false,
       user() { return typeof Auth !== 'undefined' ? Auth.user : null; },
-      current(generation = this.generation) { return generation === this.generation && this.user()?.id === this.ownerId && this.user()?.role === 'student' && this.container?.isConnected && this.container.querySelector('[data-progress-page]'); },
+      current(scope = this.scope) {
+        return scope && this.scope === scope && scope.generation === this.generation && scope.container === this.container
+          && this.user()?.id === scope.userId && this.user()?.role === 'student' && Auth.generation === scope.authGeneration
+          && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === scope.epoch && Auth.getSessionEpoch() === scope.epoch))
+          && scope.container?.isConnected && scope.container.querySelector('[data-progress-page]') === scope.page
+          && (!scope.container.id || typeof document === 'undefined' || document.getElementById(scope.container.id) === scope.container);
+      },
+      currentControls(controls = this.controls) {
+        return controls && this.controls === controls && this.current(controls.scope) && controls.slot.isConnected !== false
+          && this.container.querySelector('[data-progress-content]') === controls.slot
+          && ['select', 'reps', 'warmups', 'note', 'error', 'choice', 'series'].every(name => {
+            const selectors = { select: 'exercise', reps: 'reps', warmups: 'warmups', note: 'filter-note', error: 'filter-error', choice: 'choice-note', series: 'series' };
+            return controls[name]?.isConnected !== false && controls.slot.querySelector(`[data-progress-${selectors[name]}]`) === controls[name];
+          });
+      },
+      currentRequest(operation) {
+        return this.request === operation && this.current(operation.scope)
+          && [['status', 'status'], ['button', 'refresh'], ['content', 'content'], ['week', 'week']].every(([name, selector]) =>
+            operation[name]?.isConnected !== false && this.container.querySelector(`[data-progress-${selector}]`) === operation[name])
+          && (!operation.controls || this.currentControls(operation.controls));
+      },
       escape(value) { return FitFlowSecurity.escapeHtml(value); },
       format(value) { return Number(value).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); },
       date(record) { return record.timestamp === null ? 'Data não informada' : new Date(record.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); },
@@ -72,28 +93,43 @@
           <div data-progress-week></div><div data-progress-content></div>
           <footer class="progress-method"><h3>Uma comparação exige contexto</h3><p>Compare o mesmo exercício, técnica e amplitude semelhantes. Repetições, descanso e RIR podem mudar a interpretação de uma carga. O gráfico mostra registros; não estima 1RM nem diagnostica ganho de força.</p><p>O volume em kg·reps é carga externa × repetições informadas. Com peso corporal, 0 kg registra somente a ausência de carga externa declarada. Exercícios com nomes iguais e identificações diferentes ficam separados.</p><a href="https://pubmed.ncbi.nlm.nih.gov/41843416/" target="_blank" rel="noopener noreferrer">Referência: ACSM 2026</a><button class="btn btn-ghost" type="button" data-progress-legacy>Consultar registros anteriores ao formato de sessões</button></footer>
         </section>`;
-        container.querySelector('[data-progress-refresh]').onclick = () => this.load();
-        container.querySelector('[data-progress-legacy]').onclick = () => window.dispatchEvent(new CustomEvent('progressao:legacy'));
+        const scope = this.scope = { container, page: container.querySelector('[data-progress-page]'), generation: this.generation,
+          userId: this.user()?.id, authGeneration: Auth.generation, epoch: typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null };
+        const refreshButton = container.querySelector('[data-progress-refresh]'), legacyButton = container.querySelector('[data-progress-legacy]');
+        refreshButton.onclick = () => { if (this.current(scope) && container.querySelector('[data-progress-refresh]') === refreshButton) return this.load(); };
+        legacyButton.onclick = () => { if (this.current(scope) && container.querySelector('[data-progress-legacy]') === legacyButton) window.dispatchEvent(new CustomEvent('progressao:legacy')); };
         await this.load();
       },
-      async load() {
-        if (!this.current() || this.loading) return;
-        const generation = this.generation; this.loading = true;
-        const status = this.container.querySelector('[data-progress-status]'), button = this.container.querySelector('[data-progress-refresh]');
-        button.disabled = true; status.textContent = 'Consultando seus registros no servidor…';
-        try {
-          const response = await API.get('/sessoes/mine');
-          if (!this.current(generation)) return;
-          if (!Array.isArray(response?.data?.sessions)) throw new Error('O servidor retornou um histórico inválido.');
-          this.data = response.data; this.history = buildExerciseHistory(this.data.sessions);
-          const limit = Number.isSafeInteger(this.data.historyLimit) ? this.data.historyLimit : 100;
-          status.textContent = `${this.data.sessions.length} sessão(ões) consultada(s). Histórico limitado às ${limit} sessões mais recentes.${this.data.historyMayBeTruncated ? ' Podem existir sessões anteriores fora desta consulta.' : ''} O resumo de 7 dias é calculado no servidor em uma consulta independente.${this.history.ignoredRecords || this.history.duplicateRecords ? ` ${this.history.ignoredRecords} registro(s) sem exercício confirmado e ${this.history.duplicateRecords} duplicado(s) foram excluídos da comparação.` : ''}`;
-          this.renderWeek(); this.renderControls();
-        } catch (error) {
-          if (!this.current(generation)) return;
-          status.textContent = `${error.message}${this.data ? ' Exibindo a última consulta desta conta nesta aba; os dados não foram atualizados.' : ' Tente novamente quando a conexão estiver disponível. Nenhum registro foi alterado.'}`;
-          if (!this.data) this.container.querySelector('[data-progress-content]').innerHTML = '<section class="progress-panel"><h3>Não foi possível carregar o histórico</h3><p>Se você registrou séries sem conexão, sincronize a fila em Sessões e séries antes de consultar a evolução.</p></section>';
-        } finally { if (this.current(generation)) { this.loading = false; button.disabled = false; } }
+      load() {
+        if (!this.current()) return;
+        if (this.request) return this.currentRequest(this.request) ? this.request.promise : undefined;
+        const operation = { scope: this.scope, controls: this.controls,
+          status: this.container.querySelector('[data-progress-status]'), button: this.container.querySelector('[data-progress-refresh]'),
+          content: this.container.querySelector('[data-progress-content]'), week: this.container.querySelector('[data-progress-week]'), promise: null };
+        this.request = operation; this.loading = true;
+        const { status, button } = operation;
+        button.disabled = true; button.setAttribute?.('aria-busy', 'true'); status.textContent = 'Consultando seus registros no servidor…';
+        operation.promise = (async () => {
+          try {
+            const response = await API.get('/sessoes/mine', { timeoutMs: 15000 });
+            if (!this.currentRequest(operation)) return;
+            if (!Array.isArray(response?.data?.sessions)) throw new Error('O servidor retornou um histórico inválido.');
+            this.data = response.data; this.history = buildExerciseHistory(this.data.sessions);
+            const limit = Number.isSafeInteger(this.data.historyLimit) ? this.data.historyLimit : 100;
+            status.textContent = `${this.data.sessions.length} sessão(ões) consultada(s). Histórico limitado às ${limit} sessões mais recentes.${this.data.historyMayBeTruncated ? ' Podem existir sessões anteriores fora desta consulta.' : ''} O resumo de 7 dias é calculado no servidor em uma consulta independente.${this.history.ignoredRecords || this.history.duplicateRecords ? ` ${this.history.ignoredRecords} registro(s) sem exercício confirmado e ${this.history.duplicateRecords} duplicado(s) foram excluídos da comparação.` : ''}`;
+            this.renderWeek(); this.renderControls();
+          } catch (error) {
+            if (!this.currentRequest(operation)) return;
+            status.textContent = `${error.message}${this.data ? ' Exibindo a última consulta desta conta nesta aba; os dados não foram atualizados.' : ' Tente novamente quando a conexão estiver disponível. Nenhum registro foi alterado.'}`;
+            if (!this.data) operation.content.innerHTML = '<section class="progress-panel"><h3>Não foi possível carregar o histórico</h3><p>Se você registrou séries sem conexão, sincronize a fila em Sessões e séries antes de consultar a evolução.</p></section>';
+          } finally {
+            if (this.request === operation) {
+              const current = this.currentRequest(operation); this.request = null; this.loading = false;
+              if (current) { button.disabled = false; button.setAttribute?.('aria-busy', 'false'); }
+            }
+          }
+        })();
+        return operation.promise;
       },
       renderWeek() {
         const week = this.data.summary7Days, slot = this.container.querySelector('[data-progress-week]');
@@ -102,34 +138,52 @@
       },
       renderControls() {
         const groups = this.history.exercises, slot = this.container.querySelector('[data-progress-content]');
-        if (!groups.length) { this.destroyChart(); slot.innerHTML = '<section class="progress-panel progress-empty"><h3>Seu histórico de séries começa aqui.</h3><p>Inicie uma sessão e registre as séries executadas. Elas aparecerão após a sincronização, com carga e repetições reais.</p></section>'; return; }
-        if (!groups.some(group => group.id === this.selectedId)) this.selectedId = groups[0].id;
-        slot.innerHTML = `<section class="progress-panel"><div class="progress-filters"><label>Exercício registrado<select data-progress-exercise>${groups.map(group => `<option value="${group.id}" ${group.id === this.selectedId ? 'selected' : ''}>${this.escape(group.name)} · identificação ${group.id}</option>`).join('')}</select></label><label>Repetições por série<input type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Todas" data-progress-reps></label><label class="progress-warmup-check"><input type="checkbox" data-progress-warmups>Mostrar aquecimentos no gráfico</label></div><p class="progress-filter-note" data-progress-filter-note></p><div data-progress-series></div></section>`;
-        slot.querySelector('[data-progress-exercise]').onchange = event => { this.selectedId = Number(event.target.value); this.renderSeries(); };
-        slot.querySelector('[data-progress-reps]').oninput = () => this.renderSeries();
-        slot.querySelector('[data-progress-warmups]').onchange = () => this.renderSeries();
+        if (!groups.length && !this.controls) { this.destroyChart(); slot.innerHTML = '<section class="progress-panel progress-empty"><h3>Seu histórico de séries começa aqui.</h3><p>Inicie uma sessão e registre as séries executadas. Elas aparecerão após a sincronização, com carga e repetições reais.</p></section>'; return; }
+        if (this.selectedId !== null && !groups.some(group => group.id === this.selectedId)) this.selectedId = null;
+        if (!this.hasSelection && groups.length) { this.selectedId = groups[0].id; this.hasSelection = true; }
+        if (!this.currentControls()) {
+          const prefix = `progress-${this.generation}`;
+          slot.innerHTML = `<section class="progress-panel"><div class="progress-filters"><label>Exercício registrado<select data-progress-exercise aria-describedby="${prefix}-choice"></select></label><label>Repetições por série<input type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Todas" data-progress-reps aria-describedby="${prefix}-help ${prefix}-error" aria-invalid="false"></label><label class="progress-warmup-check"><input type="checkbox" data-progress-warmups>Mostrar aquecimentos no gráfico</label></div><p id="${prefix}-choice" class="progress-filter-note" data-progress-choice-note role="status" aria-live="polite"></p><p id="${prefix}-help" class="progress-filter-note" data-progress-filter-note></p><p id="${prefix}-error" class="progress-incomplete" data-progress-filter-error role="status" aria-live="polite" aria-atomic="true"></p><div data-progress-series></div></section>`;
+          const controls = this.controls = { scope: this.scope, slot, select: slot.querySelector('[data-progress-exercise]'), reps: slot.querySelector('[data-progress-reps]'),
+            warmups: slot.querySelector('[data-progress-warmups]'), note: slot.querySelector('[data-progress-filter-note]'), error: slot.querySelector('[data-progress-filter-error]'),
+            choice: slot.querySelector('[data-progress-choice-note]'), series: slot.querySelector('[data-progress-series]') };
+          controls.select.onchange = () => {
+            if (!this.currentControls(controls)) return;
+            const id = Number(controls.select.value);
+            this.selectedId = this.history.exercises.some(group => group.id === id) ? id : null; this.renderSeries();
+          };
+          controls.reps.oninput = () => { if (this.currentControls(controls)) this.renderSeries(); };
+          controls.warmups.onchange = () => { if (this.currentControls(controls)) this.renderSeries(); };
+        }
+        const controls = this.controls;
+        controls.select.innerHTML = `<option value="" disabled>Escolha um exercício</option>${groups.map(group => `<option value="${group.id}">${this.escape(group.name)} · identificação ${group.id}</option>`).join('')}`;
+        controls.select.value = this.selectedId === null ? '' : String(this.selectedId); controls.select.disabled = !groups.length;
         this.renderSeries();
       },
       table(records, label) {
-        return records.length ? `<div class="progress-table-scroll"><table class="progress-table"><caption>${label}</caption><thead><tr><th scope="col">Execução</th><th scope="col">Carga externa</th><th scope="col">Repetições</th><th scope="col">RIR</th><th scope="col">Nota</th></tr></thead><tbody>${records.slice().reverse().map(record => `<tr><td>${this.escape(this.date(record))}</td><td>${record.weightKg === null ? 'Não informada' : `${this.format(record.weightKg)} kg`}</td><td>${record.reps === null ? 'Não informadas' : record.reps}</td><td>${record.rir === null ? 'Não informado' : this.format(record.rir)}</td><td>${this.escape(record.notes || '—')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="progress-muted">Nenhuma série registrada neste filtro.</p>';
+        return records.length ? `<div class="progress-table-scroll" tabindex="0" role="region" aria-label="${this.escape(label)} · tabela com rolagem horizontal"><table class="progress-table"><caption>${label}</caption><thead><tr><th scope="col">Execução</th><th scope="col">Carga externa</th><th scope="col">Repetições</th><th scope="col">RIR</th><th scope="col">Nota</th></tr></thead><tbody>${records.slice().reverse().map(record => `<tr><td>${this.escape(this.date(record))}</td><td>${record.weightKg === null ? 'Não informada' : `${this.format(record.weightKg)} kg`}</td><td>${record.reps === null ? 'Não informadas' : record.reps}</td><td>${record.rir === null ? 'Não informado' : this.format(record.rir)}</td><td>${this.escape(record.notes || '—')}</td></tr>`).join('')}</tbody></table></div>` : '<p class="progress-muted">Nenhuma série registrada neste filtro.</p>';
       },
       renderSeries() {
-        if (!this.current()) return;
-        const group = this.history.exercises.find(item => item.id === this.selectedId), field = this.container.querySelector('[data-progress-reps]');
-        const slot = this.container.querySelector('[data-progress-series]'), note = this.container.querySelector('[data-progress-filter-note]');
+        if (!this.currentControls()) return;
+        const { reps: field, series: slot, note, error, select, choice, warmups } = this.controls;
+        const group = this.history.exercises.find(item => item.id === this.selectedId);
         this.destroyChart();
+        select.setAttribute?.('aria-invalid', String(!group));
+        choice.textContent = group ? '' : `O exercício selecionado não consta nesta consulta. A comparação não foi substituída; escolha explicitamente um exercício.${this.history.exercises.length ? '' : ' Não há exercícios disponíveis nesta consulta.'}`;
         let series;
-        try { series = selectSeries(group, { reps: field.value }); }
-        catch (error) { note.textContent = error.message; slot.innerHTML = ''; return; }
+        try {
+          if (field.validity?.badInput) throw new Error('Filtro de repetições: use um número inteiro entre 1 e 1000.');
+          series = selectSeries(group, { reps: field.value }); field.setAttribute?.('aria-invalid', 'false'); error.textContent = '';
+        } catch (invalid) { field.setAttribute?.('aria-invalid', 'true'); error.textContent = invalid.message; slot.innerHTML = ''; return; }
         note.textContent = field.value === '' ? 'Todas as repetições registradas. Cargas com números diferentes de repetições não são diretamente equivalentes.' : `Somente séries com ${field.value} repetições. O filtro também se aplica aos aquecimentos mostrados abaixo.`;
+        if (!group) { slot.innerHTML = ''; return; }
         const last = series.workingPoints.at(-1), latest = last ? `${this.format(last.weightKg)} kg × ${last.reps}` : 'Sem registro válido';
         slot.innerHTML = `<div class="progress-series-heading"><div><p class="progress-kicker">${this.escape(group.workoutNames.join(' / '))}</p><h3>${this.escape(group.name)}</h3></div><span class="progress-muted">Identificação ${group.id} · cada ponto é uma série</span></div><div class="progress-metrics"><div><span>Séries de trabalho com carga e reps</span><strong>${series.validWorkingSets}</strong></div><div><span>Volume de trabalho no filtro</span><strong>${this.format(series.workingVolumeKg)} <small>kg·reps</small></strong></div><div><span>Série de trabalho mais recente</span><strong>${latest}</strong></div></div>
           <div class="progress-chart"><canvas data-progress-chart role="img" aria-label="Carga externa das séries registradas por data. Os valores completos estão na tabela abaixo."></canvas><p class="progress-chart-note" data-progress-chart-note></p></div>
           ${series.incomplete.length ? `<p class="progress-incomplete">${series.incomplete.length} registro(s) sem todos os dados necessários para aparecer no gráfico. Volume usa somente carga e repetições conhecidas.</p>` : ''}
           <h4>Séries de trabalho</h4>${this.table(series.working, 'Séries de trabalho registradas')}
           <details class="progress-warmups"><summary>Aquecimentos · ${series.warmup.length} registro(s) · ${this.format(series.warmupVolumeKg)} kg·reps</summary>${this.table(series.warmup, 'Aquecimentos separados das séries de trabalho')}</details>`;
-        const showWarmup = this.container.querySelector('[data-progress-warmups]').checked;
-        this.renderChart(series, showWarmup);
+        this.renderChart(series, warmups.checked);
       },
       renderChart(series, showWarmup) {
         const caption = this.container.querySelector('[data-progress-chart-note]'), canvas = this.container.querySelector('[data-progress-chart]');
@@ -155,7 +209,8 @@
       },
       destroyChart() { if (this.chart) this.chart.destroy(); this.chart = null; },
       destroy({ clear = false } = {}) {
-        ++this.generation; this.destroyChart(); this.loading = false; this.data = null; this.history = null; this.selectedId = null;
+        ++this.generation; this.destroyChart(); this.loading = false; this.request = null; this.controls = null; this.scope = null; this.hasSelection = false;
+        this.data = null; this.history = null; this.selectedId = null;
         if (clear && this.container?.querySelector('[data-progress-page]')) this.container.innerHTML = '';
         this.container = null; this.ownerId = null;
       },

@@ -79,10 +79,14 @@ class AlunoPainelService {
           businessRules.validateWorkoutView(aluno);
           return this.db.workout.findMany({
             where: { studentId: aluno.id, active: true },
-            include: {
+            select: {
+              id: true, name: true, description: true, createdAt: true,
               exercises: {
                 orderBy: { orderIndex: 'asc' },
-                include: {
+                select: {
+                  id: true, name: true, muscleGroup: true, sets: true, reps: true,
+                  restSeconds: true, suggestedLoad: true, notes: true,
+                  catalogExerciseId: true, catalogSnapshot: true,
                   workoutLogs: {
                     where: { studentId: aluno.id },
                     orderBy: { createdAt: 'desc' },
@@ -168,6 +172,8 @@ class AlunoPainelService {
           descansoSegundos: ex.restSeconds,
           cargaSugerida: ex.suggestedLoad,
           notas: ex.notes,
+          catalogExerciseId: ex.catalogExerciseId ?? null,
+          catalogSnapshot: ex.catalogSnapshot ?? null,
           ultimaCarga: ex.workoutLogs[0] ? {
             peso: ex.workoutLogs[0].weight,
             reps: ex.workoutLogs[0].repsCompleted,
