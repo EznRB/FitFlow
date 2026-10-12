@@ -10,9 +10,11 @@ Login editorial publicado na revisão `3adf5c1`. Captura de desktop; versões mo
 
 ## Revisão atual
 
-Primeira revisão visual publicada: painel editorial com fotografia, identidade laranja/navy e apresentações próprias para gestão, treino, nutrição e conversa. [Direção, referências e trabalho restante](docs/REVISAO_VISUAL_SISTEMA.md). Troca de senha com revogação de sessões validada localmente e na Vercel. Suíte atual: 503/503; Pix/cartão reais em sandbox ainda dependem da configuração do provedor.
+Primeira revisão visual publicada: painel editorial com fotografia, identidade laranja/navy e apresentações próprias para gestão, treino, nutrição e conversa. [Direção, referências e trabalho restante](docs/REVISAO_VISUAL_SISTEMA.md). Troca de senha com revogação de sessões validada localmente e na Vercel. Suíte atual: 527/527; Pix/cartão reais em sandbox ainda dependem da configuração do provedor.
 
 ![Painel do FitFlow publicado em 12/10/2026](docs/evidence/66-dashboard-workspace-vercel.png)
+
+O caderno de treino também recebeu etapas de registro, números legíveis, séries organizadas e resumo semanal distinto. Foram corrigidas seleção de ficha e preservação do rascunho durante sincronização, além do rótulo de vencimento no dia. [Captura publicada](docs/evidence/106-caderno-vercel.jpg); [registro mobile local](docs/evidence/105-sessao-registro-mobile-local.jpg). A revisão completa de todas as jornadas continua em andamento.
 
 ## Desenvolvimento
 

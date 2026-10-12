@@ -1,6 +1,10 @@
 # Revisão de entrega — 12/10/2026
 
-Código publicado `d60d072` (`d60d0722b858881319810d1233e492fcd951ee02`), Production READY `dpl_9jnWh8FRjp4hXFiZ1gQE1Z56cj35`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-q46jbzn61-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38279551464). Suíte integral **520/520**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 17 hashes de interface/autenticação/financeiro conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada. Este marco não conclui a meta completa.
+Código publicado `4f4a7ee` (`4f4a7eeb2131b8aacbeb31cb3912ce1d2744fe1a`), Production READY `dpl_BdguYNxkBYXfDjyWNDcxfm8MeJn2`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-itrd2zpfm-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38286869722/job/114937231019). Suíte integral **527/527**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 19 hashes de interface/autenticação/financeiro/aluno conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada. Este marco não conclui a meta completa.
+
+## Caderno de treino publicado
+
+Sessão com etapas de exercício/execução, controles numéricos legíveis, confirmação e séries organizadas, créditos disponíveis e resumo semanal com leitura própria. Corrigidas seleção de ficha durante sincronização, reconciliação por ID, preservação do rascunho/envio e vigência de hoje. **527/527**; teste nativo exclusivo confirmou salvar, sincronizar, finalizar e restaurar histórico, com limpeza restrita aos IDs criados. Emulação 375/768 sem overflow; não comprova telefone físico. [Registro mobile local](evidence/105-sessao-registro-mobile-local.jpg), [caderno publicado](evidence/106-caderno-vercel.jpg) e [relato completo](REVISAO_VISUAL_SISTEMA.md). Navegador público confirmou login do aluno e leitura; não gravou sessão ou série no Neon.
 
 ## Revisão de 12/10 — conta, interface e pertinência do chat
 
