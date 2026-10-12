@@ -90,3 +90,7 @@ A revisão por subagente foi feita no código/asset, sem navegador compartilhado
 ## Avanço da ficha/Evolução/mensalidade — 12/10/2026
 
 `d5b90d5` publicado e CI/Preview Git aprovados; **555/555** locais e **23 arquivos** conferidos. Ficha recebe origem persistida/data do registro, Evolução mantém filtros com identidade explícita e mensalidade declara disponibilidade sem criar cobrança. [Provas e limites](REVISAO_VISUAL_SISTEMA.md). Próxima ação disponível: reproduzir/corrigir o formulário avulso (callbacks antigos, envio compartilhado, rascunho e submit), depois continuidade das jornadas/estados e revisão final documental. PSP, telefone físico, rotação da chave pelo titular e revisão/merge ainda pendentes.
+
+## Correção do formulário avulso — 12/10/2026
+
+`024a7f0` publicado e CI/Preview Git aprovados; **564/564** locais. Contextos/payloads/envios próprios, Enter sem navegação e rascunho preservado. Teste nativo exclusivo confirmou um registro e limpou somente IDs próprios, com 134 sessões/168 séries/0 avulsos anteriores preservados. [Provas](REVISAO_VISUAL_SISTEMA.md). Próximas ações disponíveis: consolidar a revisão de jornadas/estados e a documentação atual, conferir lacunas de entrega; gates de PSP/aparelho físico/rotação pelo titular e revisão dos PRs continuam abertos.

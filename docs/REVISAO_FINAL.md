@@ -1,6 +1,10 @@
 # Revisão de entrega — 12/10/2026
 
-Código publicado `d5b90d5` (`d5b90d5522152995c40609fb29d4c38ec7b5fc4a`), Production READY `dpl_6GzQp2jg69Cv4bWaNiujxnitFxpv`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-ptuas2a7i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38308061050/job/115006791024) e Preview Git aprovado. Suíte integral **555/555**, zero falhas e ignorados; depois, os 18 testes de checkout passaram novamente após refinamento de texto. Saúde HTTP 200, banco ready e API no-store; 23 hashes de interface/autenticação/financeiro/aluno conferidos. Este marco não conclui a meta completa.
+Código publicado `024a7f0` (`024a7f071a16544045717c0957d2a0576e629c16`), Production READY `dpl_9uy2owcJHVbtk7vrCE7g7qYQkZqo`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-csrfe5zva-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38309575269/job/115011729174) e Preview Git aprovado. Suíte integral **564/564**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 23 hashes de interface/autenticação/financeiro/aluno conferidos. Este marco não conclui a meta completa.
+
+## Formulário avulso corrigido
+
+Em `024a7f0`, exercício/formulário/modal e envio têm contexto próprio. Callbacks antigos não lêem nem fecham outra tela; resposta preserva alterações posteriores. Enter e footer compartilham salvamento com prazo de 15 segundos. Resultado incerto orienta conferir histórico, sem retry automático ou promessa de idempotência legada. **564/564** locais. Enter real em fixture nativa criou exatamente um registro de 0 kg e reps ausentes no exercício correto, sem navegação; IDs próprios removidos e contagens anteriores preservadas. [Prova local](evidence/120-avulso-enter-local.jpg), [modal mobile local](evidence/121-avulso-mobile-local.jpg), [modal publicado](evidence/122-avulso-vercel.jpg) e [relato/limites](REVISAO_VISUAL_SISTEMA.md). Browser público abriu/cancelou vazio, sem escrita no Neon.
 
 ## Ficha, Evolução e mensalidade publicadas
 
