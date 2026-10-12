@@ -85,7 +85,7 @@
 .sessions-workout:disabled { cursor: wait; opacity: .65; }
 [data-week-summary] > .sessions-panel { background: #f3efe6; color: #182332; }
 [data-week-summary] :is(p, span) { color: #4b535b; }
-[data-week-summary] h3 { font: 600 1.65rem var(--font-heading); }
+[data-week-summary] h3 { color: #182332; font: 600 1.65rem var(--font-heading); }
 .sessions-metrics { margin: 1.5rem 0; gap: 1.5rem; }
 .sessions-metrics strong { font: 600 clamp(1.75rem, 3vw, 2.4rem)/1.1 var(--font-heading); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .sessions-metrics div + div { border-left: 1px solid #cec8bc; padding-left: 1.5rem; }
