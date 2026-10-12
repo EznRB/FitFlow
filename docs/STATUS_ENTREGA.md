@@ -181,8 +181,8 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 2. **Telefone físico:** instalação HTTPS, teclado, sessão, interrupção de rede e retorno. Emulação e fila no navegador não substituem esse gate. [Matriz M01–M14 e evidências necessárias](VALIDACAO_MOBILE.md), todos inicialmente NÃO FEITO.
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
-4. **Financeiro administrativo:** concluído em `9d0361e`, com histórico, saldo e vigência explícita. Isso não encerra a validação do checkout externo descrita no item 1.
-5. **UX/UI:** finalizar a revisão por tela, estados e controles; a primeira composição visual publicada não encerra esse trabalho. [Critérios e progresso](REVISAO_VISUAL_SISTEMA.md).
+4. **UX/UI:** finalizar a revisão por tela, estados e controles; a primeira composição visual publicada não encerra esse trabalho. [Critérios e progresso](REVISAO_VISUAL_SISTEMA.md).
+5. **Credencial da IA:** rotacionar a chave Groq anteriormente exposta quando o proprietário retornar; segredo fora do Git.
 
 ## Roteiro de apresentação
 

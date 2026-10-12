@@ -68,7 +68,7 @@ Amostras iniciais foram reprovadas por contagens e justificativas inventadas. A 
 
 1. Configurar Mercado Pago sandbox, contas de teste, credenciais e webhook HTTPS; cartão APRO/rejeitado/CONT, Pix QR/pendente sem renovar plano. O sandbox não simula liquidação Pix; approved de Pix permanece nos testes com doubles. [Roteiro e fontes oficiais](PAGAMENTOS_SANDBOX.md).
 2. Telefone físico: instalação PWA, teclado, interrupção/retorno de rede e reconexão publicada. [Matriz M01–M14](VALIDACAO_MOBILE.md), execução pendente.
-3. Correção/estorno financeiro administrativo com motivo, ator, histórico e tratamento explícito da vigência. A recusa 405 elimina edição direta, sem entregar esse recurso.
+3. Rotação da chave Groq exposta anteriormente, quando o proprietário retornar. O segredo não está no Git; a rotação não é a troca de senha do FitFlow.
 4. Revisão completa de UX/UI por tela, estado, teclado e contraste; primeira composição publicada com trabalho restante descrito no plano visual.
 5. Revisão dos PRs draft do aplicativo e da landing e gates das próximas mudanças; nenhum merge realizado.
 
