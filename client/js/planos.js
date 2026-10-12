@@ -75,10 +75,10 @@ const PlanosView = {
     if (!this.idValido(plan.id)) return '';
     const value = this.valor(plan.price), duration = this.duracao(plan.durationDays);
     const equivalent = this.equivalente(plan.price, plan.durationDays);
-    return `<article class="card" style="display:flex;flex-direction:column;gap:1rem;min-width:0;overflow-wrap:anywhere">
+    return `<article class="card workspace-plan" style="display:flex;flex-direction:column;gap:1rem;min-width:0;overflow-wrap:anywhere">
       <div><span class="badge ${plan.active ? 'badge-success' : 'badge-secondary'}">${plan.active ? 'Ativo' : 'Inativo'}</span>
         <h3>${this.escapar(plan.name)}</h3></div>
-      <p style="font-size:var(--font-size-xl);font-weight:700;color:var(--primary-400)">${value === null ? 'Valor inválido' : this.moeda(value)}</p>
+      <p class="workspace-plan-price">${value === null ? 'Valor inválido' : this.moeda(value)}</p>
       <p>Valor total · vigência de ${duration === null ? 'dias não informados' : `${duration} dias`}.</p>
       <p style="font-size:var(--font-size-xs);color:var(--text-muted)">${equivalent === null ? 'Equivalência indisponível' : `${this.moeda(equivalent)} por 30 dias, como comparação aritmética.`}</p>
       <p style="flex:1">${this.escapar(plan.description || 'Sem descrição.')}</p>

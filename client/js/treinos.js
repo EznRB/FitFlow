@@ -46,7 +46,7 @@ const TreinosView = {
       <button type="button" class="kpi-card" data-student="${a.id}" style="cursor:pointer;text-align:left">
         <div class="kpi-icon"><i data-lucide="user"></i></div>
         <div class="kpi-content"><div class="kpi-label">${this.escapar(a.name)}</div>
-          <span class="badge badge-success">Matrícula ativa</span><p>Consultar fichas e planejar</p></div>
+          <span class="badge badge-success">Matrícula ativa</span><p>Consultar fichas e planejar</p><span class="workspace-student-action">Ver fichas <i data-lucide="arrow-up-right" aria-hidden="true"></i></span></div>
       </button>`).join('') : '<p>Nenhum aluno elegível encontrado.</p>';
     grid.onclick = event => {
       const button = event.target.closest('[data-student]'); if (!button || !grid.contains(button)) return;

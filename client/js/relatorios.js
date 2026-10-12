@@ -67,8 +67,8 @@ const RelatoriosView = {
     const start = new Date(today + 'T00:00:00Z');
     start.setUTCDate(start.getUTCDate() - 29);
     this.container.innerHTML = `
-      <div class="page-header" style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-        <div><h2>Relatórios gerenciais</h2><p>Consulte presença, situação dos alunos e registros financeiros.</p></div>
+      <div class="page-header admin-page-header" style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+        <div><span class="workspace-kicker">Análise / acompanhamento</span><h2>Relatórios gerenciais</h2><p>Consulte presença, situação dos alunos e registros financeiros.</p></div>
         <button type="button" id="btn-imprimir-relatorio" class="btn btn-outline-primary no-print">Imprimir</button>
       </div>
       <div class="card no-print" style="padding:1.25rem;margin-bottom:1.5rem">

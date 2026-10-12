@@ -273,9 +273,18 @@ const App = {
       dashboard: `
         <div class="premium-dashboard">
           
-          <div class="dashboard-header">
-            <h2 class="dashboard-header-title">Dashboard</h2>
-          </div>
+          <section class="dashboard-editorial" aria-labelledby="dashboard-editorial-title">
+            <div class="dashboard-editorial-copy">
+              <span class="workspace-kicker">FitFlow / gestão da academia</span>
+              <h2 id="dashboard-editorial-title">Sua academia.<br><em>Em movimento.</em></h2>
+              <p>Alunos, presença e recebimentos: um olhar sobre o que acontece na sua academia.</p>
+              <div class="dashboard-editorial-actions">
+                <button type="button" class="btn btn-primary" data-dashboard-page="alunos">Acompanhar alunos <i data-lucide="arrow-up-right" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-secondary" data-dashboard-page="treinos">Ver fichas de treino</button>
+              </div>
+            </div>
+            <figure class="dashboard-editorial-photo"><img src="/img/login-gym.webp" alt="" width="800" height="1200"><figcaption>Treino. Ciência. Constância.<small>Imagem ilustrativa</small></figcaption></figure>
+          </section>
           
           <!-- KPI Grid -->
           <div class="kpi-grid">
@@ -383,6 +392,7 @@ const App = {
       alunos: `
         <div class="page-header admin-page-header">
           <div>
+            <span class="workspace-kicker">Gestão / pessoas</span>
             <h2>Gestão de Alunos</h2>
             <p style="color:var(--text-muted)">Cadastre, inative ou atualize o perfil dos clientes da academia.</p>
           </div>
@@ -418,6 +428,7 @@ const App = {
       planos: `
         <div class="page-header admin-page-header">
           <div>
+            <span class="workspace-kicker">Gestão / assinaturas</span>
             <h2>Planos de Academia</h2>
             <p style="color:var(--text-muted)">Crie ou atualize os planos de assinatura disponíveis para os alunos.</p>
           </div>
@@ -439,6 +450,7 @@ const App = {
       exercicios: `
         <div class="page-header admin-page-header">
           <div>
+            <span class="workspace-kicker">Biblioteca / movimento</span>
             <h2>Catálogo de Exercícios</h2>
             <p style="color:var(--text-muted)">Gerencie os exercícios disponíveis para montar fichas de treino.</p>
           </div>
@@ -448,7 +460,7 @@ const App = {
             </select>
             <button id="btn-sync-wger" class="btn btn-outline-primary" style="cursor:pointer" title="Sincronizar exercícios via API">
               <i data-lucide="refresh-cw"></i>
-              <span>API Sync</span>
+              <span>Sincronizar catálogo</span>
             </button>
             <button id="btn-novo-exercicio" class="btn btn-primary" style="cursor:pointer">
               <i data-lucide="plus-circle"></i>
@@ -483,6 +495,7 @@ const App = {
         <div id="treinos-view-alunos">
           <div class="page-header admin-page-header">
             <div>
+              <span class="workspace-kicker">Treinamento / planejamento</span>
               <h2>Fichas de Treino</h2>
               <p style="color:var(--text-muted)">Selecione um aluno para gerenciar suas fichas de treino.</p>
             </div>
@@ -563,6 +576,7 @@ const App = {
       pagamentos: `
         <div class="page-header admin-page-header">
           <div>
+            <span class="workspace-kicker">Financeiro / recebimentos</span>
             <h2>Fluxo de Pagamentos</h2>
             <p style="color:var(--text-muted)">Registre recebimentos, acompanhe vencimentos e controle a inadimplência dos alunos.</p>
           </div>
@@ -589,6 +603,7 @@ const App = {
         </div>
 
         <div class="card admin-table-scroll" role="region" aria-label="Histórico de pagamentos; deslize para ver todas as colunas" tabindex="0">
+          <div class="workspace-finance-note"><i data-lucide="receipt" aria-hidden="true"></i><p><strong>Histórico de recebimentos</strong><br>Consulte o recibo para ver o saldo e os ajustes registrados. A confirmação de pagamentos online ocorre pelo provedor.</p></div>
           <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
             <thead>
               <tr style="border-bottom: 1px solid var(--border-color)">
@@ -645,6 +660,7 @@ const App = {
         content.innerHTML = `
           <div class="page-header admin-page-header">
             <div>
+              <span class="workspace-kicker">Academia / presença</span>
               <h2>Registro de Presença</h2>
               <p style="color:var(--text-muted)">Registre check-ins, acompanhe frequência e gerencie a presença dos alunos.</p>
             </div>
@@ -925,32 +941,21 @@ const DashboardView = {
     // Limpa instância anterior para evitar loops de redimensionamento
     this.destroyChart();
 
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(249, 115, 22, 0.3)');
-    gradient.addColorStop(1, 'rgba(249, 115, 22, 0)');
-
     const cleanLabels = tendencias.labels || [];
     const cleanData = (tendencias.data || []).map(v => Number(v) || 0);
 
     this.chartInstance = new Chart(canvas, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: cleanLabels,
         datasets: [{
           label: 'Check-ins',
           data: cleanData,
           borderColor: '#fb923c', // primary-400
-          borderWidth: 3,
-          backgroundColor: gradient,
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#fb923c',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointHitRadius: 20
+          borderWidth: 0,
+          backgroundColor: '#fb923c',
+          borderRadius: 4,
+          maxBarThickness: 32
         }]
       },
       options: {
@@ -977,11 +982,11 @@ const DashboardView = {
           y: {
             beginAtZero: true,
             grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
-            ticks: { color: '#6b7280', font: { size: 11 }, precision: 0, padding: 10 }
+            ticks: { color: '#a8b2c3', font: { size: 12 }, precision: 0, padding: 10 }
           },
           x: {
             grid: { display: false },
-            ticks: { color: '#6b7280', font: { size: 11 }, padding: 10 }
+            ticks: { color: '#a8b2c3', font: { size: 12 }, padding: 10 }
           }
         }
       }

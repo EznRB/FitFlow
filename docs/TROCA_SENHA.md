@@ -1,6 +1,6 @@
 # Troca de senha e invalidação de sessões
 
-Contrato e validação local — 12/10/2026. A validação HTTPS da publicação será registrada após o deploy.
+Contrato validado e publicado — 12/10/2026, código `3f48109`, Production READY `dpl_72WkccBkSVzU8Ap7ZzoSUnB2AuNR`. [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38202900732). A revisão visual posterior preserva este contrato.
 
 ## Fluxo do titular
 
@@ -45,6 +45,7 @@ Essa função não é recuperação de senha por e-mail. A rotação da chave Gr
 - Gate com dois clientes Prisma: aprovado em MariaDB nativo, PostgreSQL nativo e branch Neon de verificação. Cobriu concorrência, restrição de versão, revogação dos JWTs anteriores e preservação de outra conta; somente contas UUID desta execução foram removidas.
 - Migração `20261012_credential_version` aplicada nos dois bancos nativos, na branch Neon de verificação e no Neon principal. São oito migrações MySQL e cinco PostgreSQL.
 - Formulário vazio inspecionado localmente em desktop e em 375 × 812; inputs de 16 px, documento de 375 px sem transbordamento horizontal. Nenhuma senha foi alterada pelo navegador automatizado. Capturas locais ignoradas pelo Git: `server/tmp/44-seguranca-conta-local.png` e `45-seguranca-conta-mobile-local.png`.
-- O gate `hosted-password-change.integration.cjs` prepara contas sintéticas e verifica o endpoint HTTPS; sua execução exige `--execute-hosted-fixtures`. O sucesso desse gate será registrado após a publicação.
+- Gate `hosted-password-change.integration.cjs`: aprovado na URL canônica da Vercel após publicação. Verificou titular, CSRF, senha atual incorreta sem logout, resposta sem Set-Cookie, sessões antigas recusadas, login com senha nova e outra conta preservada. Quatro logins no máximo; somente contas UUID desta execução removidas, quotas preservadas. Nenhuma senha demonstrativa alterada.
+- Formulário vazio conferido no navegador publicado; captura local ignorada `server/tmp/46-seguranca-conta-vercel.png`. Não houve entrada nem submissão de nova senha pelo navegador automatizado.
 
 A revogação descrita cobre a troca feita pelo endpoint. Uma alteração direta de hash por um administrador do banco deve incrementar a versão de credencial na mesma operação; não há trigger que faça isso automaticamente.

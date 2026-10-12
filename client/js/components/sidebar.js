@@ -62,6 +62,7 @@ const Sidebar = {
     const menu = role === 'admin' ? this.adminMenu : role === 'instructor' ? this.instructorMenu : this.alunoMenu;
     this.render(menu);
     this.bindEvents();
+    this.closeMobile(false);
   },
 
   /**
