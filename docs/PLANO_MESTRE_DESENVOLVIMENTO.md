@@ -31,9 +31,9 @@ Manter a identidade laranja/navy e Barlow. O usuário rejeitou o aspecto genéri
 
 ## Estado
 
-Em desenvolvimento, com frentes paralelas e integração local/remota em 11/10/2026. MariaDB nativo funciona sem Docker; seis migrations MySQL e contas demonstrativas isoladas. Neon PostgreSQL 17 Free em São Paulo tem três migrations próprias: baseline preservada e migration aditiva de idempotência manual, aplicadas nas duas branches; onze CHECKs anteriores e o novo CHECK de origem. Login público recuperado com credenciais novas, sem recuperação dos dados Aiven. Gestão, catálogo wger, sessões/séries, progressão e nutrição optativa implementados. Credenciais Mercado Pago continuam pendentes. Groq Free foi confirmado no console; chave e flag Free estão configuradas privadamente em Production/Preview.
+Em desenvolvimento, com integração local/remota em 12/10/2026. MariaDB nativo funciona sem Docker; oito migrations MySQL e contas demonstrativas isoladas. Neon PostgreSQL 17 Free em São Paulo tem cinco migrations próprias aplicadas nas duas branches, incluindo idempotência manual, origem, ajustes financeiros e versão de credencial. Login público recuperado com credenciais novas, sem recuperação dos dados Aiven. Gestão, catálogo wger, sessões/séries, progressão e nutrição optativa implementados. Credenciais Mercado Pago continuam pendentes. Groq Free foi confirmado no console; chave e flag Free estão configuradas privadamente em Production/Preview.
 
-Código publicado undefined Planos agora protege requisições e formulários de contextos anteriores. Campos mobile de 16 pixels e duração personalizada condicional foram conferidos em HTTPS. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png). Gestão HTTPS e capturas 37/38 registram `16b09b6`; conversa real e capturas 35/36 registram `943d495`.
+Na revisão `bb68606`, Planos agora protege requisições e formulários de contextos anteriores. Campos mobile de 16 pixels e duração personalizada condicional foram conferidos em HTTPS. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png). Gestão HTTPS e capturas 37/38 registram `16b09b6`; conversa real e capturas 35/36 registram `943d495`.
 
 Chat contextual homologado em `943d495` (401/401), capturas 35/36: rotina inicial em `5e4ec38` e repetição manual da continuação em `943d495`. Histórico em memória e conteúdo curado são escolhas explícitas; resultados iniciais reprovados permanecem registrados. A amostra final não certifica futuras gerações nem adequação individual.
 
@@ -56,6 +56,12 @@ Planos detalhados anteriores: `superpowers/plans/2026-10-07-landing.md`, `2026-1
 ### Integração do catálogo — implementada
 
 `catalogExerciseId` opcional e `catalogSnapshot` versionado são capturados pelo servidor na transação da ficha. A origem original é separada da adaptação do instrutor, com créditos de base/texto/imagem; a sessão copia essa origem ao iniciar. Migrations aditivas e gates reais antecederam a publicação. Exercícios manuais e legados permanecem sem referência, sem reconstrução por nome. A progressão continua separada por ID do exercício da ficha, mesmo quando duas fichas usam o mesmo catálogo.
+
+## Marco de formulários — 12/10/2026
+
+`b5d4288` (`b5d42889d8a1f642bc591bbbf27cdb832863b6a4`), Production READY `dpl_3Rq7d7WRpNTzsEgWyrK1uEhhRBsB`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-4onrza31i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38209366822) e Preview Git aprovado. Suíte integral **507/507**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 16 hashes de interface/autenticação/financeiro conferidos.
+
+Em `b5d4288`, matrícula, edição e planos têm campos agrupados por tarefa e controles de 16 px; ações de criar funcionam durante o carregamento. Falhas nas listas oferecem recuperação sem duplicar notificações. Resultado nutricional preenchido ganhou contraste correto; editor de treino mobile evita rolagem sobreposta e tem ações de 44 × 44 px. Quatro novos casos estão incluídos em 507/507. Navegador público confirmou matrícula e cenário fictício Mifflin (2.670 kcal/dia, 128 g de proteína, 372,6 g de carboidrato e 74,2 g de gordura), sem cadastro ou salvamento. [Matrícula publicada](evidence/84-matricula-vercel.png) e [resultado publicado](evidence/85-nutricao-resultado-vercel.png). Recuperação com interrupção intencional do Node e as verificações mobile adicionais são locais; não comprovam aparelho físico.
 
 ## Marco financeiro — 11/10/2026
 

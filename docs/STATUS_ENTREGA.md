@@ -6,7 +6,7 @@ A entrega completa ainda depende de pagamentos, telefone físico e das melhorias
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `460e7b0` (`460e7b064d114ccdb1db26756d7cfce5673c45f6`), Production READY `dpl_AZVoNNQS84Cg6jJ8YUn46fE6n51F`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-6znii0d3v-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38204618039) e Preview Git aprovado. Suíte integral **503/503**, zero falhas e ignorados; gate privado aprovado. Saúde HTTP 200, banco ready e API no-store; 14 hashes de interface/autenticação/financeiro conferidos. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `b5d4288` (`b5d42889d8a1f642bc591bbbf27cdb832863b6a4`), Production READY `dpl_3Rq7d7WRpNTzsEgWyrK1uEhhRBsB`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-4onrza31i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38209366822) e Preview Git aprovado. Suíte integral **507/507**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 16 hashes de interface/autenticação/financeiro conferidos. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
 ### Revisão de 12/10 — conta, interface e pertinência do chat
@@ -20,6 +20,10 @@ O teste real de volume em `22e2f99` foi reprovado: listava músculos sem rotina.
 O teste de concorrência MariaDB deixou de escrever nas fichas demonstrativas: cria e limpa suas próprias contas/ficha/sessões. Contagens locais permaneceram 134 sessões/168 séries durante a suíte de 501 testes; os dados antigos acumulados foram preservados. A suíte final com dois casos de IA adicionais passou em 503/503.
 
 Pagamento externo continua sem conta/credenciais/webhook configurados; ajustes administrativos não executam devolução no provedor. Revisão completa da UX/UI, aparelho físico, rotação da chave Groq e revisão/merge dos PRs permanecem pendentes.
+
+## Formulários e resultados publicados
+
+Em `b5d4288`, matrícula, edição e planos têm campos agrupados por tarefa e controles de 16 px; ações de criar funcionam durante o carregamento. Falhas nas listas oferecem recuperação sem duplicar notificações. Resultado nutricional preenchido ganhou contraste correto; editor de treino mobile evita rolagem sobreposta e tem ações de 44 × 44 px. Quatro novos casos estão incluídos em 507/507. Navegador público confirmou matrícula e cenário fictício Mifflin (2.670 kcal/dia, 128 g de proteína, 372,6 g de carboidrato e 74,2 g de gordura), sem cadastro ou salvamento. [Matrícula publicada](evidence/84-matricula-vercel.png) e [resultado publicado](evidence/85-nutricao-resultado-vercel.png). Recuperação com interrupção intencional do Node e as verificações mobile adicionais são locais; não comprovam aparelho físico.
 
 ## Ajustes financeiros — 9d0361e
 

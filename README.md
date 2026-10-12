@@ -36,7 +36,7 @@ O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 
 ## Recursos implementados
 
 - Gestão de alunos, planos, fichas, presença, pagamentos manuais e relatórios.
-- Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão. A API recusa PUT/PATCH/DELETE do recebimento com 405; correção ou estorno auditado ainda não está disponível.
+- Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão. A API recusa PUT/PATCH/DELETE do recebimento com 405; correções e devoluções informadas usam eventos auditados, sem executar reembolso no provedor.
 - Autenticação em cookie httpOnly; autorização considera o usuário ativo e seu papel atual no banco. Escritas protegidas por origem, API sem cache e quotas de login/IA compartilhadas no banco em produção.
 - A inicialização mostra verificação acessível da sessão e impede envio prematuro do login; `/auth/me` tem timeout de 15 segundos, incluindo espera pelo lock. Login/logout/retry coordenam o cookie entre abas com Web Locks e marcador de sessão opaco.
 - Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
@@ -62,7 +62,7 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado: **470 testes aprovados, zero falhas e zero ignorados** na revisão `9d0361e`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado: **507 testes aprovados, zero falhas e zero ignorados** na revisão `b5d4288`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
 
 ## Publicação e limites atuais
 
@@ -72,11 +72,13 @@ Checkout Pix/cartão está implementado exclusivamente em sandbox, com concilia�
 
 A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
 
-A revisão atual `9d0361e` (`9d0361eae38c023635ba2f9958239ff840fcb9ba`), Production READY `dpl_5YRDgobgwuxx4zfsrFFeYg7eNFXj`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-2xrp9f8zy-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38182537049) e Preview Git aprovado. Suíte integral **470/470**, zero falhas e ignorados; gate privado em 338 arquivos. Saúde HTTP 200, banco ready e API no-store; oito hashes financeiros de HTML/JS/CSS conferidos. Ajustes administrativos publicados e verificados por HTTPS; [contrato e evidências](docs/AJUSTES_FINANCEIROS.md). Proveniência do catálogo preservada. [Estado e limites](docs/STATUS_ENTREGA.md).
+A revisão atual `b5d4288` (`b5d42889d8a1f642bc591bbbf27cdb832863b6a4`), Production READY `dpl_3Rq7d7WRpNTzsEgWyrK1uEhhRBsB`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-4onrza31i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38209366822) e Preview Git aprovado. Suíte integral **507/507**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 16 hashes de interface/autenticação/financeiro conferidos. Gate privado aprovado. Ajustes administrativos publicados e verificados por HTTPS; [contrato e evidências](docs/AJUSTES_FINANCEIROS.md). Proveniência do catálogo preservada. [Estado e limites](docs/STATUS_ENTREGA.md).
 
 A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
 
 Mercado Pago real de teste, telefone físico/instalação, reconexão publicada, revisão completa da UX/UI e revisão/merge dos PRs continuam pendentes. Troca de senha e revogação estão publicadas e validadas em `3f48109`. A primeira revisão visual e a correção de pertinência do chat estão publicadas em `460e7b0`. Ajustes financeiros administrativos não executam devoluções no provedor. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
+
+Formulários e resultados refinados em `b5d4288`: matrícula e planos agrupados por tarefa, recuperação das listas, contraste nutricional e controles de treino mobile. [Revisão visual e evidências](docs/REVISAO_VISUAL_SISTEMA.md).
 
 ## Documentação
 
