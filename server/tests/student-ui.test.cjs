@@ -97,3 +97,13 @@ test('registro avulso de sessão antiga não fecha modal ou atualiza página da 
   assert.equal(closes, 0); assert.equal(reads, 0); assert.equal(successes, 0);
 });
 
+test('vigência de hoje não aparece vencida; negativos e ausência têm rótulos distintos no painel e mensalidade', () => {
+  for (const [remaining, expected] of [[0, 'Vence hoje'], [-1, 'Vencida'], [null, '—']]) {
+    const h = browser(), data = panel('Aluno'); data.mensalidade.diasRestantes = remaining;
+    h.context.panel.dados = data; const dashboard = h.node('aluno-painel-container'); h.context.panel.renderizar(dashboard);
+    assert.ok(dashboard.innerHTML.includes(expected)); if (remaining === 0 || remaining === null) assert.ok(!dashboard.innerHTML.includes('Vencida'));
+    const monthly = h.node('aluno-mensalidade-container'); h.context.monthly.renderizar(monthly, { diasRestantes: remaining, statusVisual: remaining === 0 ? 'vencendo' : 'indefinido', plano: null, historicoPagamentos: [] });
+    assert.ok(monthly.innerHTML.includes(remaining === null ? 'Não informado' : expected)); if (remaining === 0 || remaining === null) assert.ok(!monthly.innerHTML.includes('Vencida'));
+  }
+});
+

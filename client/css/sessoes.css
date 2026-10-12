@@ -40,3 +40,75 @@
 .sessions-evidence a { color: var(--primary-400, #fb923c); }
 .sessions-page :is(button, input, select, textarea, summary):focus-visible { outline: 3px solid var(--primary-400, #fb923c); outline-offset: 3px; }
 @media (max-width: 600px) { .sessions-panel { padding: 1rem; } .sessions-set-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sessions-form-feedback { grid-column: 1 / -1; } .sessions-set-form .btn { grid-column: 1 / -1; } .sessions-metrics { grid-template-columns: 1fr; } .sessions-records li { flex-direction: column; gap: .4rem; } .sessions-workouts { grid-template-columns: 1fr; } }
+
+/* The entry surface follows a training notebook: prescription, execution, receipt. */
+.sessions-page { gap: 1rem; }
+.sessions-page-heading { padding: .5rem 0 1rem; border-bottom: 1px solid var(--border-color); }
+.sessions-page-heading h2 { font: 700 clamp(2.6rem, 5vw, 4rem)/.95 var(--font-heading); letter-spacing: -.02em; }
+.sessions-page-heading p:last-child { margin-bottom: 0; }
+.sessions-panel { border-radius: 12px; }
+.sessions-panel > .sessions-header h3 { font: 600 clamp(1.8rem, 3vw, 2.5rem)/1.05 var(--font-heading); }
+.sessions-panel > .sessions-header p:last-child { margin: .4rem 0 0; font-size: .85rem; }
+.sessions-set-form { display: block; margin: 1.5rem 0; padding: clamp(1rem, 3vw, 1.75rem); background: #f3efe6; color: #182332; border-radius: 8px; border-top: 4px solid #ee742d; }
+.sessions-form-stage { margin: 0; padding: 0; border: 0; min-width: 0; }
+.sessions-form-stage legend { padding: 0; margin: 0 0 1rem; color: #182332; font: 600 1.45rem/1.2 var(--font-heading); }
+.sessions-form-stage legend span { display: inline-block; margin-right: .65rem; color: #80502e; font: 600 .8rem var(--font-family); }
+.sessions-stage-entry { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; border-top: 1px solid #cec8bc; padding-top: 1.25rem; margin-top: 1.25rem; }
+.sessions-stage-entry legend { float: left; width: 100%; grid-column: 1 / -1; margin: 0; }
+.sessions-set-form label { font-weight: 600; color: #182332; }
+.sessions-set-form :is(input, select, textarea) { color: #182332; background: #fffdf8; border-color: #a7a395; border-radius: 5px; min-height: 48px; }
+.sessions-set-form :is(input, textarea)::placeholder { color: #656b70; opacity: 1; }
+.sessions-set-form input { font-variant-numeric: tabular-nums; }
+.sessions-set-form .sessions-number-field input { font-size: 1.5rem; font-weight: 600; padding-block: .55rem; }
+.sessions-set-form small, .sessions-set-form p { color: #4b535b; }
+.sessions-prescription { margin-top: .85rem; padding: .65rem .85rem; background: #e7e1d5; font-size: .9rem; border-color: #a45529; }
+.sessions-save-row { display: flex; align-items: center; gap: 1.25rem; border-top: 1px solid #cec8bc; margin-top: 1.25rem; padding-top: 1.25rem; }
+.sessions-save-row .btn { flex-shrink: 0; min-width: 160px; }
+.sessions-form-feedback { font-size: .85rem; }
+.sessions-set-form :is(input, select, textarea, button):focus-visible { outline-color: #975022; }
+.sessions-ledger h4 { font: 600 1.45rem var(--font-heading); }
+.sessions-records { counter-reset: recorded-set; }
+.sessions-records li { counter-increment: recorded-set; padding: 1rem 0; }
+.sessions-records li::before { content: counter(recorded-set, decimal-leading-zero); color: var(--text-secondary); font: 600 .8rem var(--font-family); padding-top: .2rem; }
+.sessions-records li > div { flex: 1; }
+.sessions-records strong { font-size: 1rem; }
+.sessions-records span { font-variant-numeric: tabular-nums; line-height: 1.5; }
+.sessions-set-state { padding: .25rem .55rem; border: 1px solid var(--border-color); border-radius: 4px; }
+.sessions-source-foot { margin-top: 1.5rem; }
+.sessions-source-foot .sessions-history { padding-bottom: 0; }
+.sessions-source-foot summary { display: list-item; font-size: .85rem; color: var(--text-secondary); padding-block: .65rem; }
+.sessions-source-foot article { padding: 1rem 0; }
+.sessions-workout { position: relative; padding: 1.25rem; min-height: 160px; border-left: 3px solid #ee742d; }
+.sessions-workout strong { font: 600 1.7rem/1.1 var(--font-heading); }
+.sessions-workout span:last-child { padding-top: .8rem; color: #ffb583; border-top: 1px solid var(--border-color); }
+.sessions-workout:hover { border-color: #ee742d; background: #172231; }
+.sessions-workout:disabled { cursor: wait; opacity: .65; }
+[data-week-summary] > .sessions-panel { background: #f3efe6; color: #182332; }
+[data-week-summary] :is(p, span) { color: #4b535b; }
+[data-week-summary] h3 { font: 600 1.65rem var(--font-heading); }
+.sessions-metrics { margin: 1.5rem 0; gap: 1.5rem; }
+.sessions-metrics strong { font: 600 clamp(1.75rem, 3vw, 2.4rem)/1.1 var(--font-heading); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.sessions-metrics div + div { border-left: 1px solid #cec8bc; padding-left: 1.5rem; }
+.sessions-muscles { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
+.sessions-muscles li { padding: .35rem .6rem; border: 1px solid #cec8bc; border-radius: 4px; font-size: .85rem; }
+[data-session-history] > .sessions-panel > h3 { font: 600 1.7rem var(--font-heading); }
+[data-session-history] > .sessions-panel > .sessions-history > summary { position: relative; padding-right: 2rem; }
+[data-session-history] > .sessions-panel > .sessions-history > summary::after { content: '+'; position: absolute; right: .3rem; top: .3rem; color: #ffb583; font-size: 1.5rem; }
+[data-session-history] > .sessions-panel > .sessions-history[open] > summary::after { content: '−'; }
+.sessions-evidence { border-left: 2px solid var(--border-color); padding-left: 1.25rem; }
+@media (max-width: 800px) {
+  .sessions-stage-entry { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sessions-metrics { grid-template-columns: 1fr; gap: 1rem; }
+  .sessions-metrics div + div { border-left: 0; border-top: 1px solid #cec8bc; padding: 1rem 0 0; }
+}
+@media (max-width: 600px) {
+  .sessions-panel { padding: 1rem; }
+  .sessions-save-row { flex-direction: column; align-items: stretch; gap: .75rem; }
+  .sessions-save-row .btn { width: 100%; }
+  .sessions-records li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: .5rem; }
+  .sessions-set-state { grid-column: 2; justify-self: start; }
+  .sessions-stage-entry > label:first-of-type, .sessions-stage-entry > label:last-of-type { grid-column: 1 / -1; }
+  .sessions-set-form .sessions-number-field input { font-size: 1.4rem; }
+  .sessions-number-field > span { min-height: 2.8em; line-height: 1.4; }
+  .sessions-panel > .sessions-header .btn { width: 100%; }
+}

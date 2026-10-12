@@ -21,19 +21,30 @@ function container() {
       querySelector(query) {
         if (query === '[data-set-form]') return this.form || null;
         return node(query);
-      }, querySelectorAll: () => [] };
+      }, querySelectorAll: () => item.buttons || [], contains: button => (item.buttons || []).includes(button) };
     Object.defineProperty(item, 'innerHTML', { get: () => item.html || '', set: value => {
       item.html = value; item.writes++;
-      if (selector === '[data-active-session]') item.form = value.includes('data-set-form') ? {
-        elements: Object.fromEntries(['exerciseId', 'kind', 'weightKg', 'reps', 'rir', 'notes'].map(name => [name, { value: name === 'exerciseId' ? '3' : '' }])),
-        querySelector: query => node(query), reportValidity: () => true,
-      } : null;
+      if (selector === '[data-workouts]') item.buttons = [...value.matchAll(/data-start="(\d+)"/g)].map(match => ({ dataset: { start: match[1] }, isConnected: true }));
+      if (selector === '[data-active-session]') {
+        if (item.form) item.form.isConnected = false;
+        item.form = value.includes('data-set-form') ? {
+          isConnected: true,
+          elements: Object.fromEntries(['exerciseId', 'kind', 'weightKg', 'reps', 'rir', 'notes'].map(name => [name, { value: name === 'exerciseId' ? '3' : name === 'kind' ? 'working' : '' }])),
+          querySelector: query => node(query), reportValidity() { return this.elements.exerciseId.value !== ''; },
+        } : null;
+        if (item.form) {
+          const select = item.form.elements.exerciseId;
+          Object.defineProperty(select, 'innerHTML', { get: () => select.html || '', set: html => {
+            select.html = html; select.value = html.match(/<option value="([^"]*)"/)?.[1] || '';
+          } });
+        }
+      }
     } });
     nodes.set(selector, item); return item;
   };
   const dom = { isConnected: true, nodes, node,
     querySelector: selector => selector === '[data-set-form]' ? node('[data-active-session]').form || null : node(selector),
-    querySelectorAll: () => [] };
+    querySelectorAll: selector => selector === '[data-start]' ? node('[data-workouts]').buttons || [] : [] };
   Object.defineProperty(dom, 'innerHTML', { get: () => dom.html || '', set: value => {
     dom.html = value;
     const button = node('[data-sync]');
@@ -214,4 +225,80 @@ test('cache inicial antigo não substitui ficha atual nem recria formulário dig
   assert.equal(form.elements.weightKg.value, '42.5'); assert.equal(form.elements.notes.value, 'Texto escrito após a consulta');
   assert.equal((await h.view.store.state()).sessions[0].id, 'current-active');
   await rendering;
+});
+
+test('botão de ficha captura o plano exibido durante refresh e callback substituído não inicia sessão', async () => {
+  const h = fixture(), dom = container(), old = { ...workout, name: 'Ficha A exibida' }, newer = { ...workout, id: 8, name: 'Ficha B nova' };
+  const rendering = h.view.render(dom); await tick(); h.success(undefined, [old]); await rendering;
+  const button = dom.node('[data-workouts]').buttons[0], held = deferred();
+  h.view.store.mergeHistory = () => held.promise;
+  const started = []; h.view.store.start = async plan => started.push(plan); h.view.afterMutation = async () => {};
+  const refreshing = h.view.refresh(); await tick(); h.success(undefined, [newer]); await tick();
+  assert.match(dom.node('[data-workouts]').innerHTML, /Ficha A exibida/);
+  await button.onclick(); assert.equal(started[0].id, old.id); assert.equal(started[0].name, old.name);
+  held.resolve(); await refreshing;
+  await button.onclick(); assert.equal(started.length, 1, 'botão removido não pode iniciar outra sessão');
+});
+
+test('início que remove o botão continua a sincronização sem reconstruir um rascunho recém-digitado', async () => {
+  const h = fixture({ online: false }), dom = container(), store = await h.view.ensureStore(); await store.cacheWorkouts([workout]);
+  await h.view.render(dom); const start = store.start.bind(store); let form, refreshes = 0;
+  store.start = async plan => { const result = await start(plan); form = dom.node('[data-active-session]').form; form.elements.notes.value = 'Digitado após iniciar'; return result; };
+  h.view.refresh = async () => { refreshes++; };
+  await dom.node('[data-workouts]').buttons[0].onclick();
+  assert.equal(refreshes, 1); assert.equal(dom.node('[data-active-session]').form, form);
+  assert.equal(form.elements.notes.value, 'Digitado após iniciar');
+});
+
+async function activeFormFixture() {
+  const h = fixture(), dom = container(), store = await h.view.ensureStore();
+  await store.cacheWorkouts([workout]); const active = await store.start(workout);
+  const rendering = h.view.render(dom); await tick(); h.success(undefined, [workout], [{ ...active, sets: [] }]); await rendering;
+  const form = dom.node('[data-active-session]').form;
+  form.elements.weightKg.value = '42.5'; form.elements.reps.value = '9'; form.elements.rir.value = '2'; form.elements.notes.value = 'Rascunho';
+  return { h, dom, store, active, form };
+}
+
+test('snapshot canônico preserva exercício por ID e atualiza prescrição sem apagar rascunho', async () => {
+  const { h, dom, active, form } = await activeFormFixture();
+  const revised = { ...workout, exercises: [{ ...workout.exercises[0], name: 'Supino revisado', sets: 5, restSeconds: 90 }] };
+  const refresh = h.view.refresh(); await tick(); h.success(undefined, [revised], [{ ...active, planSnapshot: revised, sets: [] }]); await refresh;
+  assert.equal(dom.node('[data-active-session]').form, form); assert.equal(form.elements.exerciseId.value, '3');
+  assert.equal(form.elements.weightKg.value, '42.5'); assert.equal(form.elements.notes.value, 'Rascunho');
+  assert.match(dom.node('[data-prescription]').textContent, /5 séries.*90s/);
+});
+
+test('exercício removido exige escolha explícita sem atribuir os valores a outro por nome ou posição', async () => {
+  const { h, dom, store, active, form } = await activeFormFixture();
+  const revised = { ...workout, exercises: [{ ...workout.exercises[0], id: 40 }] };
+  const refresh = h.view.refresh(); await tick(); h.success(undefined, [revised], [{ ...active, planSnapshot: revised, sets: [] }]); await refresh;
+  assert.equal(dom.node('[data-active-session]').form, form); assert.equal(form.elements.exerciseId.value, '');
+  assert.match(form.elements.exerciseId.innerHTML, /value="40"/); assert.match(dom.node('[data-session-plan-change]').textContent, /removido.*preservad/i);
+  const before = (await store.state()).operations.length;
+  await form.onsubmit({ preventDefault() {} }); assert.equal((await store.state()).operations.length, before);
+  assert.equal(form.elements.weightKg.value, '42.5'); assert.equal(form.elements.notes.value, 'Rascunho');
+  form.elements.exerciseId.value = '40'; form.elements.exerciseId.onchange(); assert.match(dom.node('[data-prescription]').textContent, /3 séries/);
+});
+
+test('envio de série não duplica e resposta preserva valores editados enquanto addSet aguarda', async () => {
+  const { h, dom, store, form } = await activeFormFixture(); const held = deferred(), submissions = [];
+  store.addSet = (id, values) => { submissions.push({ id, values }); return held.promise; };
+  const first = form.onsubmit({ preventDefault() {} }), second = form.onsubmit({ preventDefault() {} }); await tick();
+  assert.equal(submissions.length, 1); assert.equal(submissions[0].values.notes, 'Rascunho');
+  form.elements.notes.value = 'Nova nota enquanto salva'; form.elements.weightKg.value = '50';
+  held.resolve(); await tick(); h.success(undefined, [workout]); await Promise.all([first, second]);
+  assert.equal(dom.node('[data-active-session]').form, form); assert.equal(form.elements.notes.value, 'Nova nota enquanto salva');
+  assert.equal(form.elements.weightKg.value, '50'); assert.equal(dom.node('[type="submit"]').disabled, false);
+});
+
+test('resposta antiga de addSet não toca feedback, campos ou botão de formulário substituído', async () => {
+  const { h, dom, store, form } = await activeFormFixture(), held = deferred();
+  store.addSet = () => held.promise;
+  const sending = form.onsubmit({ preventDefault() {} }); await tick();
+  h.view.draw(await store.state()); const fresh = dom.node('[data-active-session]').form;
+  fresh.elements.notes.value = 'Novo formulário'; const feedback = dom.node('[data-set-feedback]'); feedback.textContent = 'Estado atual';
+  const button = dom.node('[type="submit"]'); button.disabled = true;
+  held.resolve(); await tick(); if (h.requests.length > 2) h.success(); await sending;
+  assert.equal(fresh.elements.notes.value, 'Novo formulário'); assert.equal(feedback.textContent, 'Estado atual');
+  assert.equal(button.disabled, true); assert.equal(h.requests.length, 2);
 });

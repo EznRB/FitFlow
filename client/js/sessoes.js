@@ -1,7 +1,7 @@
 'use strict';
 // Account identity comes only from Auth.user after the application's /auth/me check.
 const SessoesView = {
-  store: null, storeIdentity: null, storeRequest: null, accountCleanups: new Map(), userId: null, container: null, workouts: [], summary: null, renderGeneration: 0, syncing: null, renderedSessionKey: null,
+  store: null, storeIdentity: null, storeRequest: null, accountCleanups: new Map(), userId: null, container: null, workouts: [], summary: null, renderGeneration: 0, syncing: null, renderedSessionKey: null, activeForm: null,
   queryStates: { workouts: 'loading', history: 'loading' }, queryVersion: 0,
   origens(plan) {
     if (typeof FitFlowExerciseOrigin === 'undefined') return '';
@@ -53,10 +53,10 @@ const SessoesView = {
   escape(value) { return FitFlowSecurity.escapeHtml(value); },
   async render(container) {
     const generation = ++this.renderGeneration, identity = this.identity(), queryVersion = this.queryVersion;
-    this.container = container; this.summary = null;
+    this.container = container; this.summary = null; this.activeForm = null;
     this.queryStates = { workouts: navigator.onLine ? 'loading' : 'offline', history: navigator.onLine ? 'loading' : 'offline' };
     container.innerHTML = `<section class="sessions-page" data-session-page>
-      <header class="sessions-header"><div><p class="sessions-eyebrow">REGISTRO DE TREINO</p><h2>Sessões e séries</h2><p>Registre o que você executou na ficha do instrutor.</p></div><button class="btn btn-secondary" type="button" data-sync disabled aria-busy="true">Atualizando…</button></header>
+      <header class="sessions-header sessions-page-heading"><div><p class="sessions-eyebrow">SEU CADERNO DE TREINO</p><h2>Sessões e séries</h2><p>A ficha orienta. Cada série conta a sua execução.</p></div><button class="btn btn-secondary" type="button" data-sync disabled aria-busy="true">Atualizando…</button></header>
       <p class="sessions-sync" role="status" aria-live="polite" data-sync-status>Carregando a fila deste dispositivo…</p>
       <p class="sessions-message" role="alert" data-session-error hidden></p>
       <div data-active-session></div><p class="sessions-query" role="status" aria-live="polite" data-workouts-query></p><div data-workouts></div><p class="sessions-query" role="status" aria-live="polite" data-history-query></p><div data-week-summary></div><div data-session-history></div>
@@ -176,6 +176,7 @@ const SessoesView = {
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     const key = active ? `${active.id}:${active.status}` : null;
     if (key !== this.renderedSessionKey) { this.draw(state); return; }
+    this.reconcileSetForm(active);
     const blocked = state.operations.filter(op => op.status === 'blocked'), pending = state.operations.length;
     const status = this.container.querySelector('[data-sync-status]');
     status.textContent = blocked.length ? `${blocked.length} registro(s) precisam de revisão. ${pending} envio(s) continuam salvos neste dispositivo.`
@@ -186,8 +187,44 @@ const SessoesView = {
     if (recovery) recovery.hidden = !blocked.some(op => op.sessionId === active?.id);
     this.drawRecords(state); this.drawHistory(state);
   },
+  planSignature(plan) {
+    return JSON.stringify([plan.name, (plan.exercises || []).map(exercise => [exercise.id, exercise.name, exercise.sets,
+      exercise.reps, exercise.restSeconds, exercise.suggestedLoad, exercise.notes])]);
+  },
+  currentSetForm(context) {
+    return context && this.activeForm === context && this.ownsContext(context.scope) && this.current()
+      && context.form.isConnected !== false && context.section.querySelector('[data-set-form]') === context.form;
+  },
+  setDraft(form) {
+    return Object.fromEntries(['exerciseId', 'kind', 'weightKg', 'reps', 'rir', 'notes'].map(name => [name, form.elements[name]?.value || '']));
+  },
+  updatePrescription(context) {
+    const exercise = context.plan.exercises.find(item => item.id === Number(context.form.elements.exerciseId.value));
+    context.section.querySelector('[data-prescription]').textContent = exercise
+      ? `Ficha: ${exercise.sets} séries · ${exercise.reps} repetições${exercise.restSeconds === null || exercise.restSeconds === undefined ? ' · pausa não informada' : ` · descanso ${exercise.restSeconds}s`}${exercise.suggestedLoad ? ` · carga sugerida ${exercise.suggestedLoad}` : ''}${exercise.notes ? ` · ${exercise.notes}` : ''}`
+      : 'Escolha um exercício da ficha atual. Os valores do rascunho foram preservados; nenhum registro será atribuído a outro exercício automaticamente.';
+  },
+  reconcileSetForm(active) {
+    const context = this.activeForm;
+    if (!active || active.id !== context?.sessionId || !this.currentSetForm(context)) return;
+    const signature = this.planSignature(active.planSnapshot);
+    if (signature === context.signature) return;
+    const select = context.form.elements.exerciseId, selected = select.value;
+    const retained = active.planSnapshot.exercises.some(exercise => exercise.id === Number(selected));
+    context.plan = active.planSnapshot; context.signature = signature; context.revision++;
+    select.innerHTML = `${retained ? '' : '<option value="" disabled>Selecione um exercício da ficha atual</option>'}${context.plan.exercises.map(exercise => `<option value="${Number(exercise.id)}">${this.escape(exercise.name)}</option>`).join('')}`;
+    select.value = retained ? selected : '';
+    const notice = context.section.querySelector('[data-session-plan-change]');
+    notice.textContent = retained ? 'A ficha foi atualizada no servidor. O exercício selecionado e os valores do rascunho foram preservados. Confira a prescrição atual antes de salvar.'
+      : 'O exercício selecionado foi removido da ficha atual. Os valores e a nota foram preservados. Escolha explicitamente um exercício e confira esses valores antes de salvar.';
+    notice.hidden = false;
+    context.section.querySelector('[data-session-plan-name]').textContent = context.plan.name;
+    context.section.querySelector('[data-session-origins]').innerHTML = this.origens(context.plan);
+    this.updatePrescription(context);
+  },
   draw(state) {
     if (!this.current()) return;
+    this.activeForm = null;
     const context = this.context();
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     this.renderedSessionKey = active ? `${active.id}:${active.status}` : null;
@@ -195,37 +232,46 @@ const SessoesView = {
     this.container.querySelector('[data-workouts]').innerHTML = active ? '' : `<section class="sessions-panel"><h3>Iniciar uma sessão</h3><div class="sessions-workouts">${this.workouts.length ? this.workouts.map((w, index) => `<button class="sessions-workout" data-start="${index}" type="button"><strong>${this.escape(w.name)}</strong><span>${w.exercises.length} ${w.exercises.length === 1 ? 'exercício' : 'exercícios'} · ficha do instrutor</span><span>Iniciar treino →</span></button>`).join('') : `<p data-workouts-empty>${this.queryEmpty('workouts')}</p>`}</div></section>`;
     if (active) {
       const plan = active.planSnapshot;
-      section.innerHTML = `<section class="sessions-panel"><div class="sessions-header"><div><p class="sessions-eyebrow">${active.status === 'completing' ? 'FINALIZAÇÃO NA FILA' : 'SESSÃO ATUAL'}</p><h3>${this.escape(plan.name)}</h3><p>Iniciada em ${this.escape(new Date(active.clientStartedAt).toLocaleString('pt-BR'))}</p></div>${active.status === 'active' ? '<button class="btn btn-secondary" type="button" data-complete>Finalizar sessão</button>' : ''}</div>
-        ${this.origens(plan)}${active.status === 'active' ? `<form class="sessions-set-form" data-set-form>
-          <label class="sessions-exercise-field">Exercício<select name="exerciseId" required>${plan.exercises.map(e => `<option value="${Number(e.id)}">${this.escape(e.name)}</option>`).join('')}</select></label>
+      section.innerHTML = `<section class="sessions-panel"><div class="sessions-header"><div><p class="sessions-eyebrow">${active.status === 'completing' ? 'FINALIZAÇÃO NA FILA' : 'SESSÃO ATUAL'}</p><h3 data-session-plan-name>${this.escape(plan.name)}</h3><p>Iniciada em ${this.escape(new Date(active.clientStartedAt).toLocaleString('pt-BR'))}</p></div>${active.status === 'active' ? '<button class="btn btn-secondary" type="button" data-complete>Finalizar sessão</button>' : ''}</div>
+        <p class="sessions-query" role="status" data-session-plan-change hidden></p>${active.status === 'active' ? `<form class="sessions-set-form" data-set-form>
+          <fieldset class="sessions-form-stage sessions-stage-exercise"><legend><span aria-hidden="true">01</span> Confira o exercício</legend><label class="sessions-exercise-field">Exercício<select name="exerciseId" required>${plan.exercises.map(e => `<option value="${Number(e.id)}">${this.escape(e.name)}</option>`).join('')}</select></label>
           <p class="sessions-prescription" data-prescription></p>
+          </fieldset><fieldset class="sessions-form-stage sessions-stage-entry"><legend><span aria-hidden="true">02</span> Registre a série executada</legend>
           <label>Tipo de série<select name="kind"><option value="working">Trabalho</option><option value="warmup">Aquecimento</option></select></label>
-          <label>Carga externa (kg)<input name="weightKg" type="number" inputmode="decimal" min="0" max="2000" step="0.01" required placeholder="Ex.: 20"></label>
-          <label>Repetições realizadas<input name="reps" type="number" inputmode="numeric" min="1" max="1000" step="1" required placeholder="Ex.: 10"></label>
+          <label class="sessions-number-field"><span>Carga externa (kg)</span><input name="weightKg" type="number" inputmode="decimal" min="0" max="2000" step="0.01" required placeholder="Ex.: 20"></label>
+          <label class="sessions-number-field"><span>Repetições realizadas</span><input name="reps" type="number" inputmode="numeric" min="1" max="1000" step="1" required placeholder="Ex.: 10"></label>
           <label>RIR (opcional)<input name="rir" type="number" inputmode="decimal" min="0" max="10" step="0.5" placeholder="Ex.: 2"><small>Repetições que você estima ainda conseguir realizar.</small></label>
           <label class="sessions-note-field">Nota da série (opcional)<textarea name="notes" rows="2" maxlength="2000" placeholder="Ex.: técnica, desconforto ou ajuda"></textarea></label>
-          <button class="btn btn-primary" type="submit">Salvar série</button><p class="sessions-form-feedback" aria-live="polite" data-set-feedback></p>
+          </fieldset><div class="sessions-save-row"><button class="btn btn-primary" type="submit">Salvar série</button><p class="sessions-form-feedback" aria-live="polite" data-set-feedback>Um registro por série executada. Acompanhe a confirmação abaixo.</p></div>
         </form>` : '<p>A sessão será finalizada no servidor após sincronizar todas as séries. Seus registros permanecem salvos neste dispositivo.</p>'}
-        <div data-set-records></div><aside data-session-recovery hidden><h4>Esta sessão tem envios rejeitados</h4><p>Você pode arquivar os envios desta sessão neste dispositivo e iniciar outra ficha. Os registros ficam disponíveis para conferência abaixo; o FitFlow não substitui exercícios nem confirma séries rejeitadas.</p><button class="btn btn-secondary" type="button" data-abandon-session>Revisar arquivamento da sessão</button></aside></section>`;
+        <div class="sessions-ledger" data-set-records></div><div class="sessions-source-foot" data-session-origins>${this.origens(plan)}</div><aside data-session-recovery hidden><h4>Esta sessão tem envios rejeitados</h4><p>Você pode arquivar os envios desta sessão neste dispositivo e iniciar outra ficha. Os registros ficam disponíveis para conferência abaixo; o FitFlow não substitui exercícios nem confirma séries rejeitadas.</p><button class="btn btn-secondary" type="button" data-abandon-session>Revisar arquivamento da sessão</button></aside></section>`;
       const form = section.querySelector('[data-set-form]');
       if (form) {
-        const prescription = () => {
-          const exercise = plan.exercises.find(e => e.id === Number(form.elements.exerciseId.value));
-          section.querySelector('[data-prescription]').textContent = `Ficha: ${exercise.sets} séries · ${exercise.reps} repetições${exercise.restSeconds === null || exercise.restSeconds === undefined ? ' · pausa não informada' : ` · descanso ${exercise.restSeconds}s`}${exercise.suggestedLoad ? ` · carga sugerida ${exercise.suggestedLoad}` : ''}${exercise.notes ? ` · ${exercise.notes}` : ''}`;
-        };
-        form.elements.exerciseId.onchange = prescription; prescription();
-        form.onsubmit = async event => {
-          event.preventDefault(); if (!this.ownsContext(context) || !form.reportValidity()) return;
+        const formContext = { scope: context, form, section, sessionId: active.id, plan, signature: this.planSignature(plan), revision: 0, pending: null };
+        this.activeForm = formContext;
+        form.elements.exerciseId.onchange = () => { if (this.currentSetForm(formContext)) this.updatePrescription(formContext); };
+        this.updatePrescription(formContext);
+        form.onsubmit = event => {
+          event.preventDefault(); if (!this.currentSetForm(formContext)) return;
+          if (formContext.pending) return formContext.pending;
+          if (!form.reportValidity()) return;
+          const draft = this.setDraft(form), revision = formContext.revision;
+          if (!formContext.plan.exercises.some(exercise => exercise.id === Number(draft.exerciseId))) return;
           const button = form.querySelector('[type="submit"]'); button.disabled = true;
-          try {
-            await context.store.addSet(active.id, { exerciseId: Number(form.elements.exerciseId.value), kind: form.elements.kind.value,
-              weightKg: Number(form.elements.weightKg.value), reps: Number(form.elements.reps.value),
-              rir: form.elements.rir.value === '' ? null : Number(form.elements.rir.value), notes: form.elements.notes.value });
-            if (!this.ownsContext(context) || !this.current()) return;
-            section.querySelector('[data-set-feedback]').textContent = 'Série salva neste dispositivo.';
-            form.elements.notes.value = ''; await this.refresh();
-          } catch (error) { if (this.ownsContext(context)) this.error(error.message); }
-          finally { button.disabled = false; }
+          formContext.pending = Promise.resolve().then(async () => {
+            try {
+              if (!this.currentSetForm(formContext)) return;
+              await context.store.addSet(active.id, { exerciseId: Number(draft.exerciseId), kind: draft.kind,
+                weightKg: Number(draft.weightKg), reps: Number(draft.reps), rir: draft.rir === '' ? null : Number(draft.rir), notes: draft.notes });
+              if (!this.currentSetForm(formContext)) return;
+              const unchanged = revision === formContext.revision && JSON.stringify(this.setDraft(form)) === JSON.stringify(draft);
+              section.querySelector('[data-set-feedback]').textContent = unchanged ? 'Série salva neste dispositivo.' : 'Série salva neste dispositivo. As alterações feitas no rascunho durante o envio foram preservadas.';
+              if (unchanged) form.elements.notes.value = '';
+              await this.refresh();
+            } catch (error) { if (this.currentSetForm(formContext)) this.error(error.message); }
+            finally { formContext.pending = null; if (this.currentSetForm(formContext)) button.disabled = false; }
+          });
+          return formContext.pending;
         };
       }
       const complete = section.querySelector('[data-complete]');
@@ -245,19 +291,25 @@ const SessoesView = {
         }, 'Arquivar envios e liberar nova sessão');
       };
     } else section.innerHTML = '';
-    this.container.querySelectorAll('[data-start]').forEach(button => { button.onclick = async () => {
-      if (!this.ownsContext(context)) return;
-      button.disabled = true;
-      try { await context.store.start(this.workouts[Number(button.dataset.start)]); await this.afterMutation(context); }
-      catch (error) { if (this.ownsContext(context)) this.error(error.message); button.disabled = false; }
-    }; });
+    const workoutsAnchor = this.container.querySelector('[data-workouts]');
+    this.container.querySelectorAll('[data-start]').forEach(button => {
+      const workout = this.workouts[Number(button.dataset.start)];
+      const current = () => this.ownsContext(context) && button.isConnected !== false
+        && this.container.querySelector('[data-workouts]') === workoutsAnchor && workoutsAnchor.contains(button);
+      button.onclick = async () => {
+        if (!current() || button.disabled) return;
+        button.disabled = true;
+        try { await context.store.start(workout); if (this.ownsContext(context)) await this.afterMutation(context); }
+        catch (error) { if (current()) { this.error(error.message); button.disabled = false; } }
+      };
+    });
     this.updateIndicators(state);
   },
   async afterMutation(context) {
     if (!this.ownsContext(context) || !this.current()) return;
     const state = await context.store.state();
     if (!this.ownsContext(context) || !this.current()) return;
-    this.draw(state); await this.refresh();
+    this.updateIndicators(state); await this.refresh();
   },
   drawRecords(state) {
     const slot = this.container?.querySelector('[data-set-records]'); if (!slot) return;
@@ -281,7 +333,7 @@ const SessoesView = {
     const week = this.summary;
     this.container.querySelector('[data-week-summary]').innerHTML = week ? `<section class="sessions-panel"><h3>Últimos 7 dias · registros sincronizados</h3><div class="sessions-metrics"><div><strong>${week.workingSets}</strong><span>Séries de trabalho</span></div><div><strong>${Number(week.workingVolumeKg).toLocaleString('pt-BR')} kg·reps</strong><span>Volume de trabalho registrado</span></div><div><strong>${week.warmupSets}</strong><span>Séries de aquecimento</span></div></div><p>Horário de execução informado pelo aluno. Aquecimento: ${Number(week.warmupVolumeKg).toLocaleString('pt-BR')} kg·reps.</p><ul class="sessions-muscles">${Object.entries(week.directSetsByMuscle).map(([muscle, count]) => `<li>${this.escape(muscle)}: ${count} ${count === 1 ? 'série direta' : 'séries diretas'}</li>`).join('')}</ul>${week.unknownMuscleSets ? `<p>${week.unknownMuscleSets} ${week.unknownMuscleSets === 1 ? 'série' : 'séries'} sem grupo muscular conhecido.</p>` : ''}<p>Compare exercícios equivalentes e a mesma técnica. O volume registrado não mede estímulo muscular nem determina uma prescrição individual.</p></section>` : '';
   },
-  destroy() { ++this.renderGeneration; this.container = null; this.renderedSessionKey = null; this.syncing = null; },
+  destroy() { ++this.renderGeneration; this.container = null; this.renderedSessionKey = null; this.syncing = null; this.activeForm = null; },
   clearAccount(userId, store = null) {
     const pending = this.accountCleanups.get(userId);
     if (pending) return pending;
@@ -300,7 +352,7 @@ const SessoesView = {
     }
     ++this.renderGeneration;
     const store = this.store; this.store = null; this.storeIdentity = null; this.storeRequest = null; this.syncing = null;
-    this.userId = null; this.workouts = []; this.summary = null; this.container = null; this.renderedSessionKey = null;
+    this.userId = null; this.workouts = []; this.summary = null; this.container = null; this.renderedSessionKey = null; this.activeForm = null;
     if (!['expired', 'password_changed'].includes(reason)) await this.clearAccount(loggedOutUserId, store);
     else if (store) await store.dispose({ clear: false });
   },
