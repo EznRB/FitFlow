@@ -138,7 +138,8 @@ test('classificador plano sem program despacha resposta ou esclarecimento, nunca
       calls++;
       const request = JSON.parse(options.body);
       assert.equal(request.response_format.type, 'json_schema');
-      return stageUpstream(options, { message: 'Podemos revisar a distribuição conforme sua rotina e esclarecer os limites da evidência.',
+      return stageUpstream(options, { message: kind === 'clarification' ? { reason: 'missing_context', fields: ['availability'] }
+        : 'Podemos revisar a distribuição conforme sua rotina e esclarecer os limites da evidência.',
         sourceIds: kind === 'clarification' ? [] : ['split-2024'], kind });
     } });
     const result = await current.chat(input());
@@ -159,7 +160,7 @@ test('esclarecimento admite fontes vazias e resposta longa continua no históric
   let forwarded;
   const current = service({ fetchImpl: async (_, options) => {
     forwarded = JSON.parse(options.body).messages;
-    return upstream({ message: 'Quais equipamentos você tem e quanto tempo consegue reservar em cada dia?',
+    return upstream({ message: { reason: 'missing_context', fields: ['equipment', 'duration'] },
       kind: 'clarification', sourceIds: [] });
   } });
   const previousAnswer = 'Rascunho educativo. '.repeat(200);
@@ -182,27 +183,21 @@ test('fontes inventadas, links/HTML, extra keys e resposta inconsistente são re
   assert.equal(result.sources.length, 1);
 });
 
-test('formatação Markdown inofensiva vira texto legível sem perder contagens, distinções ou cabeçalhos da tabela', async () => {
+test('esclarecimento antigo com Markdown e afirmações livres é recusado sem aproveitar a prosa', async () => {
   const current = service({ fetchImpl: async (_, options) => stageUpstream(options, { ...valid, kind: 'clarification', sourceIds: ['acsm-2026'],
     message: '### Séries planejadas\n**Peito tem 9 séries diretas; posteriores têm 3.**\nDez séries não são mínimo universal. [acsm-2026; split-2024]\n\n| Indicador | Significado |\n|---|---|\n| Séries diretas | Contagem planejada, não execução |\n| Tonelagem | Carga externa × repetições registradas |' }) });
-  const result = await current.chat(input('Por que peito tem nove séries?'));
-  assert.match(result.message, /^Séries planejadas\nPeito tem 9 séries diretas; posteriores têm 3\./);
-  assert.match(result.message, /Dez séries não são mínimo universal/);
-  assert.match(result.message, /Indicador: Séries diretas; Significado: Contagem planejada, não execução/);
-  assert.match(result.message, /Indicador: Tonelagem; Significado: Carga externa × repetições registradas/);
-  assert.doesNotMatch(result.message, /\*\*|###|\|---/);
-  assert.doesNotMatch(result.message, /\[acsm-2026/);
+  await assert.rejects(current.chat(input('Por que peito tem nove séries?')), error => error.statusCode === 502
+    && !/Peito|Tonelagem/.test(error.message));
 });
 
-test('comparações numéricas em esclarecimento viram texto sem liberar HTML', async () => {
+test('esclarecimento não aceita comparações numéricas livres; HTML também permanece recusado', async () => {
   let calls = 0;
   const current = service({ fetchImpl: async (_, options) => {
     calls++;
     return stageUpstream(options, { ...valid, kind: 'clarification', message: 'Comparações do exemplo: descanso > 60 s; valor < 90. Estes sinais não são limites científicos universais.' });
   } });
-  const result = await current.chat(input());
+  await assert.rejects(current.chat(input()), error => error.statusCode === 502);
   assert.equal(calls, 1);
-  assert.match(result.message, /maior que 60 s; valor menor que 90/);
   for (const message of ['Não executar <script>1</script>.', 'Não executar <img src=x onerror=1>.']) {
     let rejectedCalls = 0;
     await assert.rejects(service({ fetchImpl: async () => { rejectedCalls++; return upstream({ ...valid, message }); } }).chat(input()), error => error.statusCode === 502);

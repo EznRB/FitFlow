@@ -147,8 +147,8 @@ const API = {
     return this.request(endpoint, { method: 'POST', body, signal: options.signal, timeoutMs: options.timeoutMs });
   },
 
-  put(endpoint, body) {
-    return this.request(endpoint, { method: 'PUT', body });
+  put(endpoint, body, options = {}) {
+    return this.request(endpoint, { method: 'PUT', body, signal: options.signal, timeoutMs: options.timeoutMs });
   },
 
   delete(endpoint) {

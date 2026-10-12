@@ -42,6 +42,11 @@ function enumArray(value, values, min = 1, max = values.length) {
     && new Set(value).size === value.length && value.every(item => values.includes(item));
 }
 function invalid() { throw new AppError('A IA não gerou um rascunho consistente com a conversa. Tente esclarecer os dias, o tempo e os equipamentos disponíveis.', 502); }
+function clarify(fields, reason = 'conflicting_context') {
+  const error = new AppError('Reconfirme o contexto antes de montar o rascunho.', 502);
+  error.routineClarification = { reason, fields: [...new Set(fields)] };
+  throw error;
+}
 
 function normalized(value) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 const dayPatterns = { monday: /\b(?:seg(?:unda(?:-feira)?)?|mon(?:day)?)\b/,
@@ -52,6 +57,77 @@ const equipmentPatterns = { dumbbells: /halter|dumbbell/, barbell: /barbell|barr
   machines: /maquina|machine|smith|barra guiada/,
   cables: /polia|cabo|cable|pulley|crossover|cross-over/, bands: /elastic|band/, kettlebell: /kettlebell/, bench: /banco|bench/ };
 function equipmentHints(text) { return Object.entries(equipmentPatterns).filter(([, pattern]) => pattern.test(text)).map(([item]) => item); }
+const goalPatterns = { hypertrophy: /hipertrof|muscle growth/, strength: /\bforca\b|\bstrength\b/,
+  general: /condicionamento|general fitness/ };
+function explicitlyMentionedGoals(text) {
+  return Object.entries(goalPatterns).filter(([, pattern]) => pattern.test(text)).map(([goal]) => goal);
+}
+function scopeContradiction(text) {
+  // Detecta somente declarações textuais explícitas; não infere doença, idade
+  // ou aptidão de sintomas. Casos não reconhecidos precisam de confirmação.
+  return text.split(/[.;!?\n]|\b(?:mas|porem|contudo|but|however)\b/).some(clause =>
+    /\b(?:nao sou|nao me considero|nao confirmo|nao confirmei|nao estou)\b[^.;!?]{0,90}\b(?:adult[oa]|saudavel|escopo)\b/.test(clause)
+    || /\b(?:sou|estou|tenho)\s+(?:com\s+)?(?:uma?\s+)?(?:menor de idade|gestante|gravida|lesao|condicao clinica)/.test(clause));
+}
+function positiveScopeDeclaration(text, quote) {
+  const source = normalized(text), quoted = normalized(quote);
+  const clauses = source.match(/[^.;!?\n]+[.;!?]?/g) || [];
+  const declaration = clauses.findLast(clause => clause.includes(quoted));
+  if (!declaration || declaration.trim().endsWith('?')
+    || /\b(?:nao sei|nao tenho certeza|tenho duvida|talvez|acho que|suponho|sera que|o que significa|como saber)\b/.test(declaration)) return false;
+  // Reconhece uma afirmação do próprio usuário ou um cenário educativo
+  // declarado; reconhecer palavras em uma pergunta não confirma elegibilidade.
+  return /\b(?:sou|confirmo|declaro|me considero)\b/.test(declaration)
+    || /\bcenario(?:\s+ficticio|\s+educativo)?\s+(?:de|para)\s+adult[oa]\b/.test(declaration)
+    || declaration.split(',').some(part => /^\s*adult[oa]\s+saudavel\b/.test(part));
+}
+function fieldDeclaration(field, text) {
+  const statements = normalized(text).split(/(?<=[.!?;])\s*|\n/).filter(clause => !clause.trim().endsWith('?')).join(' ');
+  if (!statements) return false;
+  const correction = /correcao|corrig|na verdade|agora|mudei|mudou/.test(statements);
+  if (field === 'scope') return /adult[oa]|saudavel|menor de idade|gestante|gravida|lesao|condicao clinica/.test(statements)
+    && /sou|estou|confirm|tenho|correcao|na verdade/.test(statements);
+  if (field === 'goal') return explicitlyMentionedGoals(statements).length > 0
+    && (correction || /objetivo|quero|busco|foco|prioridade/.test(statements));
+  if (field === 'equipment') return (equipmentHints(statements).length > 0 || /academia completa|peso corporal/.test(statements))
+    && (correction || /tenho|possuo|dispon|acesso|somente|apenas|\bso\b|\bsem\b/.test(statements));
+  if (field === 'experience') return /iniciante|intermediario|avancado|beginner|intermediate|advanced/.test(statements)
+    && (correction || /sou|experiencia|nivel/.test(statements));
+  if (field === 'duration') return /\d\s*(?:min|h\b|hora)|\d+h\d|meia hora|uma hora/.test(statements)
+    && (correction || /tenho|posso|consigo|sessao|trein|dispon|\bpor\b/.test(statements));
+  return (days.some(day => dayPatterns[day].test(statements)) || /dias uteis|fim de semana|weekdays|weekend/.test(statements))
+    && (correction || /posso|consigo|dispon|livre|trein|somente|apenas|\bso\b/.test(statements));
+}
+function checkContextEvidence(context, userTexts) {
+  const quotes = { availability: 'availabilityQuote', duration: 'durationQuote', equipment: 'equipmentQuote',
+    experience: 'experienceQuote', goal: 'goalQuote', scope: 'healthyAdultQuote' };
+  // Cada campo pode vir de um turno diferente. Uma declaração posterior do
+  // mesmo campo torna a citação anterior insuficiente: nunca mesclar por palpite.
+  const stale = [];
+  for (const [field, key] of Object.entries(quotes)) {
+    const index = userTexts.findLastIndex(text => text.includes(context[key]));
+    const origin = userTexts[index];
+    const remainder = origin.slice(origin.lastIndexOf(context[key]) + context[key].length);
+    if (fieldDeclaration(field, remainder) || userTexts.slice(index + 1).some(text => fieldDeclaration(field, text))) stale.push(field);
+  }
+  if (stale.length) clarify(stale);
+  const scopeText = normalized(context.healthyAdultQuote);
+  const scopeOrigin = userTexts.findLast(text => text.includes(context.healthyAdultQuote));
+  if (scopeContradiction(normalized(scopeOrigin))) clarify(['scope'], 'scope_confirmation');
+  if (!/adult[oa]|maior de\s*(?:18|dezoito)/.test(scopeText) || !/\bsaudavel\b|healthy/.test(scopeText)
+    || scopeContradiction(scopeText) || !positiveScopeDeclaration(scopeOrigin, context.healthyAdultQuote)) clarify(['scope'], 'scope_confirmation');
+  const goals = explicitlyMentionedGoals(normalized(context.goalQuote));
+  if (goals.length !== 1 || goals[0] !== context.goal) clarify(['goal']);
+  const goalOrigin = normalized(userTexts.findLast(text => text.includes(context.goalQuote)));
+  if (goalOrigin.split(/[,.;!?\n]|\b(?:mas|porem|contudo)\b/).some(clause =>
+    (/\bnao\s+(?:quero|busco|pretendo|tenho como objetivo)\b/.test(clause) && goalPatterns[context.goal].test(clause))
+    || clause.split(/\bnao\b/).slice(1).some(denial => goalPatterns[context.goal].test(denial)))) clarify(['goal']);
+  // A citação curta "halteres" também aparece em "não tenho halteres".
+  // Conferir o turno original evita usar o recorte como confirmação positiva.
+  const equipmentOrigin = userTexts.findLast(text => text.includes(context.equipmentQuote));
+  try { checkEquipmentContext({ ...context, equipmentQuote: equipmentOrigin }); }
+  catch (error) { if (error instanceof AppError) clarify(['equipment']); throw error; }
+}
 function exerciseEquipmentConsistent(exercise) {
   const name = normalized(exercise.name);
   const hints = equipmentHints(name).filter(item => (item !== 'barbell' || !/barra fixa|barra paralela|barra guiada|smith/.test(name))
@@ -71,6 +147,13 @@ function repetitionsRepresentable(name) {
 }
 function checkExplicitContext(context) {
   const available = normalized(context.availabilityQuote);
+  const deniedDays = new Set();
+  for (const clause of available.split(/[,.;!?\n]|\b(?:mas|porem|contudo|but|however)\b/)) {
+    if (/\bnao\s+(?:posso|consigo|vou|quero|tenho disponibilidade)|\bsem disponibilidade/.test(clause)) {
+      days.filter(day => dayPatterns[day].test(clause)).forEach(day => deniedDays.add(day));
+    }
+  }
+  if (context.availableDays.some(day => deniedDays.has(day))) clarify(['availability']);
   let indicatedDays = days.filter(day => dayPatterns[day].test(available));
   if (/dias uteis|weekdays/.test(available)) indicatedDays = days.slice(0, 5);
   if (/fim de semana|finais de semana|weekends/.test(available)) indicatedDays = days.slice(5);
@@ -96,7 +179,9 @@ function checkExplicitContext(context) {
   if (/\b(?:iniciante|beginner)\b/.test(experience) && context.experience !== 'beginner') invalid();
   if (/\b(?:intermediario|intermediate)\b/.test(experience) && context.experience !== 'intermediate') invalid();
   if (/\b(?:avancado|advanced)\b/.test(experience) && context.experience !== 'advanced') invalid();
-
+  checkEquipmentContext(context);
+}
+function checkEquipmentContext(context) {
   const equip = normalized(context.equipmentQuote);
   const allowed = new Set(['bodyweight']);
   if (/(?:academia|ginasio)\s+complet[ao]|(?:full|fully equipped)\s+gym/.test(equip)) {
@@ -132,6 +217,7 @@ function validateProgram(program, messages) {
   for (const name of ['availabilityQuote', 'durationQuote', 'equipmentQuote', 'experienceQuote', 'goalQuote', 'healthyAdultQuote']) {
     if (!plain(context[name]) || !userTexts.some(text => text.includes(context[name]))) invalid();
   }
+  checkContextEvidence(context, userTexts);
   checkExplicitContext(context);
   if (!Array.isArray(program.sessions) || program.sessions.length < 1 || program.sessions.length > context.availableDays.length
     || program.sessions.length > 6 || new Set(program.sessions.map(session => session?.day)).size !== program.sessions.length) invalid();

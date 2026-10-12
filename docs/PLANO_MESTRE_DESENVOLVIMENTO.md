@@ -29,68 +29,44 @@ Manter a identidade laranja/navy e Barlow. O usuário rejeitou o aspecto genéri
 - Sandbox de cartão confirma/rejeita/mantém pendente adequadamente; Pix gera QR/pendente sem renovar vigência, sem exigir liquidação indisponível nesse ambiente. Chaves não vão ao frontend.
 - Limitações e pendências estão documentadas; testes obrigatórios passam.
 
-## Estado
+## Estado e prioridade de execução
 
-Em desenvolvimento, com integração local/remota em 12/10/2026. MariaDB nativo funciona sem Docker; oito migrations MySQL e contas demonstrativas isoladas. Neon PostgreSQL 17 Free em São Paulo tem cinco migrations próprias aplicadas nas duas branches, incluindo idempotência manual, origem, ajustes financeiros e versão de credencial. Login público recuperado com credenciais novas, sem recuperação dos dados Aiven. Gestão, catálogo wger, sessões/séries, progressão e nutrição optativa implementados. Credenciais Mercado Pago continuam pendentes. Groq Free foi confirmado no console; chave e flag Free estão configuradas privadamente em Production/Preview.
+A meta permanece ativa. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
 
-Na revisão `bb68606`, Planos agora protege requisições e formulários de contextos anteriores. Campos mobile de 16 pixels e duração personalizada condicional foram conferidos em HTTPS. [Captura 39](evidence/39-plano-vigencia-mobile-vercel.png). Gestão HTTPS e capturas 37/38 registram `16b09b6`; conversa real e capturas 35/36 registram `943d495`.
+1. Validar e corrigir problemas concretos das jornadas de gestão/aluno, incluindo estados de presença e do chat, preservando identidade, rascunhos e resultados reais. Reproduzir o problema e verificar os casos relevantes antes de publicar.
+2. Continuar a revisão de UX/UI do site inteiro pelo [brief visual](REVISAO_VISUAL_SISTEMA.md): comparar composição por tarefa com referências primárias; conferir carregamento, vazio, falha, formulário, resultado, foco/teclado/contraste e desktop/tablet/mobile. Preservar laranja/navy/Barlow, ciência, licenças e histórico.
+3. Manter documentação corrente curta e consistente, execução reproduzível e relatos históricos separados. Conferir links, segredos conhecidos e critérios acadêmicos, sem usar documentação ou CI como substituto dos gates funcionais.
+4. Retomar os gates externos quando o proprietário disponibilizar os acessos e aparelho. O pedido para guardar perguntas enquanto ele trabalha continua aplicável; avançar autonomamente no trabalho independente.
+5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. PRs draft continuam sujeitos a revisão/integração.
 
-Chat contextual homologado em `943d495` (401/401), capturas 35/36: rotina inicial em `5e4ec38` e repetição manual da continuação em `943d495`. Histórico em memória e conteúdo curado são escolhas explícitas; resultados iniciais reprovados permanecem registrados. A amostra final não certifica futuras gerações nem adequação individual.
+A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. A configuração externa do Mercado Pago permanece pendente e não se torna aprovada por testes simulados ou recebimentos manuais.
 
-Gates anteriores: PostgreSQL nativo/Neon isolado, runtime limitado, HTTPS de perfis e gestão, nutrição consentida, presença, renovação/replay e fixtures próprias limpas. No navegador publicado, treino persistiu com 20 kg × 8/RIR 2/160 kg·reps e nutrição foi salva/restaurada exigindo nova confirmação. Fila local sincronizou série uma vez e recarga offline retornou fallback público.
+## Gates obrigatórios ainda abertos
 
-Revisão anterior `62ff0af`: guardas de sessões/IDB/epoch e limpeza aguardada entre abas, sem migration. Hashes publicados conferidos, sessão do aluno restaurada e histórico 20 kg × 8/RIR 2/160 kg·reps verificado em 375 × 812, captura 26. As corridas foram reproduzidas nos harnesses controlados; a captura comprova o fluxo normal. Gestão HTTPS anterior `4b89e3` e captura 24 permanecem evidências datadas. Landing `c6b43ba` READY. Papel `fitflow_runtime` removido com autorização e ausência reconfirmada pelo MCP.
+| Gate | Condição concreta para concluir | Referência |
+|---|---|---|
+| Pix/cartão sandbox externo | Proprietário configura conta, vendedor/comprador de teste, token e webhook. Verificar cartão aprovado/rejeitado/pendente, assinatura/replay e Pix QR/pendente sem renovação. Pix aprovado em double não comprova liquidação. | [Roteiro do provedor](PAGAMENTOS_SANDBOX.md) |
+| Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
+| Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
+| Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |
+| Revisão/integração de PRs | Revisar os PRs draft do aplicativo e da landing, resolver os achados e conferir gates/resultados. Deployment público não significa merge. | [Estado e PRs](STATUS_ENTREGA.md) |
 
-Revisão de gestão/login `3adf5c1`: publicada em READY com [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38054589595). HTML/login.css/WEBP/alunos.js coincidiram com o checkout; saúde HTTP 200 e banco ready. Gate HTTPS de gestão aprovado, com três logins e fixtures próprias removidas, sem reset de quotas. Login editorial conferido localmente em 1280 e 375 pixels com teclado e controles; quatorze testes novos protegem lista/formulário/modal de alunos e três backend cobrem edição parcial/cancelamento/presença inativa.
+## Invariantes do desenvolvimento
 
-Groq Free a US$ 0 foi confirmado. A explicação real local de divisões levou aproximadamente 1,2 segundo e foi inspecionada contra Ramos-Campo (2024)/ACSM (2026); divisões reais em HTTPS também foram conferidas. Nutrição real publicada foi inspecionada com limitação terminológica basal/repouso, sem certificação factual integral. Captura 27 e geração desativada pertencem à revisão anterior `7b856e0`; capturas 28/29/31 registram o novo login e captura 30 registra nutrição. Não há fallback pago. [Receita e evidências](IA_GRATUITA.md).
+- Preservar migrations aplicadas, histórico real e filas ainda não sincronizadas. Testes integrados usam destino explícito e fixtures próprias; limpar somente os IDs criados. Não apagar registros antigos por semelhança.
+- Catálogo descreve movimentos: sua licença/autoria não valida prescrição. O servidor captura a origem na ficha e na sessão; não reconstruir origem pelo nome. Progressão continua por ID do exercício da ficha.
+- Carga externa × repetições, séries planejadas/executadas e estimativa de RIR mantêm seus conceitos distintos. Não preencher dados ausentes nem declarar estímulo/força individual por tonelagem.
+- Equações nutricionais e contagens são determinísticas; referências científicas, população, hipóteses e limitações permanecem explícitas. Amostra reprovada continua reprovada no histórico mesmo após correção posterior.
+- Chat exige consentimento para mensagens digitadas; não anexar automaticamente medidas/perfil/ficha. Proposta educativa não aplica ficha; formato JSON não certifica veracidade ou adequação individual. Quota/erro não aciona fallback pago.
+- Lançamento manual e ajuste auditado não cobram nem reembolsam no provedor. Retorno do checkout no navegador não confirma pagamento. Resultado incerto mantém contexto/identificador aplicável, sem recompra automática.
+- Desenvolvimento local nativo funciona sem Docker. Usar wrappers identificados para banco local/Neon de verificação; não herdar DATABASE_URL de outra aplicação.
 
-A revisão anterior `9e1b5c5` acrescentou fatos operacionais ao contexto, mas a segunda amostra real de volume confundiu séries previstas com repetições e foi reprovada. As duas reprovações motivaram substituir inferência nesse tema por glossário revisado determinístico, sem provedor externo.
+## Referências e planos de origem
 
-A baseline `f9ac83d`, preservada na revisão publicada, implementa essa decisão: glossário fixo, `generatedByAI: false`, botão **Entender indicadores**, sem chamada externa/quota de inferência e com autenticação/autorização/CSRF/proteção global mantidas. Prompt nutricional distingue repouso e basal. Naquela revisão, deployment `dpl_AhGq8iVB9UYq55ZjDmP51zpDPZGq` READY, alias e [CI aprovados](https://github.com/EznRB/FitFlow/actions/runs/38055351767). Saúde/banco e hashes conferidos; navegador confirmou o glossário, captura 32. Implantação atual e verificações posteriores em [Estado da entrega](STATUS_ENTREGA.md).
+- [Arquitetura e contratos](ARQUITETURA.md), [desenvolvimento e gates](DESENVOLVIMENTO.md), [banco/Vercel](BANCO_REMOTO_VERCEL.md).
+- [Ciência e fontes](CIENCIA.md), [auditoria científica](AUDITORIA_CIENTIFICA_FINAL.md), [IA gratuita](IA_GRATUITA.md).
+- [Ajustes financeiros](AJUSTES_FINANCEIROS.md), [troca de senha](TROCA_SENHA.md), [datas e fuso](DATAS_E_FUSO.md).
+- [Ferramentas, MCPs e repositórios pesquisados](FERRAMENTAS_E_INTEGRACOES.md), [direção e referências visuais](REVISAO_VISUAL_SISTEMA.md).
+- Planos datados: [landing](superpowers/plans/2026-10-07-landing.md), [UX/arquitetura](superpowers/plans/2026-10-07-sistema-ux-arquitetura.md), [ciência/IA/mobile](superpowers/plans/2026-10-07-ciencia-ia-mobile.md). Registram decisões anteriores, não o estado vigente.
 
-Mercado Pago real de teste, telefone físico/instalação, reconexão publicada e revisão/merge dos PRs continuam pendentes. A conta Mercado Pago ainda precisa ser criada/configurada. Troca de senha pelo titular e revogação passaram nos bancos nativos, Neon de verificação e HTTPS publicado em `3f48109`; [contrato e limites](TROCA_SENHA.md). A primeira revisão visual amplia a composição das telas, com 503/503 testes locais e publicação verificada em `460e7b0`; a revisão completa permanece em andamento. Ajustes financeiros administrativos estão implementados em `9d0361e`; não executam devoluções no provedor. Proveniência do catálogo implementada em `8c35628`, sem reclassificar o histórico existente. Corridas da tela de Planos foram corrigidas e verificadas em `bb68606`. A entrega completa depende desses itens; o trabalho independente continua conforme solicitado. [Estado completo](STATUS_ENTREGA.md) e [revisão atual](REVISAO_FINAL.md).
-
-Planos detalhados anteriores: `superpowers/plans/2026-10-07-landing.md`, `2026-10-07-sistema-ux-arquitetura.md` e `2026-10-07-ciencia-ia-mobile.md`. Estado atual em `STATUS_ENTREGA.md`; planos datados registram decisões anteriores.
-
-### Integração do catálogo — implementada
-
-`catalogExerciseId` opcional e `catalogSnapshot` versionado são capturados pelo servidor na transação da ficha. A origem original é separada da adaptação do instrutor, com créditos de base/texto/imagem; a sessão copia essa origem ao iniciar. Migrations aditivas e gates reais antecederam a publicação. Exercícios manuais e legados permanecem sem referência, sem reconstrução por nome. A progressão continua separada por ID do exercício da ficha, mesmo quando duas fichas usam o mesmo catálogo.
-
-## Marco de formulários — 12/10/2026
-
-`b5d4288` (`b5d42889d8a1f642bc591bbbf27cdb832863b6a4`), Production READY `dpl_3Rq7d7WRpNTzsEgWyrK1uEhhRBsB`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-4onrza31i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38209366822) e Preview Git aprovado. Suíte integral **507/507**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 16 hashes de interface/autenticação/financeiro conferidos.
-
-Em `b5d4288`, matrícula, edição e planos têm campos agrupados por tarefa e controles de 16 px; ações de criar funcionam durante o carregamento. Falhas nas listas oferecem recuperação sem duplicar notificações. Resultado nutricional preenchido ganhou contraste correto; editor de treino mobile evita rolagem sobreposta e tem ações de 44 × 44 px. Quatro novos casos estão incluídos em 507/507. Navegador público confirmou matrícula e cenário fictício Mifflin (2.670 kcal/dia, 128 g de proteína, 372,6 g de carboidrato e 74,2 g de gordura), sem cadastro ou salvamento. [Matrícula publicada](evidence/84-matricula-vercel.png) e [resultado publicado](evidence/85-nutricao-resultado-vercel.png). Recuperação com interrupção intencional do Node e as verificações mobile adicionais são locais; não comprovam aparelho físico.
-
-## Marco financeiro — 11/10/2026
-
-Correções de recebimentos manuais e devoluções informadas são eventos permanentes com UUID, motivo, responsável, saldo em centavos e efeito explícito de vigência. O recibo pago é protegido por trigger; não há operação de reembolso no provedor por esse formulário. Novos recebimentos capturam concessão real; registros legados não permitem reversão automática. Alteração de plano/status exige revisão atual e todos os escritores de matrícula compartilham o lock. Relatórios separam bruto, correções, devoluções informadas e líquido pela data efetiva do evento. [Contrato e testes](AJUSTES_FINANCEIROS.md).
-
-Gates reais aprovados nos dois bancos nativos, branch Neon de verificação e API HTTPS publicada. Foram aplicadas sete migrations MySQL e quatro PostgreSQL, incluindo a de ajustes nas duas branches Neon. Runtime confirmou SELECT/INSERT de ajustes e negou UPDATE/DELETE, com probe revertido. API pública verificou saldo parcial/integral, replay, forjados/auth/405, CAS após renovação, alteração explícita de vencimento, mensalidade e relatórios; dois logins e somente fixtures UUID próprias removidas, sem chamadas ao PSP. Capturas 41/42 são locais; captura 43 mostra dashboard publicado após a limpeza. Emulação não comprova telefone físico.
-
-## Publicação da biblioteca — d60d072
-
-`d60d072` (`d60d0722b858881319810d1233e492fcd951ee02`), Production READY `dpl_9jnWh8FRjp4hXFiZ1gQE1Z56cj35`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-q46jbzn61-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38279551464). Suíte integral **520/520**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 17 hashes de interface/autenticação/financeiro conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada.
-
-Biblioteca de movimento publicada em `d60d072`: busca sem distinção de acentos, filtros, páginas de 24 e leitura dedicada com imagem/descrição/créditos. Paginação de apresentação no cliente, sem nova API ou migration. Treze novos casos protegem lista/grupos/edição/envio/sincronização por contexto e descartam leitura antiga após qualquer diálogo abrir/fechar. **520/520** locais; [biblioteca publicada](evidence/95-catalogo-vercel.jpg) e [leitura mobile publicada](evidence/96-catalogo-detalhe-mobile-vercel.jpg). Busca `supino`/português da fonte encontrou dois registros; modal em 375 × 812 ficou em 375 pixels, fechar com 44 px. Medição imediata após mudar o viewport ainda não refletia o layout final; a medição e captura posteriores confirmaram 375 pixels. Não houve escrita de exercício, ficha ou série nem sincronização externa no navegador. Créditos/limites das descrições em [Revisão visual](REVISAO_VISUAL_SISTEMA.md).
-
-A captura 95 inclui a imagem #105, [Incline-press-1.png](https://wger.de/media/exercise-images/16/Incline-press-1.png), de Everkinetic, CC-BY-SA-3.0, da [referência wger #537](https://wger.de/api/v2/exerciseinfo/537/); texto de Jhonatan, CC-BY-SA-4.0. A captura 96 inclui a imagem #113 de Everkinetic, CC-BY-SA-3.0, e o texto de Jhonatan, CC-BY-SA-4.0, da referência #75 documentada na revisão visual. Capturas guardadas como JPEG, conforme os bytes retornados pelo navegador.
-
-## Continuidade da landing — publicação 754b27f
-
-Landing `754b27f` publicada em READY `dpl_G157NAMK6HzXawYqQi1ZHBry48DS`: títulos Barlow Condensed, fundamentos creme/navy, captura real do painel com identificação demonstrativa e CTA no menu mobile. Textos distinguem parâmetros locais da calculadora de mensagens compartilhadas com a Groq por consentimento; IA configurada e checkout Mercado Pago indisponível estão descritos. Browser público: documento 360 pixels em 375 × 812, Escape fechando menu/foco no botão, destino canônico e captura carregada. Build/typecheck e gate de hashes passaram; auditoria npm atual retornou zero vulnerabilidades conhecidas. [Hero publicado](evidence/98-landing-vercel.jpg), [ciência publicada](evidence/100-landing-fundamentos-vercel.jpg) e [produto em mobile](evidence/101-landing-produto-mobile-vercel.jpg). Sem certificação de toda acessibilidade ou aparelho físico. A captura do painel reaproveita a prova pública 66 de 12/10, não representa resultados comerciais.
-
-A revisão por subagente foi feita no código/asset, sem navegador compartilhado; a validação visual e teclado foi feita pelo agente principal. O primeiro teste revelou ausência de fechamento por Escape; após a correção, repetição local e pública confirmaram fechamento e foco. Amostra tablet local: 768 × 1024, documento 753 pixels. Prova 93 local não mostrava a seção da captura real e não foi publicada como evidência dessa seção; prova 101 mostra a seção na publicação.
-
-## Avanço do caderno de treino — 12/10/2026
-
-`4f4a7ee` publicado e CI aprovada; 527/527 locais. Registro em duas etapas, números e recibos legíveis, resumo semanal com trabalho/aquecimento separados; reconciliação da ficha por ID preserva rascunhos e exige escolha explícita de exercício removido. Fixture nativa própria removida, históricos existentes preservados. [Evidências e limites](REVISAO_VISUAL_SISTEMA.md). Próximas revisões: ficha/evolução/presença/mensalidade, estados e teclado das jornadas restantes; gates de provedor/aparelho físico continuam dependentes de ação humana.
-
-## Avanço da ficha/Evolução/mensalidade — 12/10/2026
-
-`d5b90d5` publicado e CI/Preview Git aprovados; **555/555** locais e **23 arquivos** conferidos. Ficha recebe origem persistida/data do registro, Evolução mantém filtros com identidade explícita e mensalidade declara disponibilidade sem criar cobrança. [Provas e limites](REVISAO_VISUAL_SISTEMA.md). Próxima ação disponível: reproduzir/corrigir o formulário avulso (callbacks antigos, envio compartilhado, rascunho e submit), depois continuidade das jornadas/estados e revisão final documental. PSP, telefone físico, rotação da chave pelo titular e revisão/merge ainda pendentes.
-
-## Correção do formulário avulso — 12/10/2026
-
-`024a7f0` publicado e CI/Preview Git aprovados; **564/564** locais. Contextos/payloads/envios próprios, Enter sem navegação e rascunho preservado. Teste nativo exclusivo confirmou um registro e limpou somente IDs próprios, com 134 sessões/168 séries/0 avulsos anteriores preservados. [Provas](REVISAO_VISUAL_SISTEMA.md). Próximas ações disponíveis: consolidar a revisão de jornadas/estados e a documentação atual, conferir lacunas de entrega; gates de PSP/aparelho físico/rotação pelo titular e revisão dos PRs continuam abertos.
+A conclusão exige o objetivo completo e todos os critérios finais acima, com evidência suficiente no ambiente exigido. Nenhuma etapa isolada, revisão visual ou suíte verde encerra a meta.

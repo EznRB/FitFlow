@@ -256,6 +256,50 @@
   #app-screen .catalog-name { font-size: 24px; }
   #app-screen .catalog-pagination { justify-content: space-between; gap: 12px; }
 }
+/* Resumo diário e livro de registros têm funções diferentes, sem repetir cards. */
+#app-screen .presence-heading h2 { font: 600 clamp(36px, 4vw, 54px)/1.05 var(--font-heading); letter-spacing: -.02em; }
+#app-screen .presence-heading p { color: var(--text-secondary); max-width: 44ch; line-height: 1.7; }
+#app-screen .presence-heading .btn { min-height: 48px; }
+#app-screen .presence-today { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; background: var(--workspace-paper); color: var(--workspace-ink); border-radius: 8px; border-left: 3px solid #c86119; padding: 28px 30px; margin-bottom: 34px; }
+#app-screen .presence-today .workspace-kicker { color: #91400e; margin-bottom: 8px; }
+#app-screen .presence-today h3 { font: 600 30px/1.1 var(--font-heading); color: var(--workspace-ink); margin: 0 0 12px; }
+#app-screen .presence-today p { color: #48566a; font-size: 14px; line-height: 1.7; max-width: 40ch; margin: 0; }
+#app-screen .presence-today .presence-summary-refresh { background: transparent; border-color: #b2ac9f; color: var(--workspace-ink); min-height: 44px; margin-top: 16px; }
+#app-screen .presence-page button[aria-busy="true"] { cursor: progress; }
+#app-screen .presence-today-numbers { display: grid; grid-template-columns: minmax(90px, .7fr) minmax(0, 1fr); align-items: center; gap: 26px; margin: 0; }
+#app-screen .presence-today-numbers > div { min-width: 0; }
+#app-screen .presence-today dt { font-size: 13px; font-weight: 500; color: #48566a; margin-bottom: 12px; }
+#app-screen .presence-today dd { font: 600 52px/1.08 var(--font-heading); color: var(--workspace-ink); font-variant-numeric: tabular-nums; margin: 0; }
+#app-screen .presence-today dd.presence-last { font-size: 24px; line-height: 1.3; overflow-wrap: anywhere; }
+#app-screen .presence-history-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 22px; }
+#app-screen .presence-history-heading h3 { font: 500 28px/1.1 var(--font-heading); margin: 0; }
+#app-screen .presence-history-heading p { max-width: 36ch; color: var(--text-secondary); font-size: 13px; line-height: 1.7; margin: 0; }
+#app-screen .presence-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 22px; align-items: end; }
+#app-screen .presence-filters .admin-search-field { max-width: none; width: 100%; margin: 0; gap: 8px; display: grid; }
+#app-screen .presence-filters label { font-size: 13px; color: var(--text-secondary); }
+#app-screen .presence-filters .admin-date-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#app-screen .presence-filters input, #app-screen .presence-filters select { width: 100%; max-width: 100%; min-width: 0; min-height: 48px; font-size: 16px; }
+#app-screen .presence-ledger { margin-bottom: 0; }
+#app-screen .presence-ledger td { font-size: 14px; line-height: 1.6; }
+#app-screen .presence-ledger tbody p { color: var(--text-secondary); font-size: 13px; }
+#app-screen .presence-ledger button.btn-icon { width: 44px; height: 44px; }
+#form-checkin select, #form-cancel-checkin textarea { font-size: 16px; min-height: 48px; }
+#checkin-form-retry[hidden] { display: none; }
+#checkin-form-feedback, #checkin-cancel-feedback { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin: 16px 0; }
+#checkin-form-feedback:empty, #checkin-cancel-feedback:empty { margin: 0; }
+@media (max-width: 900px) {
+  #app-screen .presence-today { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  #app-screen .presence-today-numbers { border-top: 1px solid #c7beb0; padding-top: 20px; }
+}
+@media (max-width: 600px) {
+  #app-screen .presence-today { padding: 24px 22px; }
+  #app-screen .presence-today-numbers { gap: 20px; }
+  #app-screen .presence-today dd.presence-last { font-size: 22px; }
+  #app-screen .presence-history-heading { align-items: start; flex-direction: column; gap: 12px; }
+  #app-screen .presence-filters { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  #app-screen .presence-heading .admin-page-actions { width: 100%; }
+  #app-screen .presence-heading .btn { justify-content: center; flex: 1 1 100%; }
+}
 @media (prefers-reduced-motion: reduce) {
   #app-screen *, #app-screen *::before, #app-screen *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

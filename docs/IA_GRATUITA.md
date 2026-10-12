@@ -10,6 +10,16 @@ Uma continuação anterior foi recusada; sua causa exata não foi comprovada. A 
 
 A IA organiza conteúdo científico curado e calcula contagens a partir das declarações do rascunho. Não faz pesquisa científica aberta em cada resposta. O histórico fica apenas em memória; recarga, logout ou troca de sessão removem a conversa. Nenhuma ficha é aplicada automaticamente.
 
+## Contrato de contexto e esclarecimentos — 12/10/2026
+
+Preparado e validado localmente nesta rodada; confirmação publicada será registrada em [Estado da entrega](STATUS_ENTREGA.md). O classificador usa `message: {reason, fields}` internamente para `clarification`. O servidor monta perguntas em português a partir desses enums; fontes, prosa científica e campos adicionais do modelo não são apresentados nessa variante. A API externa continua retornando `message` string, `kind`, `generatedByAI` e `sources`, compatível com a interface. União de formatos `anyOf` segue o subconjunto do [JSON Schema documentado pela Groq](https://console.groq.com/docs/structured-outputs), conferido em 12/10/2026 e testado com o provedor real.
+
+O rascunho confere objetivo e confirmação adulta saudável declarativa/positiva, negações explícitas, dias e equipamentos disponíveis. Uma declaração posterior do mesmo campo invalida citações anteriores; reconfirmação recente permite continuar. Pergunta ou incerteza sobre o próprio escopo, declaração explícita de lesão e contradição detectada produzem esclarecimento controlado, sem diagnóstico, geração adicional automática ou aplicação de ficha. Negar força e afirmar hipertrofia no mesmo turno não nega o objetivo afirmativo. Os padrões textuais são conservadores e limitados; não certificam interpretação universal de linguagem, ausência de condições clínicas ou adequação individual.
+
+As falhas anteriores foram reproduzidas em memória com provedor simulado: escopo negado aceito, objetivo incompatível, correção posterior ignorada e prosa científica livre escapando por `clarification`. Dezesseis casos novos, incluindo as regressões encontradas na revisão independente, passaram por RED → GREEN. Subsuíte IA **109/109**; suíte completa nativa **603/603**, zero falhas/ignorados. Os totais focados estão incluídos no integral.
+
+Duas amostras fictícias reais no serviço local usaram a chave privada já configurada, Groq Free e os mesmos modelos, sem plano pago: falta de rotina retornou perguntas de dias/tempo (217 caracteres, nenhuma fonte); contexto completo retornou rascunho de três dias (4.514 caracteres), fontes curadas e contagens/logística calculadas pelo servidor. Disponibilidade segunda/quarta/sexta, 50 minutos e equipamentos declarados foram respeitados na amostra; estimativas de 39/38/39 minutos têm hipóteses explícitas e não garantem duração real. Doses/grupos são interpretação revisável, não prescrição certificada. Esses testes diretos do serviço não são prova de HTTP/browser publicado; o gate de publicação é separado.
+
 ## Histórico de verificações anteriores
 
 - GPT-OSS 120B via Groq gerou uma explicação real do tema `divisoes` localmente em aproximadamente 1,2 segundo.

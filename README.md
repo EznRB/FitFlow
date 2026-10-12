@@ -1,26 +1,43 @@
 # FitFlow Caraguá
 
-Projeto acadêmico de gestão de academia, com áreas de administrador, instrutor e aluno. Interface em português, identidade laranja e azul escuro. A [landing publicada](https://fitflow-lp.vercel.app) apresenta o sistema e aponta ao aplicativo; seu código fica no repositório [fitflow-LP](https://github.com/EznRB/fitflow-LP).
+Projeto acadêmico de gestão de academia com áreas de administrador, instrutor e aluno. Interface em português, identidade laranja/navy e Barlow; planejamento, execução e histórico de treino têm apresentações próprias.
 
-[Abrir o aplicativo](https://fit-flow-indol.vercel.app) · [Estado da entrega](docs/STATUS_ENTREGA.md) · [Guia de desenvolvimento](docs/DESENVOLVIMENTO.md) · [Ciência e limites](docs/CIENCIA.md)
+[Abrir o aplicativo](https://fit-flow-indol.vercel.app/) · [Landing](https://fitflow-lp.vercel.app/) · [Estado da entrega](docs/STATUS_ENTREGA.md) · [Auditoria de requisitos](docs/REVISAO_FINAL.md)
 
-![Tela de acesso publicada do FitFlow em desktop](docs/evidence/28-login-desktop-vercel.png)
+![Painel demonstrativo do FitFlow publicado em 12/10/2026](docs/evidence/66-dashboard-workspace-vercel.png)
 
-Login editorial publicado na revisão `3adf5c1`. Captura de desktop; versões mobile e tablet verificadas em [Estado da entrega](docs/STATUS_ENTREGA.md). As contas demonstrativas são fornecidas por arquivo privado, sem senha universal publicada.
+Captura demonstrativa datada; não representa resultados comerciais nem comprova alterações posteriores. Outras telas, referências e limites estão na [revisão visual](docs/REVISAO_VISUAL_SISTEMA.md).
 
-## Revisão atual
+## O que o sistema oferece
 
-Primeira revisão visual publicada: painel editorial com fotografia, identidade laranja/navy e apresentações próprias para gestão, treino, nutrição e conversa. [Direção, referências e trabalho restante](docs/REVISAO_VISUAL_SISTEMA.md). Troca de senha com revogação de sessões validada localmente e na Vercel. Suíte atual: 564/564; Pix/cartão reais em sandbox ainda dependem da configuração do provedor.
+| Área | Capacidades |
+|---|---|
+| Administrador | Alunos, planos, presença/cancelamento auditável, recebimentos manuais, ajustes financeiros e relatórios por período. |
+| Instrutor | Criação e revisão de fichas, catálogo de movimentos com autoria/licenças e prescrição separada da execução. |
+| Aluno | Ficha, caderno de sessões/séries, carga/repetições/RIR, trabalho/aquecimento, sincronização, Evolução e consulta da mensalidade. |
+| Nutrição | Mifflin–St Jeor e Harris–Benedict revisada, energia/macros determinísticos, hipóteses explícitas e persistência optativa por usuário. |
+| Fundamentos e IA | Referências curadas, glossário determinístico e chat educativo sobre treinamento/hipertrofia, com rascunho de divisão segundo a rotina informada. |
+| Mobile/PWA | Layout responsivo, manifesto, fallback público offline e fila de treino em IndexedDB por conta. |
 
-![Painel do FitFlow publicado em 12/10/2026](docs/evidence/66-dashboard-workspace-vercel.png)
+Cálculos de treino/nutrição têm [fontes, unidades e limites](docs/CIENCIA.md). Catálogo descritivo não certifica prescrição. Volume em kg·reps não mede estímulo ou evolução de força automaticamente; repetições ausentes não são inventadas.
 
-O caderno de treino também recebeu etapas de registro, números legíveis, séries organizadas e resumo semanal distinto. Foram corrigidas seleção de ficha e preservação do rascunho durante sincronização, além do rótulo de vencimento no dia. [Captura publicada](docs/evidence/106-caderno-vercel.jpg); [registro mobile local](docs/evidence/105-sessao-registro-mobile-local.jpg). A revisão completa de todas as jornadas continua em andamento.
+## Arquitetura
 
-Ficha, Evolução e mensalidade também foram refinadas: prescrição/último registro distintos, créditos persistidos na ficha do aluno, filtros preservados e disponibilidade do checkout explícita. [Ficha publicada](docs/evidence/117-ficha-vercel.jpg) e [mensalidade publicada](docs/evidence/118-mensalidade-vercel.jpg). O formulário avulso foi corrigido: Enter, contexto por modal e rascunho preservado, com prova nativa isolada. A meta completa permanece aberta.
+| Camada | Implementação |
+|---|---|
+| Interface | SPA JavaScript/CSS em `client/`, servida pelo Express; Chart.js, Lucide e SortableJS empacotados como recursos locais. |
+| API | Node.js **24.x**, Express, controllers/services/repositories e Prisma. JWT em cookie httpOnly; autorização consulta o usuário ativo e papel atual no banco. |
+| Banco | MariaDB nativo na demonstração local; Neon PostgreSQL na Vercel, com schema/migrations próprios, conexão pooled no runtime e credenciais administrativas separadas. |
+| Persistência | Dados no servidor e fila de treino por conta no IndexedDB. UUIDs e intenção validada protegem sessões/séries e recebimentos manuais contra replay. |
+| IA | GPT-OSS via Groq Free, chave somente no backend. Consentimento para mensagens digitadas; perfil e ficha não são anexados automaticamente. |
+| Pagamentos | Checkout Mercado Pago exclusivamente sandbox, criação/assinatura/conciliação no servidor; validação externa ainda pendente. |
+| Landing | React/Vite em repositório separado: [fitflow-LP](https://github.com/EznRB/fitflow-LP). Apresentação do produto, autoria acadêmica e CTA para o aplicativo. |
 
-## Desenvolvimento
+[Arquitetura e contratos completos](docs/ARQUITETURA.md). Escritas com cookie têm proteção de origem; API sem cache; quotas de login/IA são compartilhadas no banco em produção. Troca de senha própria revoga sessões anteriores por versão da credencial.
 
-Node.js **24.x**; MySQL/MariaDB acessível para a demonstração local. **Docker não é necessário.** O ambiente preparado neste computador usa MariaDB nativo em `127.0.0.1:3308`, isolado em `.local-db/`.
+## Executar localmente
+
+Docker, WSL e virtualização não são necessários. O ambiente preparado usa MariaDB nativo em `127.0.0.1:3308`, com dados em `.local-db/` e configuração privada identificada. Para **outro computador**, preparar primeiro o runtime/banco conforme [Desenvolvimento](docs/DESENVOLVIMENTO.md); os comandos abaixo retomam o ambiente já configurado.
 
 ```powershell
 cd server
@@ -28,80 +45,61 @@ npm ci
 npm run db:local:start
 npm run db:local:migrate
 npm run db:local:seed
+npm run browser:vendor
 npm run dev:local
 ```
 
-Aplicativo: `http://127.0.0.1:3107/`. As contas demonstrativas têm senhas individuais em `server/.demo-credentials.local.json`, ignorado pelo Git. O seed só opera no banco local identificado, é repetível e preserva registros. Não há senha universal publicada.
+Aplicativo: `http://127.0.0.1:3107/`. Credenciais individuais em `server/.demo-credentials.local.json`, ignorado pelo Git. O seed demonstrativo é restrito ao banco local identificado e preserva registros; não há senha universal no repositório.
 
-Para configurar outro computador ou banco, consulte [Desenvolvimento](docs/DESENVOLVIMENTO.md). Não execute seed demonstrativo em produção.
+Na landing, em outro terminal e no repositório correspondente:
 
-O [aplicativo publicado](https://fit-flow-indol.vercel.app) usa Neon PostgreSQL 17 Free em São Paulo, com schema/migrations separados e conexão pooled. Gates HTTPS confirmaram os três perfis, autorização, gestão, nutrição optativa, presença e renovação manual concorrente. O navegador confirmou autenticação após recarga, treino finalizado persistido e cenário nutricional salvo/restaurado. [Banco, implantação e verificações](docs/BANCO_REMOTO_VERCEL.md).
+```powershell
+npm ci
+npm run dev -- --host 127.0.0.1 --port 3108
+```
 
-## Recursos implementados
-
-- Gestão de alunos, planos, fichas, presença, pagamentos manuais e relatórios.
-- Lançamento manual de recebimento com UUID idempotente, hash da intenção e vínculo ao administrador; replay não duplica pagamento nem renovação. Esse registro não cobra nem comprova Pix/cartão. A API recusa PUT/PATCH/DELETE do recebimento com 405; correções e devoluções informadas usam eventos auditados, sem executar reembolso no provedor.
-- Autenticação em cookie httpOnly; autorização considera o usuário ativo e seu papel atual no banco. Escritas protegidas por origem, API sem cache e quotas de login/IA compartilhadas no banco em produção.
-- A inicialização mostra verificação acessível da sessão e impede envio prematuro do login; `/auth/me` tem timeout de 15 segundos, incluindo espera pelo lock. Login/logout/retry coordenam o cookie entre abas com Web Locks e marcador de sessão opaco.
-- Catálogo local e importador wger com paginação, identidade externa, idioma, licenças e autoria. Importação local de 08/10: 795 entradas incorporadas e 124 ignoradas. Um catálogo descritivo não valida uma prescrição.
-- Registro de sessões e séries com carga externa, repetições, RIR opcional, aquecimento/trabalho, snapshot da ficha e IDs idempotentes.
-- Fila de séries por conta em IndexedDB, com estado de sincronização e conflitos visíveis. Leituras e callbacks tardios verificam identidade e tela de origem; logout aguarda limpeza antes de liberar outro login.
-- Operações idempotentes de treino e consultas de atualização têm prazo de resposta de 15 segundos por requisição, incluindo leitura do corpo. Um timeout preserva a fila e o UUID para nova tentativa; não confirma nem desfaz uma gravação no servidor.
-- Consultas de fichas e histórico distinguem carregamento, confirmação e indisponibilidade. O cache continua disponível; falha de consulta não é apresentada como ausência de dados. A atualização preserva o formulário em preenchimento.
-- Recuperação de sessão rejeitada com confirmação e preservação local dos registros. Logout sem conexão não restaura automaticamente a conta ao reconectar.
-- Nutrição com Mifflin–St Jeor ou Harris–Benedict revisada, hipóteses explícitas e parâmetros salvos/restaurados por consentimento.
-- Chat de IA em Fundamentos: conversa sobre hipertrofia, exercícios e progressão, com rascunhos de divisão a partir da rotina informada e referências curadas. Mensagens são enviadas à Groq após consentimento; dados do perfil não são anexados. Indicadores usam glossário revisado determinístico e nutrição mantém cálculos locais.
-- Séries com grupos genéricos ou desconhecidos ficam como não classificadas; não são atribuídas artificialmente a um músculo.
-- PWA com manifesto e fallback público offline. Novas abas offline exigem reconexão para validar autenticação.
-- Gestão responsiva com filtros/ações ajustados a 375 pixels, tabelas em regiões roláveis por teclado e campos com labels. Respostas obsoletas não repovoam a tela de treinos nem encerram a nova sessão.
+[Guia de banco local/PostgreSQL/Neon e bootstrap](docs/DESENVOLVIMENTO.md). Use os wrappers específicos; o ambiente do computador pode conter DATABASE_URL de outro projeto. Migrations MySQL e PostgreSQL mantêm históricos separados.
 
 ## Verificação
 
+No ambiente MariaDB local preparado, dentro de `server/`:
+
 ```powershell
-cd server
-npm test
-npm audit
 node scripts/with-local-env.cjs node --test tests/*.test.cjs
 node scripts/with-local-env.cjs node scripts/smoke-local.cjs
-node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
+node scripts/check-private-files.cjs
+npm audit
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado: **520 testes aprovados, zero falhas e zero ignorados** na revisão `d60d072`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
+A suíte inclui casos controlados e testes nativos previstos; gates PostgreSQL/Neon/HTTPS e de provedores são separados e têm destinos explícitos/fixtures próprias. No Windows, passe `node` ao wrapper. Na landing, `npm run build` valida o build e os tipos; não equivale a uma auditoria completa de acessibilidade.
 
-## Publicação e limites atuais
+Consulte [Estado da entrega](docs/STATUS_ENTREGA.md) para contagem da suíte, revisão exata, CI, implantação e hashes conferidos; [Desenvolvimento](docs/DESENVOLVIMENTO.md) para os comandos e restrições dos gates. Não somar subsuítes focadas ao total nem usar doubles como prova de integração externa.
 
-O login antigo da Vercel falhava porque o host Aiven configurado não resolvia no DNS; a tentativa retornou 500. **O login no domínio final foi recuperado com o novo banco Neon.** A demonstração remota tem cinco contas com senhas novas em `server/.demo-credentials.remote.local.json`, ignorado pelo Git, três alunos, duas fichas e 798 exercícios. As credenciais antigas do GitHub não foram restauradas, e os dados antigos do Aiven não foram recuperados. Código enviado às branches e disponível nos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum foi mesclado à branch principal.
+## Implantação e limites da entrega
 
-Checkout Pix/cartão está implementado exclusivamente em sandbox, com conciliação idempotente e renovação preservando vigência existente. Sua validação real depende de conta, credenciais e webhook do Mercado Pago: cartão aprovado/rejeitado/pendente; Pix com QR e estado pendente sem renovação. Não exigir liquidação Pix em sandbox, nem considerar retorno do navegador como confirmação. O lançamento manual já foi verificado em HTTPS e registra recebimento informado, sem cobrar ou validar Pix/cartão. [Roteiro de configuração e testes](docs/PAGAMENTOS_SANDBOX.md).
+O login no [domínio público](https://fit-flow-indol.vercel.app/) foi recuperado com banco Neon e contas novas. O Aiven antigo ficou inacessível; seus dados e credenciais não foram restaurados. As contas demonstrativas remotas ficam em arquivo privado ignorado. A implantação vigente e os PRs draft estão em [Estado da entrega](docs/STATUS_ENTREGA.md), fonte única dos metadados atuais.
 
-A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
+A meta completa permanece ativa. Os gates obrigatórios ainda incluem:
 
-A revisão atual `d60d072` (`d60d0722b858881319810d1233e492fcd951ee02`), Production READY `dpl_9jnWh8FRjp4hXFiZ1gQE1Z56cj35`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-q46jbzn61-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38279551464). Suíte integral **520/520**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 17 hashes de interface/autenticação/financeiro conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada. Gate privado aprovado. Ajustes administrativos publicados e verificados por HTTPS; [contrato e evidências](docs/AJUSTES_FINANCEIROS.md). Proveniência do catálogo preservada. [Estado e limites](docs/STATUS_ENTREGA.md).
+- **Pix/cartão externo:** conta, credenciais e webhook Mercado Pago de teste; cartão aprovado/rejeitado/pendente e Pix QR/pendente sem renovar plano. Sandbox não comprova liquidação Pix. Recebimento manual não cobra nem confirma Pix/cartão; ajuste administrativo não executa reembolso no provedor.
+- **Telefone físico:** instalação PWA, teclado, rotação e reconexão publicada conforme M01–M14. Emulação e testes locais de fila não substituem aparelho físico; nova abertura offline exige reconexão para validar identidade.
+- **IA:** rotação da chave anteriormente exposta pelo titular. Amostras reais conferidas não certificam toda resposta futura; reprovações permanecem documentadas. Histórico do chat fica em memória, não há aplicação automática da ficha nem fallback pago.
+- **UX/UI e integração:** encerramento da revisão de todas as jornadas/estados e revisão dos PRs draft antes da decisão de integração. Deployment público não significa merge.
 
-A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
-
-Mercado Pago real de teste, telefone físico/instalação, reconexão publicada, revisão completa da UX/UI e revisão/merge dos PRs continuam pendentes. Troca de senha e revogação estão publicadas e validadas em `3f48109`. A primeira revisão visual e a correção de pertinência do chat estão publicadas em `460e7b0`. Ajustes financeiros administrativos não executam devoluções no provedor. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
-
-Formulários e resultados refinados em `b5d4288`: matrícula e planos agrupados por tarefa, recuperação das listas, contraste nutricional e controles de treino mobile. [Revisão visual e evidências](docs/REVISAO_VISUAL_SISTEMA.md).
-
-Biblioteca de movimento com busca, filtros e leitura de origem, publicada em `d60d072`; [capturas e verificações](docs/REVISAO_VISUAL_SISTEMA.md).
-
-Landing atualizada em `754b27f`: captura real do produto, continuidade tipográfica/cromática e menu mobile por teclado, publicados e verificados. [Provas e limites](docs/REVISAO_VISUAL_SISTEMA.md).
+[Auditoria de requisitos e evidências](docs/REVISAO_FINAL.md) · [Plano completo](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 ## Documentação
 
-- [Estado da entrega e evidências](docs/STATUS_ENTREGA.md)
-- [Revisão atual e gates de entrega](docs/REVISAO_FINAL.md)
-- [Mercado Pago sandbox: configuração e limites](docs/PAGAMENTOS_SANDBOX.md)
-- [Telefone físico: instalação, fila e reconexão](docs/VALIDACAO_MOBILE.md)
-- [Desenvolvimento e banco nativo](docs/DESENVOLVIMENTO.md)
-- [Arquitetura e contratos](docs/ARQUITETURA.md)
-- [Datas civis e calendário operacional](docs/DATAS_E_FUSO.md)
-- [Ciência, fontes e limites](docs/CIENCIA.md)
-- [Ferramentas e integrações pesquisadas](docs/FERRAMENTAS_E_INTEGRACOES.md)
-- [Plano completo de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md)
-- [Direção visual](design-system/fitflow/MASTER.md)
+| Assunto | Fonte |
+|---|---|
+| Estado atual, evidências e gates | [Estado da entrega](docs/STATUS_ENTREGA.md), [auditoria](docs/REVISAO_FINAL.md) |
+| Desenvolvimento e implantação | [Guia](docs/DESENVOLVIMENTO.md), [banco/Vercel](docs/BANCO_REMOTO_VERCEL.md), [arquitetura](docs/ARQUITETURA.md) |
+| Ciência e IA | [Fontes/fórmulas](docs/CIENCIA.md), [auditoria científica](docs/AUDITORIA_CIENTIFICA_FINAL.md), [IA gratuita](docs/IA_GRATUITA.md) |
+| Contratos de gestão | [Ajustes financeiros](docs/AJUSTES_FINANCEIROS.md), [troca de senha](docs/TROCA_SENHA.md), [datas](docs/DATAS_E_FUSO.md) |
+| Gates externos | [Pagamento sandbox](docs/PAGAMENTOS_SANDBOX.md), [telefone físico](docs/VALIDACAO_MOBILE.md) |
+| Planejamento e referências | [Plano mestre](docs/PLANO_MESTRE_DESENVOLVIMENTO.md), [revisão visual](docs/REVISAO_VISUAL_SISTEMA.md), [direção visual](design-system/fitflow/MASTER.md), [ferramentas/MCPs](docs/FERRAMENTAS_E_INTEGRACOES.md) |
+| Histórico preservado | [Status/revisão anteriores](docs/HISTORICO_ENTREGA.md), [README/plano anteriores](docs/HISTORICO_PLANO.md) |
 
-Documentos datados de análise e planejamento registram o estado daquele momento. Não representam automaticamente o estado atual nem a conclusão do projeto.
+Documentos datados registram decisões e resultados daquele momento, sem substituir a fonte atual ou transformar reprovações em aprovações.
 
 Autoria: Enzo Marcelo Ribeiro Fermiano — Análise e Desenvolvimento de Sistemas, 2026.

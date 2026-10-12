@@ -22,6 +22,12 @@ Foram inspecionados `science.js`, `planejamento-ciencia.js`, `nutricao.js`, `pro
 | `client/js/sessoes.js:98` — RIR | Campo opcional e explicitamente estimado pelo aluno. Uma estimativa de repetições restantes tem erro; não equivale a medição objetiva de esforço. [Halperin et al., 2022](https://pubmed.ncbi.nlm.nih.gov/34542869/). |
 | `server/src/services/nutricao.service.js:23` — persistência | Revalida a mesma equação, guarda parâmetros/versão com consentimento e exige nova confirmação de escopo ao recuperar. Persistir um cenário não transforma suas hipóteses em prescrição. |
 
+## Contrato de contexto do chat — 12/10/2026
+
+A revisão encontrou e reproduziu com provedor simulado: rascunho com escopo negado/objetivo incompatível; citações antigas após correção de disponibilidade/equipamentos; e afirmações científicas livres disfarçadas de esclarecimento. A correção exige confirmação positiva, trata contradições explícitas e renderiza esclarecimentos por motivo/campos no servidor. Testes novos incluem negação com objetivo afirmativo diferente, dia negado e declaração explícita de lesão. [Contrato, amostras reais locais e limites](IA_GRATUITA.md#contrato-de-contexto-e-esclarecimentos--12102026). Evidência publicada corrente somente em [Estado da entrega](STATUS_ENTREGA.md).
+
+Isso reduz caminhos reproduzidos de aceitação incorreta; não valida linguagem universal, triagem clínica, técnica de todos os movimentos nem justificativa individual de doses. ACSM 2026 tem escopo de adultos saudáveis; os limites de população e aplicação do corpus continuam explícitos. Casos simulados não são relatos de erro científico observado ao vivo. Reprovações reais anteriores abaixo permanecem preservadas.
+
 ## Correções realizadas e melhorias restantes
 
 ### 1. Categorias genéricas contadas como músculo direto — corrigido

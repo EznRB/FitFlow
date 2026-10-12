@@ -663,48 +663,48 @@ const App = {
         const part = type => parts.find(value => value.type === type).value;
         const hoje = `${part('year')}-${part('month')}-${part('day')}`;
         content.innerHTML = `
-          <div class="page-header admin-page-header">
+          <section class="presence-page" aria-labelledby="presence-title">
+          <div class="page-header admin-page-header presence-heading">
             <div>
               <span class="workspace-kicker">Academia / presença</span>
-              <h2>Registro de Presença</h2>
-              <p style="color:var(--text-muted)">Registre check-ins, acompanhe frequência e gerencie a presença dos alunos.</p>
+              <h2 id="presence-title">Livro de presenças</h2>
+              <p>Quem passou pela academia. Um registro por aluno, a cada dia.</p>
             </div>
             <div class="admin-page-actions">
-              <button id="btn-ver-ranking" class="btn btn-primary" style="cursor:pointer">
-                <i data-lucide="trophy"></i>
-                <span>Ranking</span>
+              <button id="btn-ver-ranking" type="button" class="btn btn-secondary">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Frequência · 30 dias</span>
               </button>
-              <button id="btn-registrar-checkin" class="btn btn-success" style="cursor:pointer">
+              <button id="btn-registrar-checkin" type="button" class="btn btn-primary">
                 <i data-lucide="user-check"></i>
-                <span>Registrar Check-in</span>
+                <span>Registrar presença</span>
               </button>
             </div>
           </div>
 
-          <!-- KPIs do Dia -->
-          <div class="admin-checkin-metrics">
-            <div class="kpi-card">
-              <div class="kpi-icon green"><i data-lucide="calendar-check"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-checkins-total">—</div>
-                <div class="kpi-label">Check-ins Hoje</div>
-              </div>
+          <section class="presence-today" aria-labelledby="presence-today-title">
+            <div class="presence-today-intro">
+              <span class="workspace-kicker">O movimento de hoje</span>
+              <h3 id="presence-today-title">Na academia</h3>
+              <p>Presenças válidas de hoje. Os filtros abaixo consultam o histórico.</p>
+              <button type="button" id="btn-atualizar-presencas" class="btn btn-secondary presence-summary-refresh"><i data-lucide="refresh-cw"></i>Atualizar resumo</button>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon blue"><i data-lucide="clock"></i></div>
-              <div class="kpi-content">
-                <div class="kpi-value" id="kpi-ultimo-checkin" style="font-size:0.95rem;">—</div>
-                <div class="kpi-label">Último Check-in</div>
-              </div>
-            </div>
-          </div>
+            <dl class="presence-today-numbers">
+              <div><dt>Presenças hoje</dt><dd id="kpi-checkins-total">—</dd></div>
+              <div><dt>Último registro hoje</dt><dd id="kpi-ultimo-checkin" class="presence-last">—</dd></div>
+            </dl>
+          </section>
 
           <!-- Filtros -->
-          <div class="admin-filter-bar">
-            <div class="form-group input-with-icon admin-search-field">
-              <i data-lucide="search" class="input-icon"></i>
-              <input type="text" id="filtro-aluno-checkin" aria-label="Filtrar presença por aluno" placeholder="Buscar aluno..." />
-            </div>
+          <section class="presence-history" aria-labelledby="presence-history-title">
+          <div class="presence-history-heading">
+            <div><span class="workspace-kicker">Consulta / histórico</span><h3 id="presence-history-title">Registro diário</h3></div>
+            <p>Cancelamentos conservam o motivo e o registro original.</p>
+          </div>
+          <div class="admin-filter-bar presence-filters">
+            <label class="form-group admin-search-field" for="filtro-aluno-checkin">Aluno
+              <select id="filtro-aluno-checkin" class="form-select" aria-label="Filtrar presença por aluno"><option value="">Todos os alunos</option></select>
+            </label>
             <div class="admin-date-range">
               <label class="admin-date-field" for="filtro-data-inicio">Data inicial
                 <input type="date" id="filtro-data-inicio" class="form-select" value="${hoje}">
@@ -716,22 +716,24 @@ const App = {
           </div>
 
           <!-- Tabela de Check-ins -->
-          <div class="card admin-table-scroll" role="region" aria-label="Registros de presença; deslize para ver todas as colunas" tabindex="0">
+          <div class="card admin-table-scroll presence-ledger" role="region" aria-label="Registros de presença; deslize para ver todas as colunas" tabindex="0">
             <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
               <thead>
                 <tr style="border-bottom: 1px solid var(--border-color)">
-                  <th style="padding:1rem 0.5rem">Aluno</th>
-                  <th style="padding:1rem 0.5rem">Data</th>
-                  <th style="padding:1rem 0.5rem">Horário</th>
-                  <th style="padding:1rem 0.5rem">Status</th>
-                  <th style="padding:1rem 0.5rem; width:80px">Ações</th>
+                  <th scope="col" style="padding:1rem 0.5rem">Aluno</th>
+                  <th scope="col" style="padding:1rem 0.5rem">Data</th>
+                  <th scope="col" style="padding:1rem 0.5rem">Horário</th>
+                  <th scope="col" style="padding:1rem 0.5rem">Situação</th>
+                  <th scope="col" style="padding:1rem 0.5rem; width:80px">Ações</th>
                 </tr>
               </thead>
               <tbody id="checkins-table-body">
-                <!-- Renderizado por CheckinsView -->
+                <tr><td colspan="5" role="status">Carregando presenças…</td></tr>
               </tbody>
             </table>
           </div>
+          </section>
+          </section>
         `;
       } else {
         // Visão do aluno: self-checkin simplificado
