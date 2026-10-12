@@ -82,6 +82,8 @@ Formulários e resultados refinados em `b5d4288`: matrícula e planos agrupados 
 
 Biblioteca de movimento com busca, filtros e leitura de origem, publicada em `d60d072`; [capturas e verificações](docs/REVISAO_VISUAL_SISTEMA.md).
 
+Landing atualizada em `754b27f`: captura real do produto, continuidade tipográfica/cromática e menu mobile por teclado, publicados e verificados. [Provas e limites](docs/REVISAO_VISUAL_SISTEMA.md).
+
 ## Documentação
 
 - [Estado da entrega e evidências](docs/STATUS_ENTREGA.md)
