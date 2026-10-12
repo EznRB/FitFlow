@@ -52,8 +52,9 @@ const AlunosView = {
   async inicializar() {
     this.invalidar();
     const context = this.contexto();
+    if (!this.atual(context)) return;
+    this.configurarEventos(context);
     await this.carregarLista();
-    if (this.atual(context)) this.configurarEventos(context);
   },
 
   /**
@@ -63,22 +64,30 @@ const AlunosView = {
     const context = this.contexto(), sequence = ++this.listSequence;
     if (!this.atual(context)) return;
     const tableBody = context.table;
+    const search = document.getElementById('filtro-nome-aluno');
     const current = () => sequence === this.listSequence && this.atual(context);
 
     try {
-      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center"><div class="spinner spinner-sm"></div> Carregando...</td></tr>`;
+      if (search) search.disabled = true;
+      tableBody.innerHTML = `<tr><td colspan="5" role="status" style="text-align:center"><div class="spinner spinner-sm"></div> Carregando...</td></tr>`;
       
       const response = await API.get('/alunos');
       if (!current()) return;
       this.dados = response.data;
 
       this.renderTabela(this.dados);
+      if (search && document.getElementById('filtro-nome-aluno') === search) search.disabled = false;
       this.iniciarAutocomplete(context);
 
     } catch (error) {
       if (!current()) return;
-      Toast.error('Erro ao buscar lista de alunos: ' + error.message);
-      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger)">Erro ao carregar dados.</td></tr>`;
+      this.dados = []; this.autocompleteData = [];
+      tableBody.innerHTML = `<tr><td colspan="5"><section class="management-list-state" role="alert"><h3>Não foi possível carregar os alunos</h3><p>${FitFlowSecurity.escapeHtml(error.message || 'Confira a conexão e tente novamente.')}</p><button type="button" class="btn btn-secondary" data-alunos-retry>Tentar novamente</button></section></td></tr>`;
+      tableBody.onclick = event => {
+        if (!current()) return;
+        const button = event.target?.closest?.('button[data-alunos-retry]');
+        if (button && tableBody.contains(button)) return this.carregarLista();
+      };
     }
   },
 
@@ -97,7 +106,7 @@ const AlunosView = {
     };
 
     if (dados.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; opacity:0.5">Nenhum aluno cadastrado/encontrado.</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="5"><div class="management-list-state" role="status"><h3>Nenhum aluno encontrado</h3><p>Confira a busca ou cadastre uma nova matrícula.</p></div></td></tr>`;
       return;
     }
 
@@ -169,40 +178,44 @@ const AlunosView = {
     this.alunoAtualId = null; 
 
     const bodyHTML = `
-      <form id="form-aluno" class="form-grid">
-        <div class="form-group">
-          <label for="input-aluno-nome">Nome Completo*</label>
-          <input type="text" id="input-aluno-nome" required>
-        </div>
-        <div class="form-group">
-          <label for="input-aluno-email">E-mail*</label>
-          <input type="email" id="input-aluno-email" required>
-        </div>
-        <div class="form-group">
-          <label for="input-aluno-senha">Senha do Aluno*</label>
-          <input type="password" id="input-aluno-senha" autocomplete="new-password" minlength="8" maxlength="72" required>
+      <form id="form-aluno" class="management-form">
+        <p class="management-form-intro">Cadastre o aluno e associe um plano à matrícula. Campos com * são obrigatórios.</p>
+        <fieldset class="management-form-section"><legend><span>01</span> Dados do aluno</legend><div class="management-fields">
+        <div class="form-group management-wide">
+          <label for="input-aluno-nome">Nome completo *</label>
+          <input type="text" id="input-aluno-nome" autocomplete="name" required>
         </div>
         <div class="form-group">
           <label for="input-aluno-cpf">CPF</label>
-          <input type="text" id="input-aluno-cpf" placeholder="Apenas números">
+          <input type="text" id="input-aluno-cpf" inputmode="numeric" placeholder="Apenas números">
         </div>
         <div class="form-group">
           <label for="input-aluno-telefone">Telefone</label>
-          <input type="text" id="input-aluno-telefone">
+          <input type="tel" id="input-aluno-telefone" autocomplete="tel">
+        </div></div></fieldset>
+        <fieldset class="management-form-section"><legend><span>02</span> Acesso ao FitFlow</legend><div class="management-fields">
+        <div class="form-group">
+          <label for="input-aluno-email">E-mail *</label>
+          <input type="email" id="input-aluno-email" autocomplete="email" required>
         </div>
-        <div class="form-group" style="grid-column: span 2;">
-          <label for="input-aluno-plano">Plano de Matrícula*</label>
+        <div class="form-group">
+          <label for="input-aluno-senha">Senha inicial *</label>
+          <input type="password" id="input-aluno-senha" autocomplete="new-password" minlength="8" maxlength="72" aria-describedby="aluno-password-help" required>
+        </div></div><p id="aluno-password-help" class="management-help">Use pelo menos 8 caracteres, até 72 bytes UTF-8. O aluno poderá alterar a senha após entrar.</p></fieldset>
+        <fieldset class="management-form-section"><legend><span>03</span> Matrícula</legend>
+        <div class="form-group">
+          <label for="input-aluno-plano">Plano associado *</label>
           <select id="input-aluno-plano" required>
             <option value="">Carregando planos...</option>
           </select>
-        </div>
+        </div></fieldset>
       </form>
     `;
 
     let context;
-    Modal.open('Matricular Novo Aluno', bodyHTML, [
+    Modal.open('Nova matrícula', bodyHTML, [
       { text: 'Cancelar', class: 'btn-secondary', action: () => { if (this.formularioAtual(context)) Modal.close(); } },
-      { text: 'Salvar Cliente', class: 'btn-primary', action: () => this.submeterFormulario(context) },
+      { text: 'Criar matrícula', class: 'btn-primary', action: () => this.submeterFormulario(context) },
     ]);
     context = this.vincularFormulario(null);
     this.carregarPlanosSelect(context);
@@ -219,7 +232,7 @@ const AlunosView = {
       const planos = resp.data;
       
       select.innerHTML = '<option value="">Selecione um plano</option>' + 
-        planos.map(p => `<option value="${Number(p.id)}">${FitFlowSecurity.escapeHtml(p.name)} (R$ ${Number(p.price)})</option>`).join('');
+        planos.map(p => `<option value="${Number(p.id)}">${FitFlowSecurity.escapeHtml(p.name)} · ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.price))}</option>`).join('');
     } catch (e) {
       if (!this.formularioAtual(context) || document.getElementById('input-aluno-plano') !== select) return;
       select.innerHTML = '<option value="">Erro ao carregar planos</option>';
@@ -241,32 +254,35 @@ const AlunosView = {
     }
 
     const bodyHTML = `
-      <form id="form-aluno" class="form-grid">
-        <div class="form-group">
-          <label for="input-aluno-nome">Nome Completo*</label>
-          <input type="text" id="input-aluno-nome" value="${FitFlowSecurity.escapeHtml(aluno.user.name)}" required>
+      <form id="form-aluno" class="management-form">
+        <p class="management-form-intro">Atualize os dados cadastrais do aluno. Campos com * são obrigatórios.</p>
+        <fieldset class="management-form-section"><legend><span>01</span> Identificação</legend><div class="management-fields">
+        <div class="form-group management-wide">
+          <label for="input-aluno-nome">Nome completo *</label>
+          <input type="text" id="input-aluno-nome" autocomplete="name" value="${FitFlowSecurity.escapeHtml(aluno.user.name)}" required>
         </div>
+        <div class="form-group">
+          <label for="input-aluno-cpf">CPF</label>
+          <input type="text" id="input-aluno-cpf" inputmode="numeric" value="${FitFlowSecurity.escapeHtml(aluno.cpf || '')}">
+        </div>
+        <div class="form-group">
+          <label for="input-aluno-aniversario">Nascimento</label>
+          <input type="date" id="input-aluno-aniversario" autocomplete="bday" value="${FitFlowSecurity.escapeHtml(dataNascimento)}">
+        </div></div></fieldset>
+        <fieldset class="management-form-section"><legend><span>02</span> Contato</legend><div class="management-fields">
         <div class="form-group">
           <label for="input-aluno-email">E-mail da conta</label>
           <input type="email" id="input-aluno-email" value="${FitFlowSecurity.escapeHtml(aluno.user.email)}" disabled>
         </div>
         <div class="form-group">
-          <label for="input-aluno-cpf">CPF</label>
-          <input type="text" id="input-aluno-cpf" value="${FitFlowSecurity.escapeHtml(aluno.cpf || '')}">
-        </div>
-        <div class="form-group">
           <label for="input-aluno-telefone">Telefone</label>
-          <input type="text" id="input-aluno-telefone" value="${FitFlowSecurity.escapeHtml(aluno.phone || '')}">
-        </div>
-        <div class="form-group">
-          <label for="input-aluno-aniversario">Nascimento</label>
-          <input type="date" id="input-aluno-aniversario" value="${FitFlowSecurity.escapeHtml(dataNascimento)}">
-        </div>
+          <input type="tel" id="input-aluno-telefone" autocomplete="tel" value="${FitFlowSecurity.escapeHtml(aluno.phone || '')}">
+        </div></div></fieldset>
       </form>
     `;
 
     let context;
-    Modal.open('Editar Cadastro', bodyHTML, [
+    Modal.open('Editar aluno', bodyHTML, [
       { text: 'Cancelar', class: 'btn-secondary', action: () => { if (this.formularioAtual(context)) Modal.close(); } },
       { text: 'Salvar Alterações', class: 'btn-primary', action: () => this.submeterFormulario(context) },
     ]);

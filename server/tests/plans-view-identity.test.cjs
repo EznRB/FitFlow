@@ -58,6 +58,25 @@ test('lista de planos conserva consulta mais recente e não deixa erro antigo li
   }
 });
 
+test('novo plano abre durante a leitura da lista e não perde o formulário quando ela termina', async () => {
+  const pending = deferred(), h = fixture({ get: () => pending.promise }), loading = h.view.inicializar();
+  const button = h.node('btn-novo-plano'); assert.equal(typeof button.onclick, 'function'); button.onclick();
+  assert.equal(h.modals.length, 1); const form = h.modals[0].form;
+  pending.resolve({ data: [] }); await loading;
+  assert.equal(h.modals.length, 1); assert.equal(h.modals[0].form, form);
+});
+test('falha da lista de planos oferece retry próprio sem duplicar leitura ou executar handler antigo', async () => {
+  const pending = [], h = fixture({ get: () => { const call = deferred(); pending.push(call); return call.promise; } });
+  const reading = h.view.inicializar(); pending[0].reject(new Error('<img src=x> Consulta falhou')); await reading;
+  const grid = h.node('planos-grid'); assert.match(grid.innerHTML, /data-plan-retry/); assert.doesNotMatch(grid.innerHTML, /<img src=x>/);
+  assert.deepEqual(h.toasts, [], 'A falha permanece junto da lista e de sua ação de recuperação.');
+  const oldRetry = grid.onclick, event = { target: { closest: () => ({}) } };
+  const retry = oldRetry(event); oldRetry(event); assert.equal(pending.length, 2);
+  pending[1].resolve({ data: [plan(5, 'Recuperado')] }); await retry;
+  assert.match(grid.innerHTML, /Recuperado/);
+  h.change('account'); oldRetry(event); assert.equal(pending.length, 2);
+});
+
 test('consulta antiga não altera DOM/cache depois de trocar página, âncora, conta, geração, epoch ou papel', async () => {
   for (const change of ['page', 'anchor', 'account', 'generation', 'epoch', 'role']) for (const fails of [false, true]) {
     const pending = deferred(), h = fixture({ get: () => pending.promise });

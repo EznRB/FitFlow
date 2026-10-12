@@ -52,6 +52,22 @@ Nutrição destaca o resultado e o método em superfícies diferentes. Chat tem 
 
 A primeira publicação visual não encerra a revisão completa. Ainda faltam conferir resultados nutricionais preenchidos e seus estados, conversa real com a nova composição, modais de gestão e de treino, estados de falha/vazio, teclado/contraste por controle, mais larguras, aparelho físico e continuidade com a landing. A publicação e suas capturas serão registradas após o deploy.
 
+## Rodada de resultados e formulários — 12/10/2026
+
+O resultado preenchido mostrou um defeito não visível no estado vazio: os macros herdavam texto claro sobre a superfície clara. A cor foi corrigida no contêiner do resultado; o par medido passou para `rgb(23,35,52)` sobre `rgb(238,232,220)`, contraste calculado de 12,98:1 para esses valores. Isso não certifica o contraste de toda a aplicação.
+
+No navegador local, com parâmetros fictícios de 80 kg, 180 cm, 30 anos, atividade 1,5, ajuste 0%, proteína 1,6 g/kg e gordura 25%, Mifflin e Harris revisada foram conferidos nos dois coeficientes. Repouso, energia e macros exibidos coincidiram com as contas independentes e o arredondamento da apresentação. A primeira comparação de três valores de carboidrato usou números esperados calculados incorretamente; corrigida a conta independente, os resultados da aplicação conferiram. Nenhuma fórmula foi alterada para ajustar a comparação. Edição invalidou resultado/salvamento; campo obrigatório recebeu foco; cenário com energia insuficiente foi recusado sem manter resultado antigo; limpar não excluiu dados previamente salvos. Não houve salvamento ou envio de medidas à IA.
+
+Matrícula e edição cadastral passaram a agrupar identificação, contato, acesso e plano conforme o fluxo. Plano separa nome/vigência de valor/condições e distingue total da equivalência por 30 dias. Campos de modal usam 16 px; controles nativos respeitam o tema escuro. Na emulação 375 × 812, matrícula e plano ficaram em 375 pixels sem transbordamento. Comparação de R$ 129,90 por 45 dias exibiu R$ 86,60 por 30 dias; formulário cancelado sem gravar. Tab/Shift+Tab ficaram no modal e Escape devolveu foco ao botão de origem.
+
+Os botões de criar aluno/plano antes não tinham handler enquanto a lista carregava. Agora abrem o formulário imediatamente com proteção de contexto. Dois casos RED → GREEN conferiram a abertura durante consulta pendente e a preservação do formulário ao receber a lista. Dois outros casos verificam retry após falha, duplo clique antigo recusado, erro escapado e ausência de notificação duplicada. Estão incluídos em 507/507 testes locais, zero falhas/ignorados.
+
+Interrupção intencional do servidor Node local, após confirmar processo e wrapper desta tarefa: alunos/planos mostraram falha e ação de recuperação. Após restaurar o servidor, o botão recuperou planos; a rodada atual de alunos recuperou três registros e reabilitou a busca sem recarregar a página. Aviso da lista atual não duplica toast nem presume que a internet seja a causa. Bancos nativos permaneceram em execução; nenhuma interrupção da Vercel. Capturas locais inspecionadas: `server/tmp/70–83`.
+
+No editor de treino, o catálogo tinha uma segunda região de rolagem que cortava a ação manual; em mobile, seu contêiner agora cresce e a lista conserva o limite de rolagem. Botões de mover/remover passaram de 30/42 para 44 × 44 px, com cabeçalho que acomoda as ações. Documento em 375 pixels; exercício manual foi adicionado somente à tela e cancelado, sem salvar ficha ou doses. Cadastro, plano, perfil e treino foram inspecionados sem criar conta, alterar senha ou realizar lançamento pelo navegador.
+
+Permanecem em aberto a auditoria dos demais estados/controles, outras larguras, apresentação da landing, aparelho físico e os gates externos documentados. As evidências desta seção são locais até a conferência da publicação.
+
 ## Publicação confirmada — 12/10/2026
 
 `460e7b0` (`460e7b064d114ccdb1db26756d7cfce5673c45f6`), Production READY `dpl_AZVoNNQS84Cg6jJ8YUn46fE6n51F`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-6znii0d3v-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38204618039) e Preview Git aprovado. Suíte integral **503/503**, zero falhas e ignorados; gate privado aprovado. Saúde HTTP 200, banco ready e API no-store; 14 hashes de interface/autenticação/financeiro conferidos. [Captura do painel publicado](evidence/66-dashboard-workspace-vercel.png).

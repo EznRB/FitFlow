@@ -1,6 +1,6 @@
 /* FitFlow workspace: typography inspired by training journals, with a warm
    editorial surface for emphasis and navy surfaces for daily work. */
-#app-screen { --workspace-paper: #eee8dc; --workspace-ink: #172334; }
+#app-screen { --workspace-paper: #eee8dc; --workspace-ink: #172334; color-scheme: dark; }
 #app-screen .page-content { max-width: 1540px; width: 100%; margin-inline: auto; padding: 34px clamp(20px, 3vw, 44px) 56px; }
 #app-screen .page-content, #app-screen .premium-dashboard { animation: none; }
 #app-screen .sidebar { background: #101a29; border-right-color: #283345; transition: none; }
@@ -78,7 +78,7 @@
 #app-screen .science-heading, #app-screen .ff-student-heading, #app-screen .sessions-header { padding-bottom: 28px; border-bottom: 1px solid #303c4e; margin-bottom: 28px; }
 #app-screen .science-heading h2, #app-screen .ff-student-heading h2, #app-screen .sessions-header h2 { font: 600 clamp(36px, 4vw, 54px)/1.04 var(--font-heading); letter-spacing: -.02em; }
 #app-screen .science-section-index { background: #293041; border: 1px solid #414555; border-radius: 50%; width: 30px; height: 30px; text-align: center; flex-shrink: 0; }
-#app-screen .science-result { --text-primary: #172334; --text-secondary: #46576c; --text-muted: #536174; --border-color: #c9c0b1; --bg-base: #f9f5ed; --primary-400: #99420d; background: var(--workspace-paper); border-color: #c9c0b1; border-top: 3px solid #cf651b; }
+#app-screen .science-result { --text-primary: #172334; --text-secondary: #46576c; --text-muted: #536174; --border-color: #c9c0b1; --bg-base: #f9f5ed; --primary-400: #99420d; color: var(--text-primary); background: var(--workspace-paper); border-color: #c9c0b1; border-top: 3px solid #cf651b; }
 #app-screen .science-result h3 { font: 600 31px/1.1 var(--font-heading); }
 #app-screen .science-result .science-error { color: #9b2929; }
 #app-screen .science-result .science-total { font-family: var(--font-heading); font-size: 74px; }
@@ -143,6 +143,47 @@
   #app-screen .progress-week h3 { font-size: 22px; }
   #app-screen .progress-week-stat strong { font-size: 27px; overflow-wrap: anywhere; }
   #app-screen .progress-week-stat span { overflow-wrap: anywhere; }
+}
+.modal { background: #111b2a; border-color: #303c4e; border-radius: 10px; animation: none; color-scheme: dark; }
+.modal-overlay { animation: none; }
+.modal-header { padding: 22px 28px; border-bottom-color: #303c4e; }
+.modal-header h3 { font: 600 27px/1.15 var(--font-heading); letter-spacing: -.02em; }
+.modal-body { padding: 24px 28px; }
+.modal-footer { padding: 18px 28px; border-top-color: #303c4e; }
+.modal-footer .btn { min-width: 110px; }
+#modal input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), #modal select, #modal textarea { font-size: 16px; }
+.modal .btn-success { background: #287657; color: #fff; box-shadow: none; }
+.modal .btn-danger { background: #812f3b; color: #fff; box-shadow: none; }
+.management-form { display: grid; gap: 22px; }
+.management-form-intro { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
+.management-form-section { min-width: 0; padding: 18px 20px 20px; margin: 0; border: 1px solid #303c4e; border-radius: 6px; }
+.management-form-section legend { padding: 0 8px; margin-left: -8px; color: var(--text-primary); font-size: 15px; font-weight: 600; }
+.management-form-section legend span { color: var(--primary-400); margin-right: 10px; font: 500 14px var(--font-heading); }
+.management-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.management-form .form-group { margin: 0; min-width: 0; }
+.management-form .form-group input, .management-form .form-group select, .management-form .form-group textarea { min-width: 0; width: 100%; min-height: 44px; font-size: 16px; }
+.management-wide { grid-column: 1 / -1; }
+.management-help { font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin: 12px 0 0; }
+.management-comparison { display: block; min-height: 44px; padding: 12px; border: 1px solid #303c4e; border-radius: 6px; background: #172233; color: var(--primary-300); font-size: 14px; line-height: 1.5; }
+.management-list-state { grid-column: 1 / -1; padding: 28px 20px; }
+.management-list-state h3 { margin: 0 0 10px; font: 600 26px/1.15 var(--font-heading); }
+.management-list-state p { color: var(--text-secondary); font-size: 14px; line-height: 1.6; margin: 0 0 20px; max-width: 55ch; overflow-wrap: anywhere; }
+.management-list-state .btn { min-height: 44px; }
+#modal .workout-catalog-item button { justify-content: space-between; text-align: left; white-space: normal; overflow-wrap: anywhere; gap: 12px; min-height: 44px; }
+#modal .workout-exercise-head { flex-wrap: wrap; gap: 12px; }
+#modal .workout-exercise-head button { min-width: 44px; min-height: 44px; }
+@media (max-width: 720px) {
+  #modal .workout-catalog { max-height: none; overflow: visible; }
+  #modal .workout-catalog-list { max-height: 240px; overflow-y: auto; }
+}
+@media (max-width: 540px) {
+  .modal-header { padding: 20px; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 16px 20px; }
+  .modal-footer .btn { flex: 1 1 110px; white-space: normal; }
+  .management-fields { grid-template-columns: minmax(0, 1fr); }
+  .management-form-section { padding: 16px; }
+  .management-wide { grid-column: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   #app-screen *, #app-screen *::before, #app-screen *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

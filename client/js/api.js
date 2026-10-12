@@ -127,7 +127,7 @@ const API = {
     } catch (error) {
       // Erro de rede (servidor offline)
       if (!error.status) {
-        if (!error.timeout) error.message = 'Sem conexão com o servidor. Verifique sua internet.';
+        if (!error.timeout) error.message = 'Não foi possível conectar ao servidor. Confira a conexão ou tente novamente em instantes.';
         error.status = 0;
       }
       throw error;

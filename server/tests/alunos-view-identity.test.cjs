@@ -48,6 +48,17 @@ function fixture() {
     epoch: value => { epoch = value; }, actions: () => footerActions, closes: () => closes };
 }
 
+test('matrícula abre enquanto a lista ainda carrega e conserva o formulário após a resposta', async () => {
+  const h = fixture(), loading = h.view.inicializar();
+  const button = h.nodes.get('btn-novo-aluno');
+  assert.equal(typeof button.onclick, 'function'); button.onclick();
+  assert.equal(h.Modal.isOpen(), true); assert.equal(h.calls[1].route, '/planos?ativo=true');
+  const form = h.nodes.get('form-aluno');
+  h.calls[0].resolve({ data: [] }); await loading;
+  assert.equal(h.nodes.get('form-aluno'), form); assert.equal(h.Modal.isOpen(), true);
+  h.calls[1].resolve({ data: [] }); await tick();
+});
+
 test('lista concorrente descarta sucesso e erro antigos sem sobrescrever a leitura mais nova', async () => {
   for (const rejectOld of [false, true]) {
     const h = fixture(), old = h.view.carregarLista(), fresh = h.view.carregarLista();
@@ -57,6 +68,18 @@ test('lista concorrente descarta sucesso e erro antigos sem sobrescrever a leitu
     assert.equal(h.view.dados[0].id, 2); assert.match(h.nodes.get('alunos-table-body').innerHTML, /Atual/);
     assert.deepEqual(h.notices, []);
   }
+});
+test('falha da lista permite uma nova leitura e descarta duplo clique do botão de retry antigo', async () => {
+  const h = fixture(), loading = h.view.inicializar();
+  h.calls[0].reject(new Error('<img src=x> Serviço indisponível')); await loading;
+  const body = h.nodes.get('alunos-table-body');
+  assert.match(body.innerHTML, /data-alunos-retry/); assert.doesNotMatch(body.innerHTML, /<img src=x>/);
+  assert.deepEqual(h.notices, [], 'O aviso da lista não duplica uma notificação flutuante.');
+  assert.equal(h.nodes.get('filtro-nome-aluno').disabled, true);
+  const oldRetry = body.onclick, event = { target: { closest: () => ({}) } };
+  const retry = oldRetry(event); oldRetry(event); assert.equal(h.calls.length, 2);
+  h.calls[1].resolve({ data: [student(3, 'Recuperado')] }); await retry;
+  assert.match(body.innerHTML, /Recuperado/); assert.equal(h.nodes.get('filtro-nome-aluno').disabled, false);
 });
 
 test('lista não altera DOM substituído nem instala evento de inicialização numa tela nova', async () => {

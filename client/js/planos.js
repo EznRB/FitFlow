@@ -45,7 +45,8 @@ const PlanosView = {
   },
   async inicializar() {
     this.invalidar(); const context = this.contexto(); if (!this.atual(context)) return;
-    await this.carregarLista(); if (this.atual(context)) this.configurarEventos(context);
+    this.configurarEventos(context);
+    await this.carregarLista();
   },
   async carregarLista() {
     const context = this.contexto(), sequence = ++this.listSequence;
@@ -57,7 +58,7 @@ const PlanosView = {
       if (!this.atual(context) || sequence !== this.listSequence) return;
       this.dados = Array.isArray(response.data) ? response.data : []; this.cacheContext = context;
       const sorted = [...this.dados].sort((a, b) => Number(b.active) - Number(a.active) || Number(a.durationDays) - Number(b.durationDays));
-      grid.innerHTML = sorted.length ? sorted.map(plan => this.renderCard(plan)).join('') : '<p>Nenhum plano cadastrado.</p>';
+      grid.innerHTML = sorted.length ? sorted.map(plan => this.renderCard(plan)).join('') : '<section class="management-list-state" role="status"><h3>Nenhum plano cadastrado</h3><p>Defina valor e vigência em Novo Plano para criar a primeira opção da academia.</p></section>';
       grid.onclick = event => {
         if (!this.atual(context) || sequence !== this.listSequence) return;
         const button = event.target.closest?.('button[data-plan-action]'); if (!button || !grid.contains(button)) return;
@@ -68,7 +69,13 @@ const PlanosView = {
       if (window.lucide) window.lucide.createIcons({ nodes: [grid] });
     } catch (error) {
       if (!this.atual(context) || sequence !== this.listSequence) return;
-      this.dados = []; this.cacheContext = null; grid.textContent = error.message || 'Não foi possível carregar planos.'; Toast.error('Erro ao carregar planos.');
+      this.dados = []; this.cacheContext = null;
+      grid.innerHTML = `<section class="management-list-state" role="alert"><h3>Não foi possível carregar os planos</h3><p>${this.escapar(error.message || 'Confira a conexão e tente novamente.')}</p><button type="button" class="btn btn-secondary" data-plan-retry>Tentar novamente</button></section>`;
+      grid.onclick = event => {
+        if (!this.atual(context) || sequence !== this.listSequence) return;
+        const button = event.target?.closest?.('button[data-plan-retry]');
+        if (button && grid.contains(button)) return this.carregarLista();
+      };
     }
   },
   renderCard(plan) {
@@ -103,15 +110,18 @@ const PlanosView = {
     let context;
     const custom = Boolean(plan.durationDays) && !this.DURATION_PRESETS.some(preset => preset.value === plan.durationDays);
     const options = this.DURATION_PRESETS.map(preset => `<option value="${preset.value}" ${custom ? preset.value === 'custom' ? 'selected' : '' : preset.value === plan.durationDays ? 'selected' : ''}>${preset.label}</option>`).join('');
-    Modal.open(title, `<form id="form-plano" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1rem">
-      <div class="form-group" style="grid-column:1/-1"><label for="input-plano-nome">Nome do plano</label><input type="text" id="input-plano-nome" maxlength="100" value="${this.escapar(plan.name)}" required></div>
+    Modal.open(title, `<form id="form-plano" class="management-form">
+      <p class="management-form-intro">Defina a vigência e o valor total. A equivalência por 30 dias serve para comparar os planos.</p>
+      <fieldset class="management-form-section"><legend><span>01</span> Nome e vigência</legend><div class="management-fields">
+      <div class="form-group management-wide"><label for="input-plano-nome">Nome do plano</label><input type="text" id="input-plano-nome" maxlength="100" value="${this.escapar(plan.name)}" required></div>
       <div class="form-group"><label for="input-plano-periodo">Vigência</label><select id="input-plano-periodo">${options}</select></div>
       <div class="form-group" id="grupo-duracao-custom" ${custom ? '' : 'hidden'}><label for="input-plano-duracao-custom">Duração personalizada (dias)</label>
-        <input type="number" id="input-plano-duracao-custom" min="1" max="3650" step="1" value="${custom ? this.escapar(plan.durationDays) : ''}"></div>
+        <input type="number" id="input-plano-duracao-custom" min="1" max="3650" step="1" value="${custom ? this.escapar(plan.durationDays) : ''}"></div></div></fieldset>
+      <fieldset class="management-form-section"><legend><span>02</span> Valor e condições</legend><div class="management-fields">
       <div class="form-group"><label for="input-plano-valor">Valor total da vigência (R$)</label><input type="number" id="input-plano-valor" min="0.01" max="99999999.99" step="0.01" value="${this.escapar(plan.price)}" required></div>
-      <div class="form-group"><label for="display-mensal">Equivalente aritmético por 30 dias</label><output id="display-mensal" aria-live="polite">—</output></div>
-      <div class="form-group" style="grid-column:1/-1"><label for="input-plano-descricao">Descrição e condições</label><textarea id="input-plano-descricao" maxlength="10000" rows="3">${this.escapar(plan.description)}</textarea></div>
-      <p style="grid-column:1/-1;color:var(--text-muted);font-size:var(--font-size-xs)">O cadastro define valor e vigência. O pagamento é registrado ou iniciado no fluxo financeiro; o plano não agenda cobranças automáticas.</p>
+      <div class="form-group"><label for="display-mensal">Equivalente aritmético por 30 dias</label><output class="management-comparison" id="display-mensal" aria-live="polite">—</output></div>
+      <div class="form-group management-wide"><label for="input-plano-descricao">Descrição e condições</label><textarea id="input-plano-descricao" maxlength="10000" rows="3">${this.escapar(plan.description)}</textarea></div></div></fieldset>
+      <p class="management-help">O cadastro define valor e vigência. O pagamento é registrado ou iniciado no fluxo financeiro; o plano não agenda cobranças automáticas.</p>
       </form>`, [{ text: 'Cancelar', class: 'btn-secondary', action: () => {
         if (!this.formularioAtual(context)) return;
         Modal.close(); this.activeForm = null; this.modalSequence++;
