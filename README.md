@@ -62,7 +62,7 @@ node scripts/with-local-env.cjs node scripts/smoke-local.cjs
 node scripts/with-local-env.cjs node --test tests/sessoes-concurrency.test.cjs
 ```
 
-O terceiro comando executa a suíte com o ambiente MariaDB isolado: **507 testes aprovados, zero falhas e zero ignorados** na revisão `b5d4288`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
+O terceiro comando executa a suíte com o ambiente MariaDB isolado: **520 testes aprovados, zero falhas e zero ignorados** na revisão `d60d072`. No Windows, passe `node` ao wrapper; os testes com doubles não requerem credenciais de serviços externos. Os testes integrados optativos gravam somente na demonstração local.
 
 ## Publicação e limites atuais
 
@@ -72,13 +72,15 @@ Checkout Pix/cartão está implementado exclusivamente em sandbox, com concilia�
 
 A IA educativa usa GPT-OSS 120B via Groq Free, com plano US$ 0 confirmado e chave somente no backend. Divisões tiveram amostras reais conferidas; nutrição foi gerada e inspecionada com limitação terminológica registrada. Indicadores usam glossário revisado determinístico, confirmado no navegador publicado como conteúdo não gerado por IA, após duas respostas imprecisas do modelo. [Configuração, evidências e limites](docs/IA_GRATUITA.md).
 
-A revisão atual `b5d4288` (`b5d42889d8a1f642bc591bbbf27cdb832863b6a4`), Production READY `dpl_3Rq7d7WRpNTzsEgWyrK1uEhhRBsB`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-4onrza31i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38209366822) e Preview Git aprovado. Suíte integral **507/507**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 16 hashes de interface/autenticação/financeiro conferidos. Gate privado aprovado. Ajustes administrativos publicados e verificados por HTTPS; [contrato e evidências](docs/AJUSTES_FINANCEIROS.md). Proveniência do catálogo preservada. [Estado e limites](docs/STATUS_ENTREGA.md).
+A revisão atual `d60d072` (`d60d0722b858881319810d1233e492fcd951ee02`), Production READY `dpl_9jnWh8FRjp4hXFiZ1gQE1Z56cj35`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-q46jbzn61-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38279551464). Suíte integral **520/520**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 17 hashes de interface/autenticação/financeiro conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada. Gate privado aprovado. Ajustes administrativos publicados e verificados por HTTPS; [contrato e evidências](docs/AJUSTES_FINANCEIROS.md). Proveniência do catálogo preservada. [Estado e limites](docs/STATUS_ENTREGA.md).
 
 A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
 
 Mercado Pago real de teste, telefone físico/instalação, reconexão publicada, revisão completa da UX/UI e revisão/merge dos PRs continuam pendentes. Troca de senha e revogação estão publicadas e validadas em `3f48109`. A primeira revisão visual e a correção de pertinência do chat estão publicadas em `460e7b0`. Ajustes financeiros administrativos não executam devoluções no provedor. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 Formulários e resultados refinados em `b5d4288`: matrícula e planos agrupados por tarefa, recuperação das listas, contraste nutricional e controles de treino mobile. [Revisão visual e evidências](docs/REVISAO_VISUAL_SISTEMA.md).
+
+Biblioteca de movimento com busca, filtros e leitura de origem, publicada em `d60d072`; [capturas e verificações](docs/REVISAO_VISUAL_SISTEMA.md).
 
 ## Documentação
 
