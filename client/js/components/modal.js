@@ -12,6 +12,7 @@
  */
 
 const Modal = {
+  revision: 0,
   overlay: null,
   titleEl: null,
   bodyEl: null,
@@ -56,6 +57,7 @@ const Modal = {
    */
   open(title, bodyHTML, buttons = []) {
     if (!this.overlay) this.init();
+    this.revision++;
     if (!this.isOpen()) {
       this.previousFocus = document.activeElement;
       this.background = [...document.body.children].filter(node => node !== this.overlay && !node.contains(this.overlay))
@@ -96,6 +98,7 @@ const Modal = {
    * Fecha o modal.
    */
   close() {
+    this.revision++;
     if (!this.overlay) return;
     this.overlay.style.display = 'none';
     document.body.style.overflow = '';

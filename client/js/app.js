@@ -451,16 +451,13 @@ const App = {
         <div class="page-header admin-page-header">
           <div>
             <span class="workspace-kicker">Biblioteca / movimento</span>
-            <h2>Catálogo de Exercícios</h2>
-            <p style="color:var(--text-muted)">Gerencie os exercícios disponíveis para montar fichas de treino.</p>
+            <h2>Biblioteca de movimento.</h2>
+            <p style="color:var(--text-muted)">Encontre uma referência, confira a origem e prepare sua ficha.</p>
           </div>
           <div class="admin-page-actions">
-            <select id="filtro-grupo-muscular" class="form-select" aria-label="Filtrar por grupo muscular">
-              <option value="">Todos os grupos</option>
-            </select>
             <button id="btn-sync-wger" class="btn btn-outline-primary" style="cursor:pointer" title="Sincronizar exercícios via API">
               <i data-lucide="refresh-cw"></i>
-              <span>Sincronizar catálogo</span>
+              <span>Atualizar fonte wger</span>
             </button>
             <button id="btn-novo-exercicio" class="btn btn-primary" style="cursor:pointer">
               <i data-lucide="plus-circle"></i>
@@ -469,14 +466,21 @@ const App = {
           </div>
         </div>
 
-        <div class="card admin-table-scroll" role="region" aria-label="Catálogo de exercícios; deslize para ver todas as colunas" tabindex="0">
-          <table class="table" style="width:100%; text-align:left; border-collapse:collapse;">
+        <div class="catalog-toolbar">
+          <div class="catalog-search"><label for="filtro-nome-exercicio">Buscar exercício</label><input id="filtro-nome-exercicio" type="search" placeholder="Nome do movimento…" maxlength="100" disabled></div>
+          <div><label for="filtro-grupo-muscular">Grupo muscular</label><select id="filtro-grupo-muscular"><option value="">Todos os grupos</option></select></div>
+          <div><label for="filtro-idioma-exercicio">Idioma / origem</label><select id="filtro-idioma-exercicio" disabled><option value="">Todos</option><option value="pt">Português (wger)</option><option value="en">Inglês (wger)</option><option value="local">Cadastros locais</option></select></div>
+          <div><label for="filtro-status-exercicio">Disponibilidade</label><select id="filtro-status-exercicio"><option value="true">Ativos</option><option value="false">Inativos</option></select></div>
+        </div>
+        <div class="catalog-caption"><p id="catalog-count" role="status" aria-live="polite">Aguardando consulta</p><p>Contribuições externas têm autoria e licenças próprias. O catálogo não é uma prescrição validada.</p></div>
+        <div class="card catalog-library" role="region" aria-label="Resultados do catálogo de exercícios">
+          <table class="table catalog-table" role="table">
             <thead>
-              <tr style="border-bottom: 1px solid var(--border-color)">
-                <th style="padding:1rem 0.5rem">Exercício</th>
-                <th style="padding:1rem 0.5rem">Grupo Muscular</th>
-                <th style="padding:1rem 0.5rem">Status</th>
-                <th style="padding:1rem 0.5rem; width:120px">Ações</th>
+              <tr role="row">
+                <th role="columnheader" scope="col">Exercício / referência</th>
+                <th role="columnheader" scope="col">Grupo muscular</th>
+                <th role="columnheader" scope="col">Status</th>
+                <th role="columnheader" scope="col">Ações</th>
               </tr>
             </thead>
             <tbody id="exercicios-table-body">
@@ -484,6 +488,7 @@ const App = {
             </tbody>
           </table>
         </div>
+        <nav class="catalog-pagination" aria-label="Páginas do catálogo"><button type="button" id="catalog-prev" class="btn btn-secondary" disabled>Anterior</button><span id="catalog-page">—</span><button type="button" id="catalog-next" class="btn btn-secondary" disabled>Próxima</button></nav>
       `,
 
       /**
