@@ -86,3 +86,7 @@ A revisão por subagente foi feita no código/asset, sem navegador compartilhado
 ## Avanço do caderno de treino — 12/10/2026
 
 `4f4a7ee` publicado e CI aprovada; 527/527 locais. Registro em duas etapas, números e recibos legíveis, resumo semanal com trabalho/aquecimento separados; reconciliação da ficha por ID preserva rascunhos e exige escolha explícita de exercício removido. Fixture nativa própria removida, históricos existentes preservados. [Evidências e limites](REVISAO_VISUAL_SISTEMA.md). Próximas revisões: ficha/evolução/presença/mensalidade, estados e teclado das jornadas restantes; gates de provedor/aparelho físico continuam dependentes de ação humana.
+
+## Avanço da ficha/Evolução/mensalidade — 12/10/2026
+
+`d5b90d5` publicado e CI/Preview Git aprovados; **555/555** locais e **23 arquivos** conferidos. Ficha recebe origem persistida/data do registro, Evolução mantém filtros com identidade explícita e mensalidade declara disponibilidade sem criar cobrança. [Provas e limites](REVISAO_VISUAL_SISTEMA.md). Próxima ação disponível: reproduzir/corrigir o formulário avulso (callbacks antigos, envio compartilhado, rascunho e submit), depois continuidade das jornadas/estados e revisão final documental. PSP, telefone físico, rotação da chave pelo titular e revisão/merge ainda pendentes.

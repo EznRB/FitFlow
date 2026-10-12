@@ -1,6 +1,10 @@
 # Revisão de entrega — 12/10/2026
 
-Código publicado `4f4a7ee` (`4f4a7eeb2131b8aacbeb31cb3912ce1d2744fe1a`), Production READY `dpl_BdguYNxkBYXfDjyWNDcxfm8MeJn2`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-itrd2zpfm-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38286869722/job/114937231019). Suíte integral **527/527**, zero falhas e ignorados. Saúde HTTP 200, banco ready e API no-store; 19 hashes de interface/autenticação/financeiro/aluno conferidos. A consulta de checks desta revisão não apresentou status do Preview Git; a publicação Production pelo CLI foi confirmada. Este marco não conclui a meta completa.
+Código publicado `d5b90d5` (`d5b90d5522152995c40609fb29d4c38ec7b5fc4a`), Production READY `dpl_6GzQp2jg69Cv4bWaNiujxnitFxpv`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-ptuas2a7i-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38308061050/job/115006791024) e Preview Git aprovado. Suíte integral **555/555**, zero falhas e ignorados; depois, os 18 testes de checkout passaram novamente após refinamento de texto. Saúde HTTP 200, banco ready e API no-store; 23 hashes de interface/autenticação/financeiro/aluno conferidos. Este marco não conclui a meta completa.
+
+## Ficha, Evolução e mensalidade publicadas
+
+Em `d5b90d5`, prescrição e mensalidade têm leitura própria; o último registro avulso mostra data e repetições ausentes. A ficha recebe os créditos persistidos, sem inferência por nome. Evolução preserva filtros/entrada/foco após atualização e exige escolha explícita se o exercício desaparecer. Checkout declara disponibilidade na própria mensalidade; contextos antigos não substituem modal/tentativa e timeout preserva UUID, sem recompra automática. **555/555** locais. [Ficha publicada](evidence/117-ficha-vercel.jpg), [mensalidade publicada](evidence/118-mensalidade-vercel.jpg), [Evolução mobile publicada](evidence/119-evolucao-mobile-vercel.jpg) e [verificação detalhada](REVISAO_VISUAL_SISTEMA.md). Browser público verificou leitura e filtros, sem gravar cadastro, ficha, série, presença ou pagamento. PSP ainda aguarda configuração; aparelho físico não foi testado.
 
 ## Caderno de treino publicado
 
