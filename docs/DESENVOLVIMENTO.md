@@ -207,3 +207,19 @@ A suíte integral passou em **328/328**, sem falhas ou ignorados, incluindo doze
 Troca de senha pelo titular com revogação de sessões continua pendente. Ajustes financeiros administrativos estão implementados em `9d0361e`; não executam devoluções no provedor. Proveniência do catálogo implementada em `8c35628`, sem reclassificar o histórico existente. Corridas da tela de Planos foram corrigidas e verificadas em `bb68606`. A troca de senha deve invalidar sessões antigas. Ajustes financeiros já registram motivo, ator, histórico e tratamento explícito da vigência; não executam reembolso no provedor. A avaliação de alternativas gratuitas abertas está em [Pagamentos sandbox](PAGAMENTOS_SANDBOX.md).
 
 Navegador autenticado confirmou dashboard com Chart real, pagamentos em estado vazio e inadimplência de 13 dias, além do relatório de check-ins por período com um registro de 08/10/2026 às 23:46 em São Paulo. Capturas 37 (desktop) e 38 (375 × 812); no relatório, clientWidth e scrollWidth foram 369 pixels. Não houve lançamento financeiro pelo navegador nem atraso artificial. Emulação não comprova telefone ou teclado físico; campos de data ainda tinham 14 pixels nesta publicação. [Dashboard](evidence/37-gestao-dashboard-publicado.png) e [relatório](evidence/38-relatorios-publicados-mobile.png).
+
+## Validação de conta e isolamento dos testes — 12/10/2026
+
+Migração `20261012_credential_version` aplicada: oito migrations MySQL e cinco PostgreSQL. [Troca de senha e revogação](TROCA_SENHA.md). Gates de senha aprovados em MariaDB, PostgreSQL nativo, Neon de verificação e HTTPS publicado; não modificam senhas demonstrativas.
+
+O gate de concorrência MariaDB usa alvo nativo estrito e fixtures UUID próprias, removidas no término. O teste antigo acumulava séries na demonstração local; esses registros anteriores permanecem preservados e não são evidência de treino real. A execução da suíte corrigida manteve as contagens preexistentes.
+
+```powershell
+node scripts/with-local-env.cjs node --test tests/*.test.cjs
+node scripts/with-local-env.cjs node tests/password-change-db.integration.cjs
+node scripts/with-postgresql-test-env.cjs node tests/password-change-db.integration.cjs
+node scripts/with-neon-verification-env.cjs node tests/password-change-db.integration.cjs
+node tests/hosted-password-change.integration.cjs --execute-hosted-fixtures
+```
+
+O último comando realiza escritas reais de teste somente em contas UUID que ele próprio cria no FitFlow publicado; requer o arquivo owner privado e valida projeto, branch, banco e TLS. Quotas reais são preservadas.

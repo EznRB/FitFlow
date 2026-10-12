@@ -1,4 +1,4 @@
-# Estado da entrega — 11/10/2026
+# Estado da entrega — 12/10/2026
 
 A entrega completa ainda depende de pagamentos, telefone físico e das melhorias funcionais listadas adiante. O login publicado foi recuperado com Neon; aplicativo e landing têm evidências públicas. Código enviado aos PRs draft [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1); nenhum merge à branch principal foi realizado.
 
@@ -6,10 +6,22 @@ A entrega completa ainda depende de pagamentos, telefone físico e das melhorias
 
 | Aplicação | Revisão e verificação |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `9d0361e` (`9d0361eae38c023635ba2f9958239ff840fcb9ba`), Production READY `dpl_5YRDgobgwuxx4zfsrFFeYg7eNFXj`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-2xrp9f8zy-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38182537049) e Preview Git aprovado. Suíte integral **470/470**, zero falhas e ignorados; gate privado em 338 arquivos. Saúde HTTP 200, banco ready e API no-store; oito hashes financeiros de HTML/JS/CSS conferidos. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | `460e7b0` (`460e7b064d114ccdb1db26756d7cfce5673c45f6`), Production READY `dpl_AZVoNNQS84Cg6jJ8YUn46fE6n51F`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-6znii0d3v-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38204618039) e Preview Git aprovado. Suíte integral **503/503**, zero falhas e ignorados; gate privado aprovado. Saúde HTTP 200, banco ready e API no-store; 14 hashes de interface/autenticação/financeiro conferidos. |
 | [Landing](https://fitflow-lp.vercel.app) | `c6b43ba`, branch `codex/landing-improvements`, deployment `dpl_4VvK5DL5euaArBubytijVTVpSbXD`, READY. URL exata: `https://fitflow-bgdg31gqk-eznrbs-projects.vercel.app`. Gate público HTML/JS/CSS/hero HTTP 200, CTA e copy atuais; navegador confirmou fotografia e estado publicado. |
 
-### Ajustes financeiros — 9d0361e
+### Revisão de 12/10 — conta, interface e pertinência do chat
+
+Troca de senha própria publicada em `3f48109` e validada por HTTPS: senha atual, titular, CSRF, revogação de sessões anteriores e outra conta preservada; somente fixtures UUID removidas. Oito migrations MySQL e cinco PostgreSQL aplicadas nos bancos nativos e nas duas branches Neon. [Contrato](TROCA_SENHA.md).
+
+Primeira revisão visual em `22e2f99`: composição editorial/fotografia no dashboard, métricas agrupadas, barras de presença, hierarquia de planos/tabelas, resultado nutricional destacado e conversa com autoria distinta. Aluno recebe resumo compacto; evolução mobile deixou de transbordar. Menu inicia fechado após troca de conta. [Plano, referências e limites](REVISAO_VISUAL_SISTEMA.md).
+
+O teste real de volume em `22e2f99` foi reprovado: listava músculos sem rotina. Em `460e7b0`, novo bloco de definição e orientação de seleção responderam à mesma pergunta com unidades/exemplo e fonte, sem inventar contagens. A ciência continua sendo texto curado; IA seleciona e organiza. Uma amostra não valida todas as perguntas futuras. [Painel publicado](evidence/66-dashboard-workspace-vercel.png) e [resposta real corrigida](evidence/67-chat-volume-workspace-vercel.png).
+
+O teste de concorrência MariaDB deixou de escrever nas fichas demonstrativas: cria e limpa suas próprias contas/ficha/sessões. Contagens locais permaneceram 134 sessões/168 séries durante a suíte de 501 testes; os dados antigos acumulados foram preservados. A suíte final com dois casos de IA adicionais passou em 503/503.
+
+Pagamento externo continua sem conta/credenciais/webhook configurados; ajustes administrativos não executam devolução no provedor. Revisão completa da UX/UI, aparelho físico, rotação da chave Groq e revisão/merge dos PRs permanecem pendentes.
+
+## Ajustes financeiros — 9d0361e
 
 Correções de recebimentos manuais e devoluções informadas são eventos permanentes com UUID, motivo, responsável, saldo em centavos e efeito explícito de vigência. O recibo pago é protegido por trigger; não há operação de reembolso no provedor por esse formulário. Novos recebimentos capturam concessão real; registros legados não permitem reversão automática. Alteração de plano/status exige revisão atual e todos os escritores de matrícula compartilham o lock. Relatórios separam bruto, correções, devoluções informadas e líquido pela data efetiva do evento. [Contrato e testes](AJUSTES_FINANCEIROS.md).
 
@@ -170,7 +182,7 @@ Em `2d74840`, [CI](https://github.com/EznRB/FitFlow/actions/runs/38058786911) e 
 3. **Entrega e PRs:** reconexão na publicação, revisão dos PRs draft e gates de novas mudanças. Nenhum merge à branch principal. Manter fontes/limites da IA explícitos e verificar amostras relevantes sem tratar formato JSON como certificação factual.
 
 4. **Financeiro administrativo:** concluído em `9d0361e`, com histórico, saldo e vigência explícita. Isso não encerra a validação do checkout externo descrita no item 1.
-5. **Conta:** implementar troca de senha autenticada pelo titular e revogação das sessões anteriores; senha inicial fornecida pelo gestor não substitui esse fluxo.
+5. **UX/UI:** finalizar a revisão por tela, estados e controles; a primeira composição visual publicada não encerra esse trabalho. [Critérios e progresso](REVISAO_VISUAL_SISTEMA.md).
 
 ## Roteiro de apresentação
 

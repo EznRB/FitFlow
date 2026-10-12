@@ -51,3 +51,9 @@ Nutrição destaca o resultado e o método em superfícies diferentes. Chat tem 
 ## Trabalho restante
 
 A primeira publicação visual não encerra a revisão completa. Ainda faltam conferir resultados nutricionais preenchidos e seus estados, conversa real com a nova composição, modais de gestão e de treino, estados de falha/vazio, teclado/contraste por controle, mais larguras, aparelho físico e continuidade com a landing. A publicação e suas capturas serão registradas após o deploy.
+
+## Publicação confirmada — 12/10/2026
+
+`460e7b0` (`460e7b064d114ccdb1db26756d7cfce5673c45f6`), Production READY `dpl_AZVoNNQS84Cg6jJ8YUn46fE6n51F`, [domínio final](https://fit-flow-indol.vercel.app/) e [URL exata](https://fit-flow-6znii0d3v-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38204618039) e Preview Git aprovado. Suíte integral **503/503**, zero falhas e ignorados; gate privado aprovado. Saúde HTTP 200, banco ready e API no-store; 14 hashes de interface/autenticação/financeiro conferidos. [Captura do painel publicado](evidence/66-dashboard-workspace-vercel.png).
+
+Conversa real da nova composição foi conferida: a primeira resposta de volume não atendia à pergunta e foi reprovada. Após a correção em `460e7b0`, a repetição manual respondeu com a diferença entre séries e kg·reps, exemplo aritmético e resumo curado ACSM. [Captura da resposta](evidence/67-chat-volume-workspace-vercel.png). A seleção e os limites têm dois novos casos incluídos em 503/503; não comprova pertinência de toda resposta futura. Nenhuma ficha foi alterada. As outras etapas restantes acima continuam abertas.

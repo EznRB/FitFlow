@@ -8,6 +8,12 @@ Projeto acadêmico de gestão de academia, com áreas de administrador, instruto
 
 Login editorial publicado na revisão `3adf5c1`. Captura de desktop; versões mobile e tablet verificadas em [Estado da entrega](docs/STATUS_ENTREGA.md). As contas demonstrativas são fornecidas por arquivo privado, sem senha universal publicada.
 
+## Revisão atual
+
+Primeira revisão visual publicada: painel editorial com fotografia, identidade laranja/navy e apresentações próprias para gestão, treino, nutrição e conversa. [Direção, referências e trabalho restante](docs/REVISAO_VISUAL_SISTEMA.md). Troca de senha com revogação de sessões validada localmente e na Vercel. Suíte atual: 503/503; Pix/cartão reais em sandbox ainda dependem da configuração do provedor.
+
+![Painel do FitFlow publicado em 12/10/2026](docs/evidence/66-dashboard-workspace-vercel.png)
+
 ## Desenvolvimento
 
 Node.js **24.x**; MySQL/MariaDB acessível para a demonstração local. **Docker não é necessário.** O ambiente preparado neste computador usa MariaDB nativo em `127.0.0.1:3308`, isolado em `.local-db/`.
@@ -70,7 +76,7 @@ A revisão atual `9d0361e` (`9d0361eae38c023635ba2f9958239ff840fcb9ba`), Product
 
 A revisão de gestão/login `3adf5c1`, preservada na atual, refinou o acesso, corrigiu contraste, corridas nas telas de alunos, edição parcial e cancelamento de presença. Login por teclado e controles foram conferidos localmente; capturas públicas documentam 1280, 768 e 375 pixels. Login real do aluno, restauração após recarga e gate HTTPS de gestão foram aprovados, com limpeza das fixtures próprias.
 
-Mercado Pago real de teste, telefone físico/instalação, reconexão publicada e revisão/merge dos PRs continuam pendentes. Troca de senha pelo titular com revogação de sessões continua pendente. Ajustes financeiros administrativos estão implementados em `9d0361e`; não executam devoluções no provedor. Proveniência do catálogo implementada em `8c35628`, sem reclassificar o histórico existente. Corridas da tela de Planos foram corrigidas e verificadas em `bb68606`. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
+Mercado Pago real de teste, telefone físico/instalação, reconexão publicada, revisão completa da UX/UI e revisão/merge dos PRs continuam pendentes. Troca de senha e revogação estão publicadas e validadas em `3f48109`. A primeira revisão visual e a correção de pertinência do chat estão publicadas em `460e7b0`. Ajustes financeiros administrativos não executam devoluções no provedor. A meta completa permanece ativa. Consulte o [estado e evidências](docs/STATUS_ENTREGA.md) e a [meta de desenvolvimento](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
 ## Documentação
 
