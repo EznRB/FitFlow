@@ -12,7 +12,8 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/prisma');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
-const { validateAccount } = require('../utils/accountValidation');
+const { validateAccount, validatePassword } = require('../utils/accountValidation');
+const { credentialVersion } = require('../utils/credentialVersion');
 
 class AuthService {
   constructor({ db = prisma } = {}) { this.db = db; }
@@ -53,7 +54,7 @@ class AuthService {
     });
 
     // 4. Retorna os dados, removendo o hash da senha por segurança
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, credentialVersion: __, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
@@ -93,6 +94,7 @@ class AuthService {
       name: user.name, // O DB usa 'name'
       email: user.email,
       role: user.role,
+      credentialVersion: credentialVersion(user.credentialVersion, { stored: true }),
     };
 
     const token = jwt.sign(payload, env.jwt.secret, {
@@ -110,6 +112,38 @@ class AuthService {
       },
       token,
     };
+  }
+
+  async changePassword(actorId, data, expectedVersion) {
+    const fields = ['expectedActorId', 'currentPassword', 'newPassword'];
+    if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).some(key => !fields.includes(key)) ||
+        !Number.isSafeInteger(data.expectedActorId) || data.expectedActorId < 1 || data.expectedActorId > 2147483647) {
+      throw new AppError('Dados de alteração de senha inválidos.', 400);
+    }
+    if (!Number.isSafeInteger(actorId) || actorId < 1 || actorId > 2147483647 || data.expectedActorId !== actorId) {
+      throw new AppError('A sessão mudou. Confira a conta antes de alterar a senha.', 403);
+    }
+    if (typeof data.currentPassword !== 'string' || !data.currentPassword || Buffer.byteLength(data.currentPassword, 'utf8') > 72) {
+      throw new AppError('Informe sua senha atual válida.', 400);
+    }
+    validatePassword(data.newPassword);
+    let user;
+    try { user = await this.db.user.findUnique({ where: { id: actorId } }); }
+    catch { throw new AppError('Serviço de autenticação temporariamente indisponível.', 503); }
+    if (!user || !user.active) throw new AppError('Sessão inválida. Entre novamente.', 401);
+    const version = credentialVersion(user.credentialVersion, { stored: true });
+    if (!Number.isInteger(expectedVersion) || expectedVersion !== version || version === 2147483647) {
+      throw new AppError('A credencial mudou. Entre novamente antes de alterar a senha.', 409);
+    }
+    if (!await bcrypt.compare(data.currentPassword, user.passwordHash)) throw new AppError('A senha atual não confere.', 400);
+    if (await bcrypt.compare(data.newPassword, user.passwordHash)) throw new AppError('Escolha uma senha diferente da atual.', 400);
+    const passwordHash = await bcrypt.hash(data.newPassword, 10);
+    let updated;
+    try { updated = await this.db.user.updateMany({ where: { id: actorId, active: true, passwordHash: user.passwordHash, credentialVersion: version },
+      data: { passwordHash, credentialVersion: { increment: 1 } } }); }
+    catch { throw new AppError('Não foi possível confirmar a alteração da credencial. Entre novamente para conferir.', 503); }
+    if (updated.count !== 1) throw new AppError('A credencial mudou durante o envio. Entre novamente.', 409);
+    return { changed: true, requiresLogin: true, userId: actorId };
   }
 }
 

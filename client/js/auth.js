@@ -139,6 +139,49 @@ const Auth = {
   },
 
   /**
+   * Changes only the captured owner's credential. Password replies never mutate
+   * cookies; the established logout protocol handles that under the origin lock.
+   */
+  async changePassword(input, captured = { userId: this.user?.id, generation: this.generation, epoch: this.sessionEpoch }) {
+    const ownsIdentity = () => this.user?.id === captured.userId && this.sessionEpoch === captured.epoch && this.getSessionEpoch() === captured.epoch;
+    const canSend = () => ownsIdentity() && this.generation === captured.generation && (!captured.isCurrent || captured.isCurrent());
+    if (!canSend()) throw new Error('A sessão ou o formulário mudou. Abra novamente a segurança da conta.');
+    const bundle = await this.withCookieLock(async () => {
+      if (!canSend() || this.getLogoutIntent()) throw new Error('A sessão mudou. Entre novamente antes de alterar a senha.');
+      let result, failure;
+      try {
+        const response = await API.post('/auth/password', { currentPassword: input.currentPassword, newPassword: input.newPassword,
+          expectedActorId: captured.userId }, { timeoutMs: 15000 });
+        result = response?.data;
+        if (result?.changed !== true || result.requiresLogin !== true || result.userId !== captured.userId) {
+          throw new Error('A confirmação da alteração não foi reconhecida.');
+        }
+      } catch (error) {
+        // Explicit rejection is not a successful mutation. Infrastructure/network
+        // errors can follow a commit, so force fresh login without repeating it.
+        if ([400, 401, 403, 404, 405, 409, 422, 429].includes(error.status)) throw error;
+        failure = new Error('A alteração não foi confirmada. Entre novamente para conferir qual senha está válida; nenhum envio será repetido automaticamente.');
+        failure.credentialChangeUncertain = true;
+        failure.requiresLogin = ownsIdentity();
+      }
+      const owned = ownsIdentity();
+      const logoutTask = owned ? this.logout({ reason: 'password_changed' }) : this.logoutPending;
+      // Do not await a second exclusive lock while still holding this one.
+      return { result, failure, logoutTask, logoutGeneration: owned ? this.generation : null };
+    });
+    if (bundle.logoutTask) await bundle.logoutTask;
+    if (this.user === null && this.generation === bundle.logoutGeneration && this.sessionEpoch === this.getSessionEpoch()) {
+      const message = bundle.failure
+        ? 'Alteração de senha ainda não confirmada. Entre novamente para conferir a senha válida. Nenhum envio foi repetido automaticamente.'
+        : 'Senha alterada. Entre novamente com a nova senha. Os registros de treino pendentes continuam guardados para esta conta.';
+      const node = typeof document === 'undefined' ? null : document.getElementById('login-error');
+      if (node) { node.textContent = message + (this.getLogoutIntent() ? ' Reconecte-se para confirmar a saída anterior antes de entrar.' : ''); node.style.display = 'flex'; }
+    }
+    if (bundle.failure) throw bundle.failure;
+    return bundle.result;
+  },
+
+  /**
    * Faz logout e limpa dados locais.
    */
   logout({ reason = 'explicit' } = {}) {
@@ -152,7 +195,7 @@ const Auth = {
     ++this.generation;
     const userId = this.user?.id ?? this.expiredUserId;
     this.user = null;
-    this.expiredUserId = reason === 'expired' ? userId : null;
+    this.expiredUserId = ['expired', 'password_changed'].includes(reason) ? userId : null;
     localStorage.removeItem('fitflow_user');
     this.logoutPending = Promise.resolve().then(() => this.withCookieLock(async () => {
       const sessionChanged = this.getSessionEpoch() !== expectedEpoch;

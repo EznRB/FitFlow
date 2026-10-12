@@ -17,7 +17,7 @@ function deferred() {
 
 function harness(check) {
   const nodes = new Map();
-  for (const id of ['login-form', 'login-error', 'login-session-status', 'btn-logout', ...controls]) {
+  for (const id of ['login-form', 'login-error', 'login-session-status', 'btn-logout', 'btn-password-change', ...controls]) {
     const listeners = {}, attributes = {};
     nodes.set(id, {
       listeners, attributes, disabled: controls.includes(id), style: {}, hidden: false,

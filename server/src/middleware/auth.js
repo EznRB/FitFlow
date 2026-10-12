@@ -11,13 +11,14 @@ const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
 const { prisma } = require('../config/prisma');
+const { credentialVersion } = require('../utils/credentialVersion');
 
 /**
  * Middleware que verifica se o usuário está autenticado.
  * Extrai o token do cookie httpOnly ou do header Authorization.
  */
 function createAuthenticate({ findUser = id => prisma.user.findUnique({
-  where: { id }, select: { id: true, name: true, email: true, role: true, active: true },
+  where: { id }, select: { id: true, name: true, email: true, role: true, active: true, credentialVersion: true },
 }), secret = env.jwt.secret } = {}) {
 return async function authenticate(req, res, next) {
   try {
@@ -38,7 +39,7 @@ return async function authenticate(req, res, next) {
 
     // Verifica e decodifica o token
     const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
-    if (!Number.isSafeInteger(decoded.id) || decoded.id <= 0) throw new AppError('Token inválido. Faça login novamente.', 401);
+    if (!Number.isSafeInteger(decoded.id) || decoded.id <= 0 || decoded.id > 2147483647) throw new AppError('Token inválido. Faça login novamente.', 401);
     let user;
     try {
       user = await findUser(decoded.id);
@@ -47,6 +48,9 @@ return async function authenticate(req, res, next) {
       throw new AppError('Serviço de autenticação temporariamente indisponível.', 503);
     }
     if (!user || user.active !== true) throw new AppError('Sessão inválida ou conta desativada. Faça login novamente.', 401);
+    const tokenVersion = credentialVersion(decoded.credentialVersion);
+    if (tokenVersion !== credentialVersion(user.credentialVersion, { stored: true })) throw new AppError('Sua credencial foi alterada. Faça login novamente.', 401);
+    req.auth = { credentialVersion: tokenVersion };
 
     // Anexa os dados do usuário ao request
     req.user = {

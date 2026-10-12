@@ -55,6 +55,14 @@ test('expiração preserva a fila; descarte explícito posterior mantém ownerId
   assert.equal(h.events.at(-1).detail.userId, 7);
 });
 
+test('troca de senha preserva registros pendentes, inclusive de uma conta anterior já fechada', async () => {
+  const h = harness(); h.account(7);
+  const changing = h.Auth.logout({ reason: 'password_changed' }); await tick(); h.requests[0].resolve({}); await changing;
+  assert.deepEqual(h.disposed, [{ userId: 7, clear: false }]); assert.deepEqual(h.cleared, []); assert.equal(h.Auth.expiredUserId, 7);
+  h.account(8); await h.SessoesView.logout('password_changed', 7);
+  assert.deepEqual(h.cleared, []); assert.equal(h.SessoesView.userId, 8);
+});
+
 test('401 tardio de A ou da sessão anterior do mesmo aluno não encerra login novo', async () => {
   for (const newId of [7, 8]) {
     const h = harness(); h.account(7);

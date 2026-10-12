@@ -2,6 +2,7 @@
 :root { --text-secondary: #a8b2c3; --text-muted: #8e9aaf; --border-color: #232d3d; --border-subtle: #3a4659; --shadow-primary-glow: none; --shadow-accent-glow: none; }
 .main-content h2, .main-content h3, .modal h2, .modal h3 { font-family: var(--font-family); text-transform: none; letter-spacing: -.015em; }
 .main-content { min-width: 0; }
+.premium-chart-card, .premium-sidebar-card, .chart-content { min-width: 0; max-width: 100%; }
 .btn { min-height: 42px; border-radius: 6px; box-shadow: none; transition: background 150ms ease,border-color 150ms ease,color 150ms ease; }
 .btn-primary { color: #101722; background: var(--primary-500); box-shadow: none; }
 .btn-primary:hover:not(:disabled) { opacity: 1; color: #101722; background: var(--primary-400); transform: none; box-shadow: none; }
@@ -100,3 +101,16 @@
   .payment-adjustments-totals, .payment-adjustment-fields { grid-template-columns: 1fr; }
   .payment-adjustments-event-heading { flex-wrap: wrap; }
 }
+.password-change-form { display: grid; gap: 1rem; }
+.password-change-identity { display: grid; gap: .35rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+.password-change-identity span, .password-change-hint { color: var(--text-muted); font-size: .875rem; line-height: 1.5; overflow-wrap: anywhere; }
+.password-change-identity strong { font-size: 1.1rem; }
+.password-change-notice { padding: 1rem; border-left: 3px solid var(--primary-400); background: rgba(249,115,22,.055); line-height: 1.6; color: var(--text-secondary); margin: 0; }
+.password-change-form .form-group { display: grid; gap: .5rem; margin: 0; }
+.password-change-form .form-input { font-size: 16px; min-height: 44px; width: 100%; }
+.password-change-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem; }
+.password-change-toggle { justify-self: start; border: 1px solid var(--border-subtle); }
+.password-change-toggle[aria-pressed="true"] { border-color: var(--primary-400); color: var(--primary-400); }
+#modal:has(#password-change-form) #modal-footer { display: none; }
+.password-change-feedback { min-height: 1.5rem; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+@media (max-width: 540px) { .password-change-actions .btn { width: 100%; white-space: normal; min-height: 44px; } }

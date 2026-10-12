@@ -295,13 +295,13 @@ const SessoesView = {
     if (!Number.isSafeInteger(loggedOutUserId) || loggedOutUserId < 1) return;
     // Um evento de outra conta nunca pode descartar a fila atualmente aberta.
     if (this.userId !== loggedOutUserId && this.storeRequest?.identity.userId !== loggedOutUserId) {
-      if (reason !== 'expired') await this.clearAccount(loggedOutUserId);
+      if (!['expired', 'password_changed'].includes(reason)) await this.clearAccount(loggedOutUserId);
       return;
     }
     ++this.renderGeneration;
     const store = this.store; this.store = null; this.storeIdentity = null; this.storeRequest = null; this.syncing = null;
     this.userId = null; this.workouts = []; this.summary = null; this.container = null; this.renderedSessionKey = null;
-    if (reason !== 'expired') await this.clearAccount(loggedOutUserId, store);
+    if (!['expired', 'password_changed'].includes(reason)) await this.clearAccount(loggedOutUserId, store);
     else if (store) await store.dispose({ clear: false });
   },
 };

@@ -24,6 +24,7 @@ model User {
   name         String   @db.VarChar(100)
   email        String   @unique @db.VarChar(150)
   passwordHash String   @map("password_hash") @db.VarChar(255)
+  credentialVersion Int @default(0) @map("credential_version")
   role         UserRole @default(student)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")

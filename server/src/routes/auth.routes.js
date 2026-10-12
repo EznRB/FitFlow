@@ -20,6 +20,9 @@ function createAuthRouter({ service, authenticate = defaultAuthenticate, quotaOp
   const loginLimiter = createQuotaLimiter({ ...quotaOptions, endpoint: 'auth:login', windowMs: 15 * 60 * 1000, max: 10,
     message: { status: 'fail', message: 'Muitas tentativas de login. Aguarde 15 minutos.' } });
   router.post('/login', loginLimiter, controller.login);
+  const passwordLimiter = createQuotaLimiter({ ...quotaOptions, endpoint: 'auth:password', windowMs: 15 * 60 * 1000, max: 5,
+    keyGenerator: req => String(req.user.id), message: { status: 'fail', message: 'Muitas tentativas de alteração. Aguarde 15 minutos.' } });
+  router.post('/password', authenticate, passwordLimiter, controller.changePassword);
   router.post('/register', authenticate, authorize('admin'), controller.register);
   router.post('/logout', controller.logout);
   router.post('/refresh', controller.refreshToken);

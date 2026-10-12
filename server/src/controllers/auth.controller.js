@@ -14,6 +14,13 @@ const env = require('../config/env');
 
 function createAuthController(service = authService) {
 return {
+  async changePassword(req, res, next) {
+    try {
+      const result = await service.changePassword(req.user.id, req.body, req.auth === undefined ? 0 : req.auth.credentialVersion);
+      // No Set-Cookie: a delayed password response must not clear a newer login.
+      sendSuccess(res, 200, 'Senha alterada. Entre novamente para continuar.', result);
+    } catch (error) { next(error); }
+  },
   /**
    * POST /api/auth/register
    * Cria um novo usuário no banco de dados.

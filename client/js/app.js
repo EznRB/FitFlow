@@ -32,6 +32,7 @@ const App = {
 
     // Configura os ouvintes de evento (listeners) para o formulário de login.
     this.setupLoginForm();
+    document.getElementById('btn-password-change').addEventListener('click', () => PasswordChange.open());
 
     // Configura a ação do botão de logout no cabeçalho.
     document.getElementById('btn-logout').addEventListener('click', async () => {
