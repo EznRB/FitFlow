@@ -283,7 +283,7 @@ test('seleção obrigatória usa corpus integral e descarta prosa candidata sem 
     assert.equal(Object.keys(schema.properties)[0], 'blocks');
     assert.deepEqual(schema.required, ['blocks', 'kind', 'program']);
     const variants = schema.properties.blocks.items.anyOf;
-    assert.equal(variants.length, 6);
+    assert.equal(variants.length, 7);
     for (const variant of variants) {
       assert.equal(variant.additionalProperties, false);
       assert.deepEqual(variant.required, Object.keys(variant.properties));
@@ -291,6 +291,8 @@ test('seleção obrigatória usa corpus integral e descarta prosa candidata sem 
     const evidence = variants.find(variant => variant.properties.kind.enum[0] === 'evidence');
     assert.deepEqual(evidence.required, ['kind', 'sourceIds']);
     assert.deepEqual(variants.find(variant => variant.properties.kind.enum[0] === 'tracking').required, ['kind']);
+    assert.deepEqual(variants.find(variant => variant.properties.kind.enum[0] === 'volume_terms').required, ['kind']);
+    assert.match(body.messages[0].content, /Do not ask for routine days or equipment when the question can be answered as a definition/);
     assert.equal(body.include_reasoning, false); assert.equal(body.service_tier, 'on_demand');
     const context = JSON.parse(body.messages[1].content);
     assert.deepEqual(Object.keys(context).sort(), ['conversation', 'draftContext', 'intent', 'sources']);

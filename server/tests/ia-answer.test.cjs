@@ -8,6 +8,21 @@ const { program, exercise, routineUserText } = require('./fixtures/ia-routine.cj
 const block = (kind, options = {}) => ({ kind, ...options });
 const selection = (...blocks) => ({ blocks, kind: 'answer', program: null });
 const render = (...blocks) => renderAnswerSelection(selection(...blocks), []);
+test('definição de volume responde com unidades e exemplo aritmético, sem inventar uma rotina', () => {
+  const result = render(block('volume_terms'));
+  assert.match(result.message, /2 séries de 10 repetições com 20 kg/);
+  assert.match(result.message, /400 kg·reps/);
+  assert.match(result.message, /grupo principal declarado/);
+  assert.match(result.message, /não mede hipertrofia/);
+  assert.doesNotMatch(result.message, /Quais dias|Peito:|faltam declarações/);
+  assert.deepEqual(result.sources, []);
+  assert.throws(() => render(block('volume_terms', { text: 'Uma dose individual inventada.' })), error => error.statusCode === 502);
+});
+test('sem rascunho, uma seleção de contagens não repete lacunas para todos os músculos', () => {
+  const result = render(block('draft_counts', { groups: ['chest', 'back', 'shoulders', 'quads'] }));
+  assert.equal((result.message.match(/faltam declarações completas/g) || []).length, 1);
+  assert.doesNotMatch(result.message, /Peito:|Costas:|Ombros:|Quadríceps:|não comprovam autoria/);
+});
 function history() {
   const draft = program();
   draft.sessions[0].exercises = [exercise('Supino na máquina', 'chest', 3), exercise('Remada sentada', 'back', 3)];

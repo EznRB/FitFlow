@@ -5,7 +5,7 @@ const { extractDraftContext, groupLabels } = require('./ia-routine');
 
 const nutritionIds = new Set(['mifflin-1990', 'harris-1984', 'protein-2018', 'dri']);
 const sourceIds = Object.keys(references).filter(id => !nutritionIds.has(id));
-const kinds = ['evidence', 'draft_counts', 'tracking', 'progression', 'limits', 'question'];
+const kinds = ['evidence', 'draft_counts', 'volume_terms', 'tracking', 'progression', 'limits', 'question'];
 const followUps = ['routine', 'equipment', 'logging', 'priority', 'recovery', 'sources'];
 const answerSources = sourceIds.map(id => ({ id, title: references[id].title, summary: references[id].summary }));
 const blockSchema = (kind, fields = {}) => ({ type: 'object', additionalProperties: false,
@@ -15,13 +15,14 @@ const answerSchema = { type: 'object', additionalProperties: false, properties: 
     blockSchema('evidence', { sourceIds: { type: 'array', items: { type: 'string', enum: sourceIds } } }),
     blockSchema('draft_counts', { groups: { type: 'array', items: { type: 'string', enum: Object.keys(groupLabels) } } }),
     blockSchema('question', { followUp: { type: 'string', enum: followUps } }),
-    ...['tracking', 'progression', 'limits'].map(kind => blockSchema(kind)),
+    ...['volume_terms', 'tracking', 'progression', 'limits'].map(kind => blockSchema(kind)),
   ] } },
   kind: { type: 'string', enum: ['answer'] }, program: { type: 'null' },
 }, required: ['blocks', 'kind', 'program'] };
 
 // Definições do produto e critérios práticos conferidos pela curadoria; não atribuir a artigos.
 const canonical = {
+  volume_terms: 'São medidas diferentes. Séries por músculo contam as séries associadas a um grupo principal declarado; no FitFlow, séries diretas usam o grupo cadastrado na ficha e aquecimentos ficam separados. kg·reps é a soma de carga externa × repetições: 2 séries de 10 repetições com 20 kg são 2 séries e 400 kg·reps, não 400 séries. Essa soma não mede hipertrofia, trabalho mecânico ou estímulo muscular. Compare registros do mesmo exercício com técnica e amplitude semelhantes; carga, repetições, esforço e recuperação também precisam de contexto. Séries planejadas pertencem ao rascunho; séries realizadas dependem dos registros. Uma contagem ausente não deve ser preenchida como zero.',
   tracking: 'Séries previstas pertencem à proposta; séries executadas dependem do que você registrar. Nas sessões, registre cada série realizada com carga externa, repetições e RIR estimado, se informado; mantenha aquecimentos separados. Finalizar uma sessão não preenche séries ausentes. Dados incompletos não são zero. Tonelagem é a soma de carga externa × repetições registradas: não é trabalho mecânico, estímulo muscular ou medida de hipertrofia. Compare registros do mesmo exercício, equipamento, técnica e amplitude.',
   progression: 'Como critério prático, acompanhe carga, repetições, técnica e esforço. Ao cumprir a faixa proposta com execução consistente e esforço compatível, discuta com o instrutor um pequeno ajuste de carga ou repetições, conforme equipamento e recuperação. Não há regra universal de aumento por calendário ou percentual fixo. Cumprir o alvo de uma série não comprova que o volume semanal seja adequado ou ótimo, e não garante hipertrofia.',
   limits: 'As fontes disponíveis oferecem contexto geral para adultos saudáveis; não determinam a dose ótima, segurança individual ou o melhor exercício para cada pessoa. O rascunho usa escolhas práticas revisáveis. Se a pergunta exige informação que o corpus não aborda, essa lacuna precisa permanecer explícita; podemos esclarecer o contexto e discutir quais dados levar ao instrutor. Dor, lesão ou condições clínicas precisam de avaliação específica, sem diagnóstico pelo chat.',
@@ -38,7 +39,7 @@ const exact = (value, allowed) => value && typeof value === 'object' && !Array.i
   && Object.keys(value).length === allowed.length && Object.keys(value).every(key => allowed.includes(key));
 const answerLimit = 6000;
 const countsNotice = 'Essas declarações do histórico não comprovam autoria, classificação anatômica correta ou execução; a razão individual da dose não foi documentada. Séries planejadas não comprovam séries realizadas.';
-const topicLabels = { tracking: 'Registros e tonelagem', progression: 'Critérios práticos de progressão', limits: 'Limites das fontes',
+const topicLabels = { volume_terms: 'Séries e kg·reps', tracking: 'Registros e tonelagem', progression: 'Critérios práticos de progressão', limits: 'Limites das fontes',
   routine: 'Contexto da rotina', equipment: 'Equipamentos disponíveis', logging: 'Proposta ou registros realizados',
   priority: 'Prioridades de treino', recovery: 'Descanso e calendário', sources: 'Detalhamento das referências' };
 const invalid = (code = 'answer_selection') => {
@@ -68,6 +69,10 @@ function renderAnswerSelection(selection, messages) {
     if (block.kind === 'evidence') for (const id of block.sourceIds) {
       append(`evidence:${id}`, `${references[id].title}\n${references[id].summary}`, references[id].title, { sourceId: id });
     } else if (block.kind === 'draft_counts') {
+      if (!draft) {
+        append('counts:no_draft', 'Ainda faltam declarações completas de um rascunho nesta conversa para calcular séries por músculo. Se você quer conferir uma ficha, informe os exercícios, séries, dias e grupos principais declarados; não vou inferir uma rotina ou registros que você não forneceu.', 'Rascunho ausente');
+        continue;
+      }
       // Não apresente um histórico fora dos limites do formato como uma
       // contagem completa, nem o torne aceitável omitindo parte dos exercícios.
       if (draft && (draft.exercises.length > 36 || draft.sessionEstimates.length > 6
