@@ -78,7 +78,7 @@ const AlunoPainelView = {
 const AlunoTreinoView = {
   dados: null,
   bloqueado: false,
-  saving: false,
+  loadModal: null,
   inicializar() { return AlunoUI.load(this, 'aluno-treino-container', 'Carregando suas fichas…', async () => (await API.get('/aluno/painel')).data, (container, data) => { this.dados = data; this.bloqueado = data.perfil.status !== 'active'; this.renderizar(container); }); },
   renderizar(container) {
     const d = this.dados;
@@ -96,33 +96,51 @@ const AlunoTreinoView = {
     return `<article class="aluno-exercicio"><div class="aluno-exercicio-top"><div class="aluno-exercicio-nome"><span class="aluno-exercicio-numero">${idx + 1}</span><h4>${AlunoUI.escape(ex.nome)}</h4></div><button type="button" class="btn btn-secondary ff-student-small" data-action="load" data-exercise-id="${Number(ex.id)}" data-exercise-name="${AlunoUI.escape(ex.nome)}" ${this.bloqueado ? 'disabled' : ''}>Registro avulso</button></div><dl class="ff-student-prescription"><div><dt>Séries e repetições prescritas</dt><dd>${AlunoUI.escape(ex.series)} × ${AlunoUI.escape(ex.reps)}</dd></div><div><dt>Descanso prescrito</dt><dd>${descanso}</dd></div><div><dt>Carga orientada</dt><dd>${AlunoUI.escape(ex.cargaSugerida || 'Não informada')}</dd></div><div class="ff-student-last-log"><dt>Último registro avulso</dt><dd>${ultima}</dd></div></dl>${ex.grupoMuscular ? `<p class="ff-student-detail">Grupo cadastrado: ${AlunoUI.escape(ex.grupoMuscular)}</p>` : ''}${ex.notas ? `<p class="aluno-exercicio-notas">${AlunoUI.escape(ex.notas)}</p>` : ''}<div class="ff-student-origin">${origin}</div></article>`;
   },
   abrirRegistroCarga(exerciseId, nome) {
-    if (this.bloqueado || Auth.user?.role !== 'student') return;
+    if (this.bloqueado || Auth.user?.role !== 'student' || !Number.isSafeInteger(exerciseId) || exerciseId < 1
+      || (typeof App !== 'undefined' && App.currentPage !== 'aluno-treino')) return;
     const container = document.getElementById('aluno-treino-container');
     if (!container) return;
-    this.modalCurrent = AlunoUI.capture(this, container);
-    const html = `<form id="form-carga-aluno" class="ff-student-load-form"><p>Registro avulso do histórico anterior. Ele não representa automaticamente uma sessão completa. Para registrar séries, abra Sessões e séries.</p><div class="form-group"><label for="aluno-carga-peso">Carga externa (kg)</label><input type="number" id="aluno-carga-peso" step="0.01" min="0" max="9999.99" required><small>Informe 0 quando não houver carga externa.</small></div><div class="form-group"><label for="aluno-carga-reps">Repetições realizadas (opcional)</label><input type="number" id="aluno-carga-reps" min="1" max="1000" step="1"></div><div class="form-group"><label for="aluno-carga-obs">Observação (opcional)</label><input type="text" id="aluno-carga-obs" maxlength="10000"></div><p id="aluno-carga-feedback" role="status"></p></form>`;
-    Modal.open(`Registro avulso: ${nome}`, html, [{ text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() }, { text: 'Salvar registro', class: 'btn-primary', action: () => this.salvarCarga(exerciseId) }]);
+    const ownsPage = AlunoUI.capture(this, container);
+    if (!ownsPage()) return;
+    const context = { exerciseId, form: null, pending: null, current: () => ownsPage()
+      && this.loadModal === context && Auth.user?.role === 'student'
+      && (typeof App === 'undefined' || App.currentPage === 'aluno-treino')
+      && Modal.revision === context.revision && Modal.isOpen()
+      && context.form?.isConnected && document.getElementById('form-carga-aluno') === context.form };
+    const html = `<form id="form-carga-aluno" class="ff-student-load-form"><p>Registro avulso do histórico anterior. Ele não representa automaticamente uma sessão completa. Para registrar séries, abra Sessões e séries.</p><div class="form-group"><label for="aluno-carga-peso">Carga externa (kg)</label><input type="number" id="aluno-carga-peso" step="0.01" min="0" max="9999.99" required><small>Informe 0 quando não houver carga externa.</small></div><div class="form-group"><label for="aluno-carga-reps">Repetições realizadas (opcional)</label><input type="number" id="aluno-carga-reps" min="1" max="1000" step="1"></div><div class="form-group"><label for="aluno-carga-obs">Observação (opcional)</label><input type="text" id="aluno-carga-obs" maxlength="10000"></div><button type="submit" hidden>Salvar registro</button><p id="aluno-carga-feedback" role="status" aria-live="polite"></p></form>`;
+    Modal.open(`Registro avulso: ${nome}`, html, [{ text: 'Cancelar', class: 'btn-secondary', action: () => { if (context.current()) Modal.close(); } }, { text: 'Salvar registro', class: 'btn-primary', action: () => this.salvarCarga(context) }]);
+    context.form = document.getElementById('form-carga-aluno'); context.revision = Modal.revision; this.loadModal = context;
+    if (!context.form) return;
+    context.fields = { weight: context.form.querySelector('#aluno-carga-peso'), reps: context.form.querySelector('#aluno-carga-reps'), notes: context.form.querySelector('#aluno-carga-obs') };
+    context.feedback = context.form.querySelector('#aluno-carga-feedback');
+    context.draft = () => ({ weight: context.fields.weight.value, reps: context.fields.reps.value, notes: context.fields.notes.value });
+    context.form.onsubmit = event => { event.preventDefault(); return this.salvarCarga(context); };
   },
-  async salvarCarga(exerciseId) {
-    if (this.saving || !this.modalCurrent?.()) return;
-    const form = document.getElementById('form-carga-aluno');
-    if (!form?.reportValidity()) return;
-    const weight = document.getElementById('aluno-carga-peso').value;
-    const reps = document.getElementById('aluno-carga-reps').value;
-    const notes = document.getElementById('aluno-carga-obs').value.trim();
-    const feedback = document.getElementById('aluno-carga-feedback');
-    const current = this.modalCurrent;
-    this.saving = true;
-    feedback.textContent = 'Salvando registro…';
+  async salvarCarga(context = this.loadModal) {
+    if (!context?.current?.() || context.pending || !context.form.reportValidity()) return;
+    const draft = context.draft(), pending = context.pending = { promise: null };
+    const payload = { exerciseId: context.exerciseId, weight: Number(draft.weight), repsCompleted: draft.reps === '' ? null : Number(draft.reps), notes: draft.notes.trim() || null };
+    context.feedback.textContent = 'Salvando este registro…';
     try {
-      await API.post('/treinos/carga', { exerciseId, weight: Number(weight), repsCompleted: reps === '' ? null : Number(reps), notes: notes || null });
-      if (!current() || document.getElementById('form-carga-aluno') !== form) return;
+      pending.promise = API.post('/treinos/carga', payload, { timeoutMs: 15000 });
+      await pending.promise;
+      if (!context.current()) return;
+      // Os campos continuam editáveis. Só fechamos o formulário se o ACK corresponde
+      // ao rascunho ainda exibido; digitação posterior pertence à próxima decisão.
+      if (JSON.stringify(context.draft()) !== JSON.stringify(draft)) {
+        context.feedback.textContent = 'Registro anterior salvo. Seus novos valores foram mantidos no formulário; eles ainda não foram enviados.';
+        return;
+      }
       Modal.close();
       Toast.success('Registro avulso salvo.');
       await this.inicializar();
     } catch (error) {
-      if (current() && document.getElementById('form-carga-aluno') === form) feedback.textContent = error.message || 'Não foi possível salvar. Tente novamente.';
-    } finally { this.saving = false; }
+      if (!context.current()) return;
+      const uncertain = error.timeout || !error.status || error.status >= 500;
+      context.feedback.textContent = uncertain
+        ? 'Resultado não confirmado. Confira o histórico de registros avulsos antes de repetir; este envio pode já ter sido salvo. Seus valores foram mantidos.'
+        : error.message || 'O registro foi recusado. Confira os dados antes de tentar novamente.';
+    } finally { if (context.pending === pending) context.pending = null; }
   }
 };
 

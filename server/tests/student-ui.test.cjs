@@ -5,18 +5,29 @@ const fs = require('node:fs');
 const path = require('node:path');
 function deferred() { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
 function browser(api = {}) {
-  const nodes = new Map();
+  const nodes = new Map(), modals = [], messages = [];
   function node(id) {
     if (!nodes.has(id)) nodes.set(id, { id, innerHTML: '', textContent: '', value: '', isConnected: true, disabled: false,
       classList: { add() {} }, querySelectorAll: () => [], querySelector: selector => node(selector.startsWith('#') ? selector.slice(1) : selector), reportValidity: () => true });
     return nodes.get(id);
   }
-  const context = vm.createContext({ window: {}, document: { getElementById: id => nodes.get(id) || null }, Auth: { generation: 1, user: { id: 7, role: 'student' } }, API: api,
-    Modal: { open() {}, close() {} }, Toast: { success() {}, error() {} }, App: { navigateTo() {} }, FitFlowScience: { summarizeLogs: () => ({ knownVolumeKg: 0, completeRecords: 0, incompleteRecords: 1 }) } });
+  const modal = { revision: 0, opened: false, isOpen() { return this.opened; }, open(title, html, buttons) {
+    this.revision++; this.opened = true; modals.push({ title, html, buttons });
+    for (const id of ['form-carga-aluno', 'aluno-carga-peso', 'aluno-carga-reps', 'aluno-carga-obs', 'aluno-carga-feedback']) { const old = nodes.get(id); if (old) old.isConnected = false; nodes.delete(id); }
+    if (html.includes('form-carga-aluno')) {
+      const form = node('form-carga-aluno'); for (const id of ['aluno-carga-peso', 'aluno-carga-reps', 'aluno-carga-obs', 'aluno-carga-feedback']) node(id);
+      const owned = new Map([...nodes].filter(([id]) => id.startsWith('aluno-carga-')));
+      form.querySelector = selector => owned.get(selector.replace(/^#/, '')) || null;
+      form.querySelectorAll = () => [...owned.values()].filter(n => n.id !== 'aluno-carga-feedback');
+    }
+  }, close() { this.revision++; this.opened = false; const form = nodes.get('form-carga-aluno'); if (form) form.isConnected = false; nodes.delete('form-carga-aluno'); } };
+  const context = vm.createContext({ window: {}, document: { getElementById: id => nodes.get(id) || null }, Auth: { generation: 1, sessionEpoch: 'session-a', getSessionEpoch() { return this.sessionEpoch; }, user: { id: 7, role: 'student' } }, API: api,
+    Modal: modal, Toast: { success: text => messages.push(text), error: text => messages.push(text) }, App: { currentPage: 'aluno-treino', navigateTo() {} }, FitFlowScience: { summarizeLogs: () => ({ knownVolumeKg: 0, completeRecords: 0, incompleteRecords: 1 }) } });
   for (const name of ['security.js', 'aluno-painel.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', name), 'utf8'), context);
   vm.runInContext('this.ui = AlunoUI; this.panel = AlunoPainelView; this.workouts = AlunoTreinoView; this.monthly = AlunoMensalidadeView; this.checkins = AlunoCheckinView; this.history = AlunoHistoricoView;', context);
-  return { context, node, nodes };
+  return { context, node, nodes, modals, messages };
 }
+function openLoad(h, id = 3) { h.node('aluno-treino-container'); h.context.workouts.abrirRegistroCarga(id, `Exercício ${id}`); h.node('aluno-carga-peso').value = '20'; h.node('aluno-carga-reps').value = '8'; h.node('aluno-carga-obs').value = 'Nota'; return h.modals.at(-1); }
 function panel(name) { return { perfil: { nome: name, status: 'active' }, mensalidade: { diasRestantes: null }, treinos: [], checkins: { totalMes: 0, recentes: [] }, alertas: [] }; }
 test('resposta de outra conta, mesmo com retorno à conta original, não renderiza dados', async () => {
   const pending = deferred(); const h = browser({ get: () => pending.promise });
@@ -78,9 +89,8 @@ test('resultado de check-in não recarrega página de nova conta ou mostra seu s
 test('registro avulso admite zero de carga externa, mantém repetições ausentes e evita duplo envio', async () => {
   const pending = deferred(); const writes = [];
   const h = browser({ post: (url, body) => { writes.push({ url, body }); return pending.promise; } });
-  h.node('aluno-treino-container'); const form = h.node('form-carga-aluno'); h.node('aluno-carga-peso').value = '0'; h.node('aluno-carga-reps'); h.node('aluno-carga-obs'); h.node('aluno-carga-feedback');
-  h.context.workouts.modalCurrent = () => true;
-  const request = h.context.workouts.salvarCarga(3); await h.context.workouts.salvarCarga(3);
+  const modal = openLoad(h); const form = h.node('form-carga-aluno'); h.node('aluno-carga-peso').value = '0'; h.node('aluno-carga-reps').value = '';
+  const request = modal.buttons[1].action(); await modal.buttons[1].action();
   assert.equal(writes.length, 1); assert.equal(writes[0].body.weight, 0); assert.equal(writes[0].body.repsCompleted, null);
   h.nodes.delete('form-carga-aluno'); pending.resolve({}); await request;
   assert.equal(form.innerHTML, '');
@@ -89,9 +99,7 @@ test('registro avulso de sessão antiga não fecha modal ou atualiza página da 
   const pending = deferred(); let closes = 0, reads = 0, successes = 0;
   const h = browser({ get: async () => { reads++; }, post: () => pending.promise });
   h.context.Modal.close = () => { closes++; }; h.context.Toast.success = () => { successes++; };
-  h.node('aluno-treino-container'); h.context.workouts.abrirRegistroCarga(3, 'Exercício');
-  h.node('form-carga-aluno'); h.node('aluno-carga-peso').value = '20'; h.node('aluno-carga-reps').value = '10'; h.node('aluno-carga-obs'); h.node('aluno-carga-feedback');
-  const request = h.context.workouts.salvarCarga(3);
+  const modal = openLoad(h); const request = modal.buttons[1].action();
   h.context.Auth.user.id = 8; h.context.Auth.generation++;
   pending.resolve({}); await request;
   assert.equal(closes, 0); assert.equal(reads, 0); assert.equal(successes, 0);
@@ -148,5 +156,76 @@ test('ficha do aluno apresenta o snapshot de origem com créditos e mantém manu
   assert.ok(html.includes('CC-BY-SA-4.0')); assert.ok(html.includes('Nome ou grupo adaptado'));
   delete exercise.catalogSnapshot;
   assert.ok(h.context.workouts._renderExercicio(exercise, 0).includes('Origem não registrada'));
+});
+
+test('callback antigo não grava valores do novo exercício nem cancela outro diálogo', async () => {
+  const writes = [], h = browser({ post: async (url, body) => { writes.push(body); } });
+  const old = openLoad(h, 3); openLoad(h, 4); h.node('aluno-carga-peso').value = '35';
+  await old.buttons[1].action(); assert.equal(writes.length, 0);
+  const revision = h.context.Modal.revision; old.buttons[0].action(); assert.equal(h.context.Modal.revision, revision); assert.equal(h.context.Modal.isOpen(), true);
+});
+
+test('cancelar antigo não fecha modal de outra tarefa', () => {
+  const h = browser(); const old = openLoad(h); h.context.Modal.open('Outra tarefa', '<p>Outro conteúdo</p>', []);
+  const revision = h.context.Modal.revision; old.buttons[0].action(); assert.equal(h.context.Modal.revision, revision); assert.equal(h.context.Modal.isOpen(), true);
+});
+
+test('envio de outro formulário não bloqueia novo exercício e resultado antigo não fecha o novo modal', async () => {
+  const pending = deferred(), writes = [], h = browser({ post: (url, body) => { writes.push(body); return pending.promise; } });
+  const old = openLoad(h, 3), first = old.buttons[1].action(); h.context.Modal.close();
+  const next = openLoad(h, 4), second = next.buttons[1].action(); assert.equal(writes.length, 2); assert.equal(writes[1].exerciseId, 4);
+  const revision = h.context.Modal.revision; pending.reject({ status: 400, message: 'Recusado' }); await Promise.all([first, second]);
+  assert.equal(h.context.Modal.revision, revision); assert.equal(h.node('aluno-carga-feedback').textContent, 'Recusado');
+});
+
+test('submit do formulário compartilha salvamento com footer, impede navegação e duplo envio', async () => {
+  const pending = deferred(), writes = [], h = browser({ post: (url, body, options) => { writes.push({ body, options }); return pending.promise; } });
+  const modal = openLoad(h), form = h.node('form-carga-aluno'); let prevented = 0;
+  assert.equal(typeof form.onsubmit, 'function'); assert.match(modal.html, /<button[^>]*type="submit"/);
+  const first = form.onsubmit({ preventDefault() { prevented++; } }); await modal.buttons[1].action();
+  assert.equal(prevented, 1); assert.equal(writes.length, 1); assert.equal(writes[0].options.timeoutMs, 15000);
+  h.nodes.delete('form-carga-aluno'); pending.resolve({}); await first;
+});
+
+test('ACK preserva rascunho modificado e confirma somente payload capturado antes da espera', async () => {
+  const pending = deferred(), writes = [], h = browser({ post: (url, body) => { writes.push(body); return pending.promise; } });
+  const modal = openLoad(h), request = modal.buttons[1].action();
+  h.node('aluno-carga-peso').value = '25'; h.node('aluno-carga-obs').value = 'Rascunho novo';
+  const revision = h.context.Modal.revision; pending.resolve({}); await request;
+  assert.equal(writes[0].weight, 20); assert.equal(writes[0].notes, 'Nota'); assert.equal(h.context.Modal.revision, revision);
+  assert.equal(h.node('aluno-carga-peso').value, '25'); assert.equal(h.node('aluno-carga-obs').value, 'Rascunho novo');
+  assert.match(h.node('aluno-carga-feedback').textContent, /salvo/i); assert.match(h.node('aluno-carga-feedback').textContent, /mantid/i);
+});
+
+test('epoch, geração, navegação e revisão modal invalidam ações e resultados antigos', async () => {
+  for (const invalidate of [h => { h.context.Auth.generation++; }, h => { h.context.Auth.getSessionEpoch = () => 'remoto'; }, h => { h.context.App.currentPage = 'aluno-painel'; }, h => { h.context.Modal.revision++; }]) {
+    const writes = [], pending = deferred(), h = browser({ post: (url, body) => { writes.push(body); return pending.promise; } });
+    const modal = openLoad(h), request = modal.buttons[1].action(); invalidate(h); await modal.buttons[1].action();
+    const revision = h.context.Modal.revision; pending.resolve({}); await request; assert.equal(writes.length, 1); assert.equal(h.context.Modal.revision, revision); assert.equal(h.messages.length, 0);
+  }
+});
+
+test('timeout da escrita legada conserva valores e orienta conferir histórico; não há retry automático ou alegação idempotente', async () => {
+  const writes = [], h = browser({ post: async (url, body, options) => { writes.push({ url, body, options }); throw Object.assign(new Error('Tempo esgotado'), { timeout: true, status: 0 }); } });
+  const modal = openLoad(h), revision = h.context.Modal.revision; await modal.buttons[1].action();
+  assert.equal(writes.length, 1); assert.equal(writes[0].options?.timeoutMs, 15000); assert.equal(writes[0].body.idempotencyKey, undefined);
+  assert.equal(h.node('aluno-carga-peso').value, '20'); assert.equal(h.context.Modal.revision, revision);
+  assert.match(h.node('aluno-carga-feedback').textContent, /histórico/i); assert.match(h.node('aluno-carga-feedback').textContent, /antes de repetir/i);
+});
+
+test('ACK do contexto abandonado não libera promise do novo registro nem fecha seu modal', async () => {
+  const first = deferred(), second = deferred(), writes = [], h = browser({ post: (url, body) => { writes.push(body); return writes.length === 1 ? first.promise : second.promise; } });
+  const old = openLoad(h, 3), oldRequest = old.buttons[1].action(); const next = openLoad(h, 4), nextRequest = next.buttons[1].action();
+  const context = h.context.workouts.loadModal, pending = context.pending, revision = h.context.Modal.revision;
+  first.resolve({}); await oldRequest; assert.equal(context.pending, pending); assert.equal(h.context.Modal.revision, revision); assert.equal(h.messages.length, 0);
+  await next.buttons[1].action(); assert.equal(writes.length, 2);
+  h.context.Modal.close(); second.resolve({}); await nextRequest; assert.equal(context.pending, null);
+});
+
+test('sucesso normal fecha só o próprio modal, recarrega ficha e valida formulário antes do envio', async () => {
+  let reads = 0, writes = 0; const h = browser({ post: async () => { writes++; }, get: async () => { reads++; return { data: panel('Aluno') }; } });
+  const modal = openLoad(h), form = h.node('form-carga-aluno'); form.reportValidity = () => false;
+  await modal.buttons[1].action(); assert.equal(writes, 0); form.reportValidity = () => true;
+  await modal.buttons[1].action(); assert.equal(writes, 1); assert.equal(reads, 1); assert.equal(h.context.Modal.isOpen(), false); assert.equal(h.messages[0], 'Registro avulso salvo.');
 });
 
