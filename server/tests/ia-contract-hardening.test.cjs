@@ -9,6 +9,39 @@ const rejected = (plan, conversation) => assert.throws(() => validateProgram(pla
 const upstream = result => new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(result) } }] }));
 const service = fetchImpl => createIaChatService({ provider: 'groq', groqApiKey: 'synthetic-private-key', freeTierConfirmed: true, fetchImpl });
 
+test('capitalização de uma citação literal é canonicalizada sem alterar o input', () => {
+  const raw = program(); raw.context.goalQuote = 'Meu objetivo é hipertrofia';
+  raw.context.availabilityQuote = 'SEGUNDA, QUARTA E SEXTA';
+  raw.context.healthyAdultQuote = 'ADULTO SAUDÁVEL SEM LIMITAÇÕES';
+  const before = structuredClone(raw);
+  const original = routineUserText.replace('objetivo hipertrofia', 'meu objetivo é hipertrofia');
+  const plan = validateProgram(raw, messages(original));
+  assert.equal(plan.context.goalQuote, 'meu objetivo é hipertrofia');
+  assert.equal(plan.context.availabilityQuote, 'Segunda, quarta e sexta');
+  assert.equal(plan.context.healthyAdultQuote, 'adulto saudável sem limitações');
+  assert.notEqual(plan.context, raw.context); assert.deepEqual(raw, before);
+});
+
+test('capitalização usa a ocorrência mais recente do usuário, preservando caracteres e origem', () => {
+  const raw = program(); raw.context.goalQuote = 'Meu objetivo é hipertrofia';
+  const first = routineUserText.replace('objetivo hipertrofia', 'meu objetivo é hipertrofia');
+  const latest = 'MEU OBJETIVO É HIPERTROFIA.';
+  const plan = validateProgram(raw, [{ role: 'user', content: first }, { role: 'assistant', content: 'Qual é o objetivo confirmado?' },
+    { role: 'user', content: latest }]);
+  assert.equal(plan.context.goalQuote, 'MEU OBJETIVO É HIPERTROFIA');
+});
+
+test('tolerância de caixa não aceita paráfrase, remoção de acentos, citação assistant ou negação', () => {
+  for (const quote of ['ganhar massa muscular', 'adulto saudavel sem limitacoes']) {
+    const raw = program(); raw.context[quote.startsWith('adulto') ? 'healthyAdultQuote' : 'goalQuote'] = quote;
+    rejected(raw, messages(routineUserText));
+  }
+  const invented = program(); invented.context.goalQuote = 'Meu objetivo é hipertrofia';
+  rejected(invented, [{ role: 'user', content: routineUserText }, { role: 'assistant', content: 'Meu objetivo é hipertrofia' }]);
+  const denied = program(); denied.context.healthyAdultQuote = 'ADULTO SAUDÁVEL';
+  rejected(denied, messages(routineUserText.replace('adulto saudável sem limitações', 'não sou adulto saudável')));
+});
+
 test('escopo negativo e objetivo contrário não passam como confirmação original', () => {
   const negative = program();
   negative.context.healthyAdultQuote = 'não sou adulto saudável, tenho uma condição clínica e não confirmei o escopo';

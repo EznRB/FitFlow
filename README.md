@@ -37,6 +37,8 @@ Cálculos de treino/nutrição têm [fontes, unidades e limites](docs/CIENCIA.md
 
 ## Executar localmente
 
+Para a apresentação desta semana, veja [Acesso à demonstração e roteiro](docs/APRESENTACAO.md). As cinco contas publicadas tiveram login/restauração conferidos em 13/10/2026. As senhas atuais foram reunidas em um arquivo privado para compartilhar com o professor; as credenciais antigas do Aiven não se aplicam ao Neon atual.
+
 Docker, WSL e virtualização não são necessários. O ambiente preparado usa MariaDB nativo em `127.0.0.1:3308`, com dados em `.local-db/` e configuração privada identificada. Para **outro computador**, preparar primeiro o runtime/banco conforme [Desenvolvimento](docs/DESENVOLVIMENTO.md); os comandos abaixo retomam o ambiente já configurado.
 
 ```powershell

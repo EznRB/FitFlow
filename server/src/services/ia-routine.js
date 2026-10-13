@@ -49,6 +49,16 @@ function clarify(fields, reason = 'conflicting_context') {
 }
 
 function normalized(value) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function canonicalUserQuote(quote, userTexts) {
+  // Autoria tolera somente caixa. Não remover acentos, pontuação ou palavras:
+  // "não" jamais vira "nao", e uma paráfrase não vira citação literal.
+  const escaped = quote.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (let turn = userTexts.length - 1; turn >= 0; turn--) {
+    const occurrences = [...userTexts[turn].matchAll(new RegExp(escaped, 'giu'))];
+    if (occurrences.length) return occurrences.at(-1)[0];
+  }
+  return null;
+}
 const dayPatterns = { monday: /\b(?:seg(?:unda(?:-feira)?)?|mon(?:day)?)\b/,
   tuesday: /\b(?:ter(?:ca(?:-feira)?)?|tue(?:sday)?)\b/, wednesday: /\b(?:qua(?:rta(?:-feira)?)?|wed(?:nesday)?)\b/,
   thursday: /\b(?:qui(?:nta(?:-feira)?)?|thu(?:rsday)?)\b/, friday: /\b(?:sex(?:ta(?:-feira)?)?|fri(?:day)?)\b/,
@@ -208,14 +218,21 @@ function checkEquipmentContext(context) {
 
 function validateProgram(program, messages) {
   if (!keys(program, ['context', 'sessions']) || !keys(program.context, Object.keys(contextProperties))) invalid();
-  const context = program.context;
+  let context = program.context;
   if (!enumArray(context.availableDays, days, 1, 7) || !integer(context.minutesPerSession, 15, 150)
     || !enumArray(context.equipment, equipment) || !Object.hasOwn(experienceLabels, context.experience)
     || !Object.hasOwn(goalLabels, context.goal) || context.adultHealthyConfirmed !== true) invalid();
   // As citações demonstram que o usuário forneceu contexto, não que o modelo o interpretou corretamente.
   const userTexts = messages.filter(message => message.role === 'user').map(message => message.content);
   for (const name of ['availabilityQuote', 'durationQuote', 'equipmentQuote', 'experienceQuote', 'goalQuote', 'healthyAdultQuote']) {
-    if (!plain(context[name]) || !userTexts.some(text => text.includes(context[name]))) invalid();
+    if (!plain(context[name])) invalid();
+  }
+  // A canonicalização altera somente uma cópia, nunca o JSON original da IA.
+  context = structuredClone(context);
+  for (const name of ['availabilityQuote', 'durationQuote', 'equipmentQuote', 'experienceQuote', 'goalQuote', 'healthyAdultQuote']) {
+    const original = canonicalUserQuote(context[name], userTexts);
+    if (original === null) invalid();
+    context[name] = original;
   }
   checkContextEvidence(context, userTexts);
   checkExplicitContext(context);
