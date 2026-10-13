@@ -31,13 +31,13 @@ Manter a identidade laranja/navy e Barlow. O usuário rejeitou o aspecto genéri
 
 ## Estado e prioridade de execução
 
-A meta permanece ativa. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
+O objetivo permanece aberto; o goal automático atingiu o limite de uso da sessão em 13/10. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
 
 1. Validar e corrigir problemas concretos das jornadas de gestão/aluno, incluindo estados de presença e do chat, preservando identidade, rascunhos e resultados reais. Reproduzir o problema e verificar os casos relevantes antes de publicar.
 2. Continuar a revisão de UX/UI do site inteiro pelo [brief visual](REVISAO_VISUAL_SISTEMA.md): comparar composição por tarefa com referências primárias; conferir carregamento, vazio, falha, formulário, resultado, foco/teclado/contraste e desktop/tablet/mobile. Preservar laranja/navy/Barlow, ciência, licenças e histórico.
 3. Manter documentação corrente curta e consistente, execução reproduzível e relatos históricos separados. Conferir links, segredos conhecidos e critérios acadêmicos, sem usar documentação ou CI como substituto dos gates funcionais.
 4. Retomar os gates externos quando o proprietário disponibilizar os acessos e aparelho. O pedido para guardar perguntas enquanto ele trabalha continua aplicável; avançar autonomamente no trabalho independente.
-5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. PRs draft continuam sujeitos a revisão/integração.
+5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. O aplicativo está integrado à main para apresentação; o PR da landing continua sujeito a revisão/integração.
 
 A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. A configuração externa do Mercado Pago permanece pendente e não se torna aprovada por testes simulados ou recebimentos manuais.
 
@@ -49,7 +49,7 @@ A validação técnica do financeiro/chat e os avanços publicados permitem cont
 | Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
 | Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
 | Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |
-| Revisão/integração de PRs | Revisar os PRs draft do aplicativo e da landing, resolver os achados e conferir gates/resultados. Deployment público não significa merge. | [Estado e PRs](STATUS_ENTREGA.md) |
+| Revisão/integração de PRs | Aplicativo integrado à main em 13/10, com revisão contínua das lacunas; revisar o PR draft da landing, resolver achados e conferir gates/resultados. | [Estado e PRs](STATUS_ENTREGA.md) |
 
 ## Invariantes do desenvolvimento
 

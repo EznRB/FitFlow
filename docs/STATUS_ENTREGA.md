@@ -1,15 +1,17 @@
-# Estado da entrega — 12/10/2026
+# Estado da entrega — 13/10/2026
 
-A meta completa permanece ativa. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
+O objetivo completo ainda não foi concluído; o goal automático atingiu o limite de uso da sessão em 13/10. A atualização solicitada para apresentação foi executada como tarefa atual. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
 ## Implantação atual
 
 | Aplicação | Código publicado e evidência |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | `0b8d5d8` (`0b8d5d83d5574d61652defb3d8f0baddb8a7a518`), Production READY `dpl_EKFDWXHuUnEktZ2AuyXEpvxw2zLB`. [URL exata](https://fit-flow-h75n3pp16-eznrbs-projects.vercel.app). [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38313615487/job/115024918147) e Preview Git aprovado. Suíte integral local **603/603**, zero falhas/ignorados; saúde HTTP 200, banco ready, API no-store e **24 hashes** conferidos. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | Código `c829c8b` (`c829c8bbfa09c5d9270ed13c6df3ffc08b2c9db9`) integrado na `main`. [CI da main aprovada](https://github.com/EznRB/FitFlow/actions/runs/38341304992/job/115112671707), [CI do PR](https://github.com/EznRB/FitFlow/actions/runs/38341143641/job/115112169012) e [publicação Git/Vercel concluída](https://vercel.com/eznrbs-projects/fit-flow/A8YXpEtQ21BZRvvsH6JA5sB1q2Zm). Suíte integral local **606/606**, zero falhas/ignorados; saúde HTTP 200, banco ready, API no-store e **24 assets** com SHA-256 igual aos blobs Git do commit. |
 | [Landing](https://fitflow-lp.vercel.app/) | `754b27f` (`754b27f60cb9eb3886410ddc89970b64a16cee7a`), Production READY `dpl_G157NAMK6HzXawYqQi1ZHBry48DS`. [URL exata](https://fitflow-2nzi5b3g2-eznrbs-projects.vercel.app). Build/typecheck e comparação SHA-256 de HTML/JS/CSS/hero/captura aprovados; inspeção pública desktop/mobile registrada. A revisão documental posterior não é uma nova versão visual. |
 
-Código nos PRs **draft** [do aplicativo](https://github.com/EznRB/FitFlow/pull/1) e [da landing](https://github.com/EznRB/fitflow-LP/pull/1). Nenhum merge à branch principal realizado. A suíte, os hashes e as capturas demonstram os respectivos escopos, não a conclusão integral do projeto.
+[PR do aplicativo](https://github.com/EznRB/FitFlow/pull/1) integrado e fechado: GitHub confirmou `merged=true`, após avanço normal de `main` sem force-push em 13/10, autorizado pelo pedido de atualização para apresentação. O [PR da landing](https://github.com/EznRB/fitflow-LP/pull/1) continua draft. A suíte, os hashes e as capturas demonstram os respectivos escopos, não a conclusão integral do projeto.
+
+[Acesso e roteiro da apresentação](APRESENTACAO.md): cinco contas tiveram login e restauração de sessão 200 por HTTPS em 13/10. Senhas atuais estão em arquivo privado ignorado para compartilhar com o professor; não foram commitadas. README e roteiro na `main` foram comparados por SHA-256 com os arquivos locais.
 
 ## Capacidades e gates
 
@@ -32,11 +34,13 @@ Rodada publicada em 12/10: contrato de contexto/esclarecimentos do chat corrigid
 2. Quando o proprietário estiver disponível, configurar conta de teste, token e webhook Mercado Pago. Executar cartão aprovado/rejeitado/pendente, webhook assinado/replay e Pix QR/pendente **sem renovar plano**. Sandbox não comprova liquidação Pix.
 3. Executar o roteiro M01–M14 em aparelho físico e registrar plataforma, implantação e evidências.
 4. Rotacionar a chave Groq exposta anteriormente pelo titular e validar a substituição privada.
-5. Revisar os PRs draft e decidir a integração; manter os gates das mudanças e a documentação da entrega acadêmica.
+5. Revisar e decidir a integração do PR draft da landing; manter os gates das próximas mudanças e a documentação da entrega acadêmica. A revisão contínua do aplicativo não termina com sua integração à main.
 
 ## Publicação automática pelo GitHub
 
-CI e Preview Git da revisão atual estão aprovados. Falhas anteriores `git_info_fail` e recuperações sem mudança de permissões permanecem no [histórico documental](HISTORICO_ENTREGA.md#publicação-automática-pelo-github); sua causa não foi comprovada. Um deployment manual READY não substitui o status do Git automático.
+CI e status Git/Vercel da revisão atual estão aprovados. A tentativa de CLI em 13/10 retornou `Not authorized`; o conector Vercel também pede reautenticação. A publicação foi feita pela integração Git existente, após atualizar main, sem ampliar permissões. A comparação com o arquivo Windows inicialmente divergiu por CRLF/LF; `git diff --no-index` confirmou equivalência textual e o gate passou a conferir os blobs comprometidos no Git, iguais ao checkout do deploy. Não se remove conteúdo para obter o hash esperado.
+
+Falhas anteriores `git_info_fail` e recuperações sem mudança de permissões permanecem no [histórico documental](HISTORICO_ENTREGA.md#publicação-automática-pelo-github); sua causa não foi comprovada. Um deployment manual READY não substitui o status do Git automático.
 
 ## Documentação de referência
 

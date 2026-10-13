@@ -1,6 +1,6 @@
 # Revisão visual de todo o FitFlow
 
-Pedido reafirmado em 12/10/2026: dar personalidade, cuidado e variedade às telas, preservando laranja/navy/Barlow. Pequenos ajustes de espaçamento não encerram essa revisão. A meta completa permanece ativa; implantação e CI ficam em [Estado da entrega](STATUS_ENTREGA.md).
+Pedido reafirmado em 12/10/2026: dar personalidade, cuidado e variedade às telas, preservando laranja/navy/Barlow. Pequenos ajustes de espaçamento não encerram essa revisão. O objetivo completo permanece aberto; implantação e CI ficam em [Estado da entrega](STATUS_ENTREGA.md).
 
 ## Ordem e direção
 

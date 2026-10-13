@@ -12,7 +12,7 @@ A IA organiza conteúdo científico curado e calcula contagens a partir das decl
 
 ## Contrato de contexto e esclarecimentos — 12/10/2026
 
-Publicado em `0b8d5d8`; implantação/CI em [Estado da entrega](STATUS_ENTREGA.md). O classificador usa `message: {reason, fields}` internamente para `clarification`. O servidor monta perguntas em português a partir desses enums; fontes, prosa científica e campos adicionais do modelo não são apresentados nessa variante. A API externa continua retornando `message` string, `kind`, `generatedByAI` e `sources`, compatível com a interface. União de formatos `anyOf` segue o subconjunto do [JSON Schema documentado pela Groq](https://console.groq.com/docs/structured-outputs), conferido em 12/10/2026 e testado com o provedor real.
+Contrato publicado inicialmente em `0b8d5d8`, com canonicalização adicional em `c829c8b`; implantação/CI em [Estado da entrega](STATUS_ENTREGA.md). O classificador usa `message: {reason, fields}` internamente para `clarification`. O servidor monta perguntas em português a partir desses enums; fontes, prosa científica e campos adicionais do modelo não são apresentados nessa variante. A API externa continua retornando `message` string, `kind`, `generatedByAI` e `sources`, compatível com a interface. União de formatos `anyOf` segue o subconjunto do [JSON Schema documentado pela Groq](https://console.groq.com/docs/structured-outputs), conferido em 12/10/2026 e testado com o provedor real.
 
 O rascunho confere objetivo e confirmação adulta saudável declarativa/positiva, negações explícitas, dias e equipamentos disponíveis. Uma declaração posterior do mesmo campo invalida citações anteriores; reconfirmação recente permite continuar. Pergunta ou incerteza sobre o próprio escopo, declaração explícita de lesão e contradição detectada produzem esclarecimento controlado, sem diagnóstico, geração adicional automática ou aplicação de ficha. Negar força e afirmar hipertrofia no mesmo turno não nega o objetivo afirmativo. Os padrões textuais são conservadores e limitados; não certificam interpretação universal de linguagem, ausência de condições clínicas ou adequação individual.
 
@@ -23,6 +23,8 @@ Duas amostras fictícias reais no serviço local usaram a chave privada já conf
 ## Histórico de verificações anteriores
 
 ### Correção de capitalização — 13/10/2026
+
+`c829c8b` integrado na main e publicado pela integração Git. Uma nova geração por HTTPS com a conversa fictícia completa ainda retornou 502 de rascunho inconsistente, sem liberar programa ou aplicar ficha. A resposta original do provedor nessa geração não foi coletada; não se atribui essa recusa à mesma capitalização nem se declara o fluxo inteiro de correções aprovado. O replay do JSON capturado antes da alteração comprova a correção específica de caixa; geração futura pode produzir outras incompatibilidades. Não houve retry automático ou fallback pago.
 
 Após as duas mensagens aprovadas no browser publicado de `0b8d5d8`, uma correção fictícia para terça/35 minutos/halteres sem banco ou barra foi recusada. A mensagem ficou preservada; nenhuma ficha foi aplicada. [Captura da recusa](evidence/127-chat-correcao-recusada-vercel.jpg). O replay no serviço local com os mesmos textos reproduziu 502 na verificação de autoria: o modelo citou “Meu objetivo é hipertrofia”, enquanto o usuário havia escrito “meu objetivo é hipertrofia”. Os demais cinco trechos eram literais.
 

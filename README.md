@@ -79,14 +79,14 @@ Consulte [Estado da entrega](docs/STATUS_ENTREGA.md) para contagem da suíte, re
 
 ## Implantação e limites da entrega
 
-O login no [domínio público](https://fit-flow-indol.vercel.app/) foi recuperado com banco Neon e contas novas. O Aiven antigo ficou inacessível; seus dados e credenciais não foram restaurados. As contas demonstrativas remotas ficam em arquivo privado ignorado. A implantação vigente e os PRs draft estão em [Estado da entrega](docs/STATUS_ENTREGA.md), fonte única dos metadados atuais.
+O login no [domínio público](https://fit-flow-indol.vercel.app/) foi recuperado com banco Neon e contas novas. O Aiven antigo ficou inacessível; seus dados e credenciais não foram restaurados. As contas demonstrativas remotas ficam em arquivo privado ignorado. O aplicativo foi integrado à `main` em 13/10/2026; implantação, evidências e situação do PR da landing estão em [Estado da entrega](docs/STATUS_ENTREGA.md).
 
-A meta completa permanece ativa. Os gates obrigatórios ainda incluem:
+O objetivo completo ainda tem trabalho pendente. Os gates obrigatórios incluem:
 
 - **Pix/cartão externo:** conta, credenciais e webhook Mercado Pago de teste; cartão aprovado/rejeitado/pendente e Pix QR/pendente sem renovar plano. Sandbox não comprova liquidação Pix. Recebimento manual não cobra nem confirma Pix/cartão; ajuste administrativo não executa reembolso no provedor.
 - **Telefone físico:** instalação PWA, teclado, rotação e reconexão publicada conforme M01–M14. Emulação e testes locais de fila não substituem aparelho físico; nova abertura offline exige reconexão para validar identidade.
 - **IA:** rotação da chave anteriormente exposta pelo titular. Amostras reais conferidas não certificam toda resposta futura; reprovações permanecem documentadas. Histórico do chat fica em memória, não há aplicação automática da ficha nem fallback pago.
-- **UX/UI e integração:** encerramento da revisão de todas as jornadas/estados e revisão dos PRs draft antes da decisão de integração. Deployment público não significa merge.
+- **UX/UI e landing:** encerramento da revisão de todas as jornadas/estados e revisão do PR draft da landing antes da sua integração. A integração do aplicativo não comprova os gates externos.
 
 [Auditoria de requisitos e evidências](docs/REVISAO_FINAL.md) · [Plano completo](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 
