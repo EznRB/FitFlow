@@ -122,8 +122,13 @@ function createProgramSchema(messages) {
   const quoteFields = { availability: 'availabilityQuote', duration: 'durationQuote', equipment: 'equipmentQuote',
     experience: 'experienceQuote', goal: 'goalQuote', scope: 'healthyAdultQuote' };
   const choices = Object.fromEntries(Object.keys(quoteFields).map(field => [field, []]));
-  for (const message of messages.filter(message => message.role === 'user')) {
-    const sentences = message.content.match(/(?:[^.!?\n]|\.(?=\d))+(?:[.!?\n]|$)/g) || [];
+  const userTexts = messages.filter(message => message.role === 'user').map(message => message.content);
+  // Uma correção pode afetar só um campo. Não oferecer provas já obsoletas
+  // desse campo, nem descartar objetivo/experiência anteriores não alterados.
+  const latest = Object.fromEntries(Object.keys(choices).map(field => [field,
+    userTexts.findLastIndex(text => fieldDeclaration(field, text))]));
+  for (const [turn, original] of userTexts.entries()) {
+    const sentences = original.match(/(?:[^.!?\n]|\.(?=\d))+(?:[.!?\n]|$)/g) || [];
     for (const sentence of sentences) {
       // Uma frase longa pode conter cláusulas curtas. Nunca truncar no meio
       // de uma palavra ou criar uma citação com reticências artificiais.
@@ -134,7 +139,7 @@ function createProgramSchema(messages) {
         const quote = fragment.trim();
         if (!plain(quote)) continue;
         const text = normalized(quote);
-        for (const field of Object.keys(choices)) if (matches[field](text)) {
+        for (const field of Object.keys(choices)) if (turn >= latest[field] && matches[field](text)) {
           choices[field] = [...choices[field].filter(value => value !== quote), quote].slice(-8);
         }
       }

@@ -74,7 +74,7 @@ test('recortes preservam duração decimal, limite por campo e escopo antigo ain
   for (let turn = 0; turn < 10; turn++) history.push({ role: 'user', content: `Agora posso treinar terça por ${30 + turn} minutos.` });
   history.push({ role: 'user', content: 'Agora posso treinar terça por 1.5 horas.' });
   const fields = createProgramSchema(history).properties.context.properties;
-  assert.equal(fields.durationQuote.enum.length, 8);
+  assert.ok(fields.durationQuote.enum.length > 0 && fields.durationQuote.enum.length <= 8);
   assert.ok(fields.durationQuote.enum.includes('Agora posso treinar terça por 1.5 horas.'));
   assert.ok(!fields.durationQuote.enum.includes('5 horas.'));
   assert.ok(fields.healthyAdultQuote.enum.includes('Sou adulto saudável, sem limitações clínicas relevantes.'));
@@ -116,4 +116,18 @@ test('recorte enumerado não confirma quarta/sexta quando a frase original nega 
   const fields = createProgramSchema(input).properties.context.properties;
   assert.ok(fields.availabilityQuote.enum.includes(draft.context.availabilityQuote));
   assert.throws(() => validateProgram(draft, input), error => error.routineClarification?.fields.includes('availability'));
+});
+
+test('enum não oferece provas anteriores a uma declaração posterior do mesmo campo', () => {
+  const input = [{ role: 'user', content: 'Quero um treino para hipertrofia.' },
+    { role: 'assistant', content: 'Informe a rotina.' }, { role: 'user', content: initial },
+    { role: 'assistant', content: 'Rascunho educativo.' }, { role: 'user', content: correction }];
+  const properties = createProgramSchema(input).properties.context.properties;
+  assert.ok(properties.goalQuote.enum.every(quote => initial.includes(quote)));
+  assert.ok(!properties.goalQuote.enum.includes('Quero um treino para hipertrofia.'));
+  assert.ok(properties.availabilityQuote.enum.every(quote => correction.includes(quote)));
+  assert.ok(properties.durationQuote.enum.every(quote => correction.includes(quote)));
+  assert.ok(properties.equipmentQuote.enum.every(quote => correction.includes(quote)));
+  assert.ok(properties.experienceQuote.enum.every(quote => initial.includes(quote)));
+  assert.ok(properties.healthyAdultQuote.enum.every(quote => initial.includes(quote)));
 });
