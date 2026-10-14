@@ -1,6 +1,6 @@
-# Estado da entrega — 13/10/2026
+# Estado da entrega — 14/10/2026
 
-O objetivo completo ainda não foi concluído; o goal automático atingiu o limite de uso da sessão em 13/10. A atualização solicitada para apresentação foi executada como tarefa atual. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
+O objetivo completo ainda não foi concluído; o goal voltou ao estado ativo em 14/10 após o limite de uso de 13/10. A atualização solicitada para apresentação foi executada. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
 ## Implantação atual
 
@@ -27,6 +27,8 @@ O objetivo completo ainda não foi concluído; o goal automático atingiu o limi
 | UX/UI e landing | Identidade laranja/navy/Barlow; apresentações distintas para gestão, treino, nutrição e chat; landing com fotografia ilustrativa e captura real identificada como demonstração. | Revisão completa de telas/estados/teclado/contraste ainda aberta; capturas não certificam toda acessibilidade. [Critérios e provas](REVISAO_VISUAL_SISTEMA.md). |
 
 ## Próximas etapas obrigatórias
+
+[Rodada de 14/10](RODADA_2026_10_14.md): seleção estrita de citações originais no rascunho da IA; prazo total da chamada externa de pagamentos; contrato de provedores; editor de ficha e relatório financeiro refinados. Suíte local integral **663/663**, zero falhas/ignorados, e correção fictícia real aprovada no serviço Groq Free. A publicação desta rodada está em verificação; a tabela acima registra o último código cuja publicação já foi comprovada.
 
 Rodada publicada em 12/10: contrato de contexto/esclarecimentos do chat corrigido, presenças protegidas contra callbacks/consultas antigas e composição de livro diário. Browser público confirmou restauração do aluno e conversa real: contexto incompleto gerou perguntas controladas, continuação fictícia completa gerou rascunho de segunda/quarta/sexta com 50 minutos disponíveis, fontes e contagens revisáveis. Gates locais e limites em [IA gratuita](IA_GRATUITA.md) e [revisão visual](REVISAO_VISUAL_SISTEMA.md). Documentação consolidada sem apagar as narrativas históricas.
 

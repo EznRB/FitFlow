@@ -4,6 +4,8 @@ Revisão: 10 de outubro de 2026. Este roteiro corresponde ao checkout **Preferen
 
 ## Estado e critério de entrega
 
+[Rodada de 14/10](RODADA_2026_10_14.md#pagamentos-abertos-contrato-e-prazo-real): contrato explícito de provedores, prazo total por chamada externa e status com capacidades separadas. Mercado Pago continua a única implementação real; cartão e Pix externos seguem aguardando preparação da conta.
+
 O projeto contém checkout hospedado, verificação de assinatura, conciliação no servidor e renovação idempotente. Os testes automatizados usam respostas controladas do provedor; o teste local do repositório utiliza banco real e respostas simuladas do Mercado Pago. Eles verificam a lógica do FitFlow, sem comprovar que a conta externa está configurada.
 
 Para concluir a validação externa, obter evidências de cartão aprovado, cartão recusado, cartão pendente, entrega assinada de webhook e repetição sem duplicar renovação. Para Pix, o critério do sandbox de Checkout Pro é **geração das instruções/QR e estado pendente, sem liberar plano**: a documentação considera esse resultado esperado para meios offline. Uma simulação de Pix aprovado nos testes do FitFlow não comprova liquidação pelo Mercado Pago. [Compras de teste — Preferences API](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/integration-test/test-purchases).

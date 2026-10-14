@@ -1,6 +1,7 @@
 const AppError = require('../utils/AppError');
 const { paymentId, moneyCents, paymentDate } = require('../utils/paymentValidation');
-const { createMercadoPagoAdapter, providerId } = require('./mercado-pago.adapter');
+const { providerId } = require('./mercado-pago.adapter');
+const { createCheckoutProvider } = require('./checkout-provider');
 const { createCheckoutRepository } = require('../repositories/checkout.repository');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const PROVIDER_STATUSES = ['pending', 'approved', 'authorized', 'in_process', 'in_mediation', 'rejected', 'cancelled', 'refunded', 'charged_back'];
@@ -9,7 +10,7 @@ function publicIntent(intent) {
   return { id: intent.id, state: intent.state, planId: intent.planId, amount: Number(intent.amount), currency: intent.currency,
     sandbox: true, checkoutUrl: intent.checkoutUrl || null, settled: Boolean(intent.paymentId), requiresReview: intent.state === 'review' };
 }
-function createCheckoutService({ provider = createMercadoPagoAdapter(), repository = createCheckoutRepository() } = {}) {
+function createCheckoutService({ provider = createCheckoutProvider(), repository = createCheckoutRepository() } = {}) {
   function requireReady() { if (!provider.enabled || !repository.ready) throw new AppError('Checkout sandbox indisponível. Configure credenciais de teste, webhook e banco.', 503); }
   async function reconcile(payment) {
     if (typeof payment.external_reference !== 'string' || !UUID.test(payment.external_reference)) return { ignored: true };
@@ -33,7 +34,8 @@ function createCheckoutService({ provider = createMercadoPagoAdapter(), reposito
     return publicIntent(await repository.settle(intent.id, payment, method));
   }
   return {
-    status: () => ({ enabled: Boolean(provider.enabled && repository.ready), sandbox: true, methods: ['pix', 'card'] }),
+    status: () => ({ enabled: Boolean(provider.enabled && repository.ready), sandbox: true, methods: ['pix', 'card'],
+      provider: provider.id || null, capabilities: provider.capabilities || null }),
     plans: () => { requireReady(); return repository.listPlans(); },
     async start(userId, data) {
       requireReady();

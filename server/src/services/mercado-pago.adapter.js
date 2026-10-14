@@ -1,7 +1,11 @@
 const { createHmac, timingSafeEqual } = require('node:crypto');
+const { performance } = require('node:perf_hooks');
 const AppError = require('../utils/AppError');
 
 const CHECKOUT_HOSTS = new Set(['www.mercadopago.com.br', 'www.mercadopago.com', 'sandbox.mercadopago.com']);
+const SANDBOX_CAPABILITIES = Object.freeze({
+  cardSandbox: true, pixQrSandbox: true, pixPendingSandbox: true, pixLiquidatedSandbox: false
+});
 function validCheckoutUrl(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && CHECKOUT_HOSTS.has(url.hostname) && !url.username && !url.password && !url.port; } catch { return false; }
 }
@@ -37,12 +41,25 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
   async function request(path, options = {}) {
     requireEnabled();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const deadline = performance.now() + timeoutMs;
+    const timeoutError = () => new AppError('Falha ao consultar Mercado Pago. A confirmação permanece pendente.', 502);
+    function requireWithinDeadline() {
+      if (controller.signal.aborted || performance.now() >= deadline) throw timeoutError();
+    }
+    let timer;
+    const timeout = new Promise((resolve, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(timeoutError()); }, timeoutMs);
+    });
     try {
-      const response = await fetchImpl(`https://api.mercadopago.com${path}`, { ...options, signal: controller.signal, redirect: 'error',
-        headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json', ...options.headers } });
-      if (!response.ok) throw new AppError('Mercado Pago indisponível para este teste. Nenhum plano foi liberado.', 502);
-      return await response.json();
+      return await Promise.race([timeout, (async () => {
+        const response = await fetchImpl(`https://api.mercadopago.com${path}`, { ...options, signal: controller.signal, redirect: 'error',
+          headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json', ...options.headers } });
+        requireWithinDeadline();
+        if (!response.ok) throw new AppError('Mercado Pago indisponível para este teste. Nenhum plano foi liberado.', 502);
+        const body = await response.json();
+        requireWithinDeadline();
+        return body;
+      })()]);
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new AppError('Falha ao consultar Mercado Pago. A confirmação permanece pendente.', 502);
@@ -59,6 +76,9 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
     sellerVerifiedAt = Date.now();
   }
   return {
+    id: 'mercado_pago',
+    sandbox: true,
+    capabilities: SANDBOX_CAPABILITIES,
     enabled: config.enabled,
     sellerId: config.sellerId,
     buyerEmail: config.buyerEmail,

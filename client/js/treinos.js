@@ -1,12 +1,13 @@
 /** Fichas profissionais: administração ampla e autoria restrita para instrutores. */
 const TreinosView = {
   alunosCache: [], catalogoCache: [], currentStudentId: null,
-  generation: 0, requests: {},
-  invalidar() { this.generation++; this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = []; },
+  generation: 0, requests: {}, editor: null,
+  invalidar() { this.generation++; this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = []; this.editor = null; },
   solicitar(kind, nodeId) {
     const user = typeof Auth !== 'undefined' ? Auth.user : null;
     return { kind, token: this.requests[kind] = (this.requests[kind] || 0) + 1, generation: this.generation,
       userId: user?.id, role: user?.role, authGeneration: typeof Auth !== 'undefined' ? Auth.generation : null,
+      epoch: typeof Auth !== 'undefined' && typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null,
       studentId: this.currentStudentId, nodeId, node: document.getElementById(nodeId) };
   },
   atual(request) {
@@ -15,6 +16,7 @@ const TreinosView = {
       && document.getElementById(request.nodeId) === request.node && typeof Auth !== 'undefined'
       && Auth.user?.id === request.userId && ['admin', 'instructor'].includes(Auth.user?.role)
       && Auth.user.role === request.role && Auth.generation === request.authGeneration
+      && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === request.epoch && Auth.getSessionEpoch() === request.epoch))
       && (typeof App === 'undefined' || App.currentPage === 'treinos');
   },
   escapar(value) { return FitFlowSecurity.escapeHtml(value); },
@@ -135,10 +137,11 @@ const TreinosView = {
     await this.carregarCatalogo(request);
     if (!this.atual(request)) return;
     const options = this.alunosCache.filter(a => this.idValido(a.id)).map(a => `<option value="${a.id}" ${a.id === this.currentStudentId ? 'selected' : ''}>${this.escapar(a.name)}</option>`).join('');
+    let editor;
     Modal.open('Planejar ficha de treino', this.renderizarConstrutorTreinoLayout(options), [
-      { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-      { text: 'Salvar ficha', class: 'btn-primary', action: () => this.salvarTreino() }]);
-    this.iniciarConstrutor();
+      { text: 'Cancelar', class: 'btn-secondary', action: () => { if (this.editorAtual(editor)) Modal.close(); } },
+      { text: 'Salvar ficha', class: 'btn-primary', action: () => this.salvarTreino(null, editor) }]);
+    editor = this.iniciarConstrutor();
   },
   async abrirModalEditar(id) {
     const request = this.solicitar('modal', 'treinos-table-body');
@@ -148,10 +151,11 @@ const TreinosView = {
       if (!this.atual(request)) return;
       await this.carregarCatalogo(request);
       if (!this.atual(request)) return;
+      let editor;
       Modal.open(`Editar ficha: ${workout.name}`, this.renderizarConstrutorTreinoLayout('', true, workout), [
-        { text: 'Cancelar', class: 'btn-secondary', action: () => Modal.close() },
-        { text: 'Salvar revisão', class: 'btn-primary', action: () => this.salvarTreino(workout.id) }]);
-      this.iniciarConstrutor(); (workout.exercises || []).forEach(ex => this.adicionarExercicio(ex));
+        { text: 'Cancelar', class: 'btn-secondary', action: () => { if (this.editorAtual(editor)) Modal.close(); } },
+        { text: 'Salvar revisão', class: 'btn-primary', action: () => this.salvarTreino(workout.id, editor) }]);
+      editor = this.iniciarConstrutor(workout.id); (workout.exercises || []).forEach(ex => this.adicionarExercicio(ex));
     } catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao editar ficha.'); }
   },
   renderizarConstrutorTreinoLayout(options, isEdit = false, workout = {}) {
@@ -162,18 +166,24 @@ const TreinosView = {
         <div class="workout-catalog-list" id="catalogo-list"></div>
         <button type="button" class="btn btn-secondary" id="add-manual-exercise">Informar exercício manualmente</button>
       </section>
-      <section><form id="form-treino" class="workout-edit-form">
+      <section><form id="form-treino" class="workout-edit-form" aria-describedby="treino-save-context treino-save-feedback">
+        <fieldset class="workout-metadata"><legend>Identificação e acompanhamento</legend>
         <div class="form-group"><label for="treino-aluno">Aluno</label>${isEdit ?
-          `<input type="text" value="${this.escapar(workout.student?.user?.name)}" disabled>` :
+          `<input type="text" id="treino-aluno" value="${this.escapar(workout.student?.user?.name)}" disabled>` :
           `<select id="treino-aluno" required><option value="">Selecionar matrícula ativa</option>${options}</select>`}</div>
         <div class="form-group"><label for="treino-nome">Nome da ficha</label><input type="text" id="treino-nome" maxlength="100" value="${value('name')}" required></div>
         <div class="form-group"><label for="treino-descricao">Objetivo e contexto</label><textarea id="treino-descricao" maxlength="10000" rows="2">${value('description')}</textarea></div>
-        <div class="form-group"><label for="treino-notas">Observações de acompanhamento</label><textarea id="treino-notas" maxlength="10000" rows="2">${value('notes')}</textarea></div>
-      </form><h4>Exercícios <span id="qtd-exercicios">(0)</span></h4>
-      <p class="workout-history-note">Defina séries, repetições e pausas para esta ficha. Salvar uma edição cria outra revisão e arquiva a ficha anterior, preservando seus exercícios e registros.</p>
-      <div id="exercicios-container"><p class="empty-routine">Selecione exercícios do catálogo ou informe um exercício.</p></div></section></div>`;
+        <div class="form-group"><label for="treino-notas">Observações de acompanhamento</label><textarea id="treino-notas" maxlength="10000" rows="2">${value('notes')}</textarea></div></fieldset>
+      <div class="workout-prescription-heading"><h4>Prescrição <span id="qtd-exercicios">(0)</span></h4>
+      <p class="workout-history-note">Defina séries, repetições e pausas para cada exercício.</p></div>
+      <div id="exercicios-container"><p class="empty-routine">Selecione exercícios do catálogo ou informe um exercício.</p></div>
+      <div id="treino-save-confirmation" class="workout-save-confirmation"><p id="treino-save-context">${isEdit ? 'Ao salvar, uma nova revisão será criada e a ficha anterior será arquivada. Seus exercícios e registros serão preservados.' : 'A ficha será disponibilizada ao aluno selecionado. A prescrição é definida pelo profissional.'}</p>
+        <p id="treino-save-feedback" class="workout-save-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button type="button" id="treino-check-saved" class="btn btn-secondary" hidden>Conferir fichas</button>
+      </div><button type="submit" hidden>Salvar ${isEdit ? 'revisão' : 'ficha'}</button>
+      </form></section></div>`;
   },
-  iniciarConstrutor() {
+  iniciarConstrutor(id = null) {
     const host = document.getElementById('planejamento-ciencia');
     if (window.PlanejamentoCiencia) window.PlanejamentoCiencia.mount(host);
     else if (host) host.textContent = 'Apoio de planejamento indisponível nesta versão. A ficha pode ser preenchida pelo profissional.';
@@ -191,6 +201,50 @@ const TreinosView = {
     };
     if (window.Sortable) new window.Sortable(container, { handle: '.grip-handle', animation: 150, onEnd: () => this.atualizarIndices() });
     this.renderizarCatalogoLista();
+    return this.configurarSalvamento(id);
+  },
+  configurarSalvamento(id) {
+    const request = this.solicitar('editor', 'form-treino');
+    const editor = { id, request, revision: Modal.revision, form: request.node,
+      page: document.getElementById('treinos-table-body'), container: document.getElementById('exercicios-container'),
+      footer: document.getElementById('modal-footer'), button: document.querySelector?.('#modal-footer .btn-primary'),
+      feedback: document.getElementById('treino-save-feedback'), check: document.getElementById('treino-check-saved'),
+      fields: {}, pending: null, requiresCheck: false };
+    for (const name of ['treino-aluno', 'treino-nome', 'treino-descricao', 'treino-notas']) editor.fields[name] = document.getElementById(name);
+    const confirmation = document.getElementById('treino-save-confirmation');
+    // Move o status para junto das ações fixas sem recriar os campos preenchidos.
+    if (confirmation && editor.footer) editor.footer.prepend(confirmation);
+    this.editor = editor;
+    if (editor.button) editor.button.setAttribute('aria-describedby', 'treino-save-context treino-save-feedback');
+    if (editor.form) editor.form.onsubmit = event => { event.preventDefault(); return this.salvarTreino(id, editor); };
+    if (editor.check) editor.check.onclick = async () => {
+      if (!this.editorAtual(editor) || editor.pending || !editor.requiresCheck) return;
+      const target = editor.targetStudentId;
+      Modal.close(); this.editor = null;
+      if (target === this.currentStudentId) await this.carregarTreinos(target);
+      else if (this.idValido(target)) await this.abrirPerfilAluno(target, this.alunosCache.find(student => student.id === target)?.name || `Aluno #${target}`);
+    };
+    return editor;
+  },
+  editorAtual(editor) {
+    if (!editor || this.editor !== editor || !this.atual(editor.request) || Modal.revision !== editor.revision
+      || (typeof Modal.isOpen === 'function' && !Modal.isOpen())) return false;
+    const anchors = [['form-treino', editor.form], ['treinos-table-body', editor.page], ['exercicios-container', editor.container],
+      ['modal-footer', editor.footer], ['treino-save-feedback', editor.feedback], ['treino-check-saved', editor.check], ...Object.entries(editor.fields)];
+    return anchors.every(([id, node]) => node && node.isConnected !== false && document.getElementById(id) === node)
+      && (!editor.button || (editor.button.isConnected !== false && document.querySelector?.('#modal-footer .btn-primary') === editor.button));
+  },
+  rascunhoTreino(editor) {
+    const rows = [...editor.container.querySelectorAll('.exercicio-item')].map(row => [row.dataset.catalogExerciseId, row.dataset.sourceExerciseId,
+      ...['ex-nome', 'ex-grupo', 'ex-series', 'ex-reps', 'ex-pausa', 'ex-carga', 'ex-obs'].map(name => row.querySelector(`.${name}`).value)]);
+    return JSON.stringify({ fields: Object.values(editor.fields).map(field => field.value), rows });
+  },
+  estadoSalvamento(editor, busy) {
+    if (!this.editorAtual(editor)) return;
+    editor.form.setAttribute('aria-busy', String(busy));
+    if (editor.button) { editor.button.disabled = busy || editor.requiresCheck;
+      editor.button.textContent = busy ? (editor.id ? 'Salvando revisão…' : 'Salvando ficha…') : (editor.id ? 'Salvar revisão' : 'Salvar ficha'); }
+    if (editor.check) editor.check.hidden = !editor.requiresCheck;
   },
   fonteCatalogo(item) {
     if (item.source !== 'wger') return '<small>Cadastro local: confirmar equipamento e execução com o profissional.</small>';
@@ -281,28 +335,51 @@ const TreinosView = {
   atualizarResumo() {
     if (window.PlanejamentoCiencia) window.PlanejamentoCiencia.updateRoutine(document.getElementById('planejamento-ciencia'), this.coletarExercicios());
   },
-  async salvarTreino(id = null) {
+  async salvarTreino(id = null, editor = this.editor) {
+    if (editor && (!this.editorAtual(editor) || editor.pending || editor.requiresCheck || editor.id !== id)) return;
     const request = this.solicitar('salvar', 'form-treino');
     if (!this.atual(request)) return;
     const exercises = this.coletarExercicios();
     const name = document.getElementById('treino-nome').value.trim();
     const studentId = id ? this.currentStudentId : Number(document.getElementById('treino-aluno').value);
-    if (!name || !exercises.length) { Toast.warning('Informe o nome da ficha e pelo menos um exercício.'); return; }
-    if (!id && !this.idValido(studentId)) { Toast.warning('Selecione o aluno.'); return; }
+    const warn = message => { if (editor?.feedback) editor.feedback.textContent = message; Toast.warning(message); };
+    if (!name || !exercises.length) { warn('Informe o nome da ficha e pelo menos um exercício.'); return; }
+    if (!id && !this.idValido(studentId)) { warn('Selecione o aluno.'); return; }
     for (const exercise of exercises) {
       if (!exercise.name || !/^\d+$/.test(exercise.sets) || Number(exercise.sets) < 1 || Number(exercise.sets) > 100 ||
         !/^\d+(?:\s*[-–]\s*\d+)?$/.test(exercise.reps) || !/^\d+$/.test(exercise.restSeconds) || Number(exercise.restSeconds) > 3600) {
-        Toast.warning('Defina nome, séries, repetições e pausa de todos os exercícios.'); return;
+        warn('Defina nome, séries, repetições e pausa de todos os exercícios.'); return;
       }
     }
     const payload = { name, exercises, description: document.getElementById('treino-descricao').value.trim(), notes: document.getElementById('treino-notas').value.trim() };
     if (!id) payload.studentId = studentId;
+    if (!editor) editor = this.configurarSalvamento(id);
+    if (!this.editorAtual(editor) || !editor.form.reportValidity()) return;
+    const draft = this.rascunhoTreino(editor), pending = editor.pending = {};
+    editor.targetStudentId = studentId;
+    editor.feedback.textContent = id ? 'Salvando a nova revisão…' : 'Salvando a ficha…';
+    this.estadoSalvamento(editor, true);
     try {
-      const response = id ? await API.put(`/treinos/${id}`, payload) : await API.post('/treinos', payload);
-      if (!this.atual(request)) return;
-      Toast.success(response.message || 'Ficha salva.'); Modal.close();
-      if (this.currentStudentId) await this.carregarTreinos(this.currentStudentId);
-    } catch (error) { if (this.atual(request)) Toast.error(error.message || 'Erro ao salvar ficha.'); }
+      const response = id ? await API.put(`/treinos/${id}`, payload, { timeoutMs: 15000 }) : await API.post('/treinos', payload, { timeoutMs: 15000 });
+      if (!this.atual(request) || !this.editorAtual(editor)) return;
+      if (this.rascunhoTreino(editor) !== draft) {
+        editor.requiresCheck = true;
+        editor.feedback.textContent = 'A ficha enviada foi salva. O rascunho alterado durante o envio foi mantido e ainda não foi salvo. Confira as fichas antes de continuar.';
+        return;
+      }
+      Toast.success(response?.message || 'Ficha salva.'); Modal.close(); this.editor = null;
+      if (studentId === this.currentStudentId) await this.carregarTreinos(studentId);
+      else if (this.idValido(studentId)) await this.abrirPerfilAluno(studentId, this.alunosCache.find(student => student.id === studentId)?.name || `Aluno #${studentId}`);
+    } catch (error) {
+      if (!this.atual(request) || !this.editorAtual(editor)) return;
+      editor.requiresCheck = Boolean(error.timeout || !error.status || error.status >= 500);
+      editor.feedback.textContent = editor.requiresCheck
+        ? 'Resultado não confirmado. Este envio pode já ter sido salvo. Seus campos foram mantidos; confira as fichas antes de iniciar outro envio.'
+        : error.message || 'A ficha foi recusada. Confira os campos antes de salvar novamente.';
+    } finally {
+      if (editor.pending === pending) editor.pending = null;
+      this.estadoSalvamento(editor, false);
+    }
   },
   confirmarDesativar(id, name) {
     const request = this.solicitar('arquivar', 'treinos-table-body');

@@ -2,7 +2,9 @@ const RelatoriosView = {
   container: null,
   requestVersion: 0,
   generation: 0,
-  invalidar() { this.generation++; this.requestVersion++; this.container = null; },
+  resultConfirmed: false,
+  pendingReport: null,
+  invalidar() { this.generation++; this.requestVersion++; this.container = null; this.resultConfirmed = false; this.pendingReport = null; },
   contexto() {
     const user = typeof Auth === 'undefined' ? null : Auth.user;
     return { generation: this.generation, container: document.getElementById('relatorios-container'),
@@ -67,12 +69,12 @@ const RelatoriosView = {
     const start = new Date(today + 'T00:00:00Z');
     start.setUTCDate(start.getUTCDate() - 29);
     this.container.innerHTML = `
-      <div class="page-header admin-page-header" style="display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div class="page-header admin-page-header reports-heading">
         <div><span class="workspace-kicker">Análise / acompanhamento</span><h2>Relatórios gerenciais</h2><p>Consulte presença, situação dos alunos e registros financeiros.</p></div>
-        <button type="button" id="btn-imprimir-relatorio" class="btn btn-outline-primary no-print">Imprimir</button>
+        <button type="button" id="btn-imprimir-relatorio" class="btn btn-outline-primary no-print" disabled>Imprimir relatório</button>
       </div>
-      <div class="card no-print" style="padding:1.25rem;margin-bottom:1.5rem">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:1rem;align-items:end">
+      <section class="reports-controls no-print" aria-label="Configurar relatório">
+        <div class="reports-filters">
           <div><label for="filtro-tipo-relatorio" class="form-label">Relatório</label><select id="filtro-tipo-relatorio" class="form-select">
             <option value="inadimplencia">Inadimplência</option><option value="frequencia">Frequência por aluno</option>
             <option value="checkins">Check-ins por período</option><option value="pagamentos">Pagamentos por período</option><option value="alunos">Situação dos alunos</option>
@@ -81,15 +83,16 @@ const RelatoriosView = {
           <div><label for="filtro-data-fim" class="form-label">Data final</label><input type="date" id="filtro-data-fim" class="form-control" value="${today}"></div>
           <button type="button" id="btn-gerar-relatorio" class="btn btn-primary">Atualizar relatório</button>
         </div>
-        <p id="aviso-filtro-data" style="margin-top:.75rem">Inadimplência e situação dos alunos mostram a situação atual, sem filtro de datas.</p>
-      </div>
-      <div id="relatorio-resumo" style="display:none;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem;margin-bottom:1.5rem"></div>
-      <div class="card" style="padding:1rem">
-        <div id="relatorio-loading" role="status" style="display:none;padding:2rem">Carregando relatório…</div>
-        <div id="relatorio-empty" role="status" style="display:none;padding:2rem">Nenhum registro encontrado.</div>
-        <div id="relatorio-error" role="alert" style="display:none;padding:2rem"></div>
+        <p id="aviso-filtro-data" class="reports-filter-note">Inadimplência e situação dos alunos mostram a situação atual, sem filtro de datas.</p>
+      </section>
+      <p id="relatorio-periodo-aplicado" class="reports-applied" style="display:none"></p>
+      <section id="relatorio-resumo" aria-label="Resumo do relatório" style="display:none"></section>
+      <div class="reports-ledger">
+        <div id="relatorio-loading" class="reports-state" role="status" style="display:none">Carregando relatório…</div>
+        <div id="relatorio-empty" class="reports-state" role="status" style="display:none">Nenhum registro encontrado. Ajuste o período ou escolha outro relatório.</div>
+        <div id="relatorio-error" class="reports-state" role="alert" style="display:none"></div>
         <div id="relatorio-content" role="region" aria-label="Resultados do relatório; deslize para ver todas as colunas" tabindex="0" style="display:none;overflow-x:auto">
-          <table class="table" style="width:100%;text-align:left"><caption id="relatorio-titulo-tabela" style="text-align:left;font-weight:600;padding-bottom:1rem">Resultados</caption><thead id="relatorio-thead"></thead><tbody id="relatorio-tbody"></tbody></table>
+          <table class="table reports-table"><caption id="relatorio-titulo-tabela">Resultados</caption><thead id="relatorio-thead"></thead><tbody id="relatorio-tbody"></tbody></table>
         </div>
       </div>
       <style>@media print{.no-print,.sidebar,.topbar{display:none!important}.main-content{margin-left:0!important;padding:0!important}.card{box-shadow:none!important;border:none!important}#relatorios-container{color:#000}}</style>`;
@@ -97,27 +100,55 @@ const RelatoriosView = {
   bindEvents(context = this.contexto()) {
     document.getElementById('btn-gerar-relatorio').onclick = () => { if (this.atual(context)) return this.carregarRelatorio(document.getElementById('filtro-tipo-relatorio').value); };
     document.getElementById('filtro-tipo-relatorio').onchange = event => { if (this.atual(context)) return this.carregarRelatorio(event.target.value); };
-    document.getElementById('btn-imprimir-relatorio').onclick = () => { if (this.atual(context)) window.print(); };
+    document.getElementById('btn-imprimir-relatorio').onclick = () => { if (this.atual(context) && this.resultConfirmed) window.print(); };
   },
   state(name) {
     for (const id of ['loading', 'empty', 'content', 'error']) document.getElementById('relatorio-' + id).style.display = id === name ? 'block' : 'none';
-    if (name !== 'content') document.getElementById('relatorio-resumo').style.display = 'none';
+    if (name === 'loading' || name === 'error') {
+      this.resultConfirmed = false;
+      document.getElementById('relatorio-resumo').style.display = 'none';
+      document.getElementById('relatorio-periodo-aplicado').style.display = 'none';
+    }
+    document.getElementById('btn-imprimir-relatorio').disabled = !this.resultConfirmed;
+    document.getElementById('relatorios-container').setAttribute('aria-busy', name === 'loading' ? 'true' : 'false');
+    document.getElementById('relatorios-container').setAttribute('data-result-confirmed', this.resultConfirmed ? 'true' : 'false');
   },
   mostrarLoading() { this.state('loading'); },
   mostrarVazio() { this.state('empty'); },
   mostrarTabela() { this.state('content'); },
-  renderizarResumo(cards) {
+  renderizarResumo(cards, financial = null) {
     const element = document.getElementById('relatorio-resumo');
-    element.innerHTML = (cards || []).map(([label, value]) => `<div class="kpi-card"><div class="kpi-content"><div class="kpi-value">${this.escape(value)}</div><div class="kpi-label">${this.escape(label)}</div></div></div>`).join('');
-    element.style.display = cards?.length ? 'grid' : 'none';
+    if (financial) {
+      const item = (label, value) => `<div><dt>${this.escape(label)}</dt><dd>${this.escape(this.formatMoney(value))}</dd></div>`;
+      element.innerHTML = `<div class="reports-financial">
+        <div class="reports-net"><span class="reports-eyebrow">Resultado do período</span><h3>Líquido registrado</h3><strong>${this.escape(this.formatMoney(financial.totalReceita))}</strong><p>Recebimentos e ajustes registrados, sem confirmação bancária.</p></div>
+        <div class="reports-breakdown"><h3>Composição do registro</h3><dl>${item('Recebimentos brutos', financial.totalBruto)}${item('Correções internas', financial.totalCorrecoes)}${item('Devoluções informadas', financial.totalDevolucoesInformadas)}</dl></div>
+        <div class="reports-due"><h3>Valores no período</h3><dl>${item('Pendentes', financial.totalPendente)}${item('Vencidos', financial.totalVencido)}</dl></div>
+      </div><div class="reports-review"><div><span class="reports-eyebrow">Situação atual · independente do período</span><h3>Conferência de checkout</h3><p>Consultas aguardando verificação do provedor; não são recebimentos confirmados.</p></div><strong>${this.escape(this.count(financial.conferenciasProvedor))}</strong></div>`;
+      element.style.display = 'block';
+      return;
+    }
+    element.innerHTML = `<dl class="reports-summary">${(cards || []).map(([label, value]) => `<div><dt>${this.escape(label)}</dt><dd>${this.escape(value)}</dd></div>`).join('')}</dl>`;
+    element.style.display = cards?.length ? 'block' : 'none';
   },
-  table(title, columns, rows, cards = []) {
+  table(title, columns, rows, cards = [], financial = null) {
     if (!Array.isArray(rows)) throw new Error('Formato inesperado do relatório.');
     document.getElementById('relatorio-titulo-tabela').textContent = title;
-    if (!rows.length) { this.mostrarVazio(); return; }
+    this.renderizarResumo(cards, financial);
+    // O intervalo pertence à consulta confirmada, não aos filtros editados durante a espera.
+    const report = this.pendingReport;
+    const applied = document.getElementById('relatorio-periodo-aplicado');
+    applied.textContent = report?.dated ? `${title} · Período aplicado: ${this.formatDate(report.start)} a ${this.formatDate(report.end)}` : `${title} · Situação atual · consulta confirmada`;
+    applied.style.display = 'block';
+    this.resultConfirmed = true;
+    if (!rows.length) {
+      document.getElementById('relatorio-thead').innerHTML = '';
+      document.getElementById('relatorio-tbody').innerHTML = '';
+      document.getElementById('relatorio-empty').textContent = financial ? 'Nenhuma movimentação registrada neste período. A conferência de checkout acima mostra a situação atual.' : 'Nenhum registro encontrado. Escolha outro relatório ou, quando disponível, ajuste o período.';
+      this.mostrarVazio(); return;
+    }
     document.getElementById('relatorio-thead').innerHTML = '<tr>' + columns.map(column => `<th scope="col" style="padding:.75rem">${this.escape(column[0])}</th>`).join('') + '</tr>';
     document.getElementById('relatorio-tbody').innerHTML = rows.map((row, index) => '<tr>' + columns.map(column => `<td style="padding:.75rem">${column[2] === 'badge' ? this.getStatusBadge(column[1](row, index)) : this.escape(column[1](row, index))}</td>`).join('') + '</tr>').join('');
-    this.renderizarResumo(cards);
     this.mostrarTabela();
   },
   async carregarRelatorio(type) {
@@ -137,7 +168,8 @@ const RelatoriosView = {
     this.mostrarLoading();
     try {
       if (dated && (!this.validDate(start.value) || !this.validDate(end.value) || start.value > end.value)) throw new Error('Informe um período válido; a data inicial deve anteceder ou coincidir com a final.');
-      const query = dated ? '?' + new URLSearchParams({ startDate: start.value, endDate: end.value }) : '';
+      this.pendingReport = { type, dated, start: start.value, end: end.value };
+      const query = dated ? '?' + new URLSearchParams({ startDate: this.pendingReport.start, endDate: this.pendingReport.end }) : '';
       await this[methods[type]](query, version, context);
     } catch (error) {
       if (version !== this.requestVersion || !this.atual(context)) return;
@@ -147,7 +179,7 @@ const RelatoriosView = {
   },
   async carregarInadimplencia(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
-    const { data } = await API.get('/relatorios/inadimplencia');
+    const { data } = await API.get('/relatorios/inadimplencia', { timeoutMs: 15000 });
     if (version !== this.requestVersion || !this.atual(context)) return;
     if (!Array.isArray(data)) throw new Error('Formato inesperado do relatório.');
     const amounts = data.map(row => this.number(row.totalAtraso));
@@ -156,27 +188,27 @@ const RelatoriosView = {
   },
   async carregarFrequencia(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
-    const { data } = await API.get('/relatorios/frequencia' + query);
+    const { data } = await API.get('/relatorios/frequencia' + query, { timeoutMs: 15000 });
     if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Presenças por aluno no período', [['Aluno', r => r.nome], ['Plano', r => r.plano || 'Sem plano'], ['Situação', r => r.statusAluno, 'badge'], ['Presenças', r => this.count(r.totalCheckins)]], data);
   },
   async carregarCheckins(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
-    const { data } = await API.get('/relatorios/checkins' + query);
+    const { data } = await API.get('/relatorios/checkins' + query, { timeoutMs: 15000 });
     if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Check-ins no período', [['Data', r => this.formatDate(r.data)], ['Horário (São Paulo)', r => this.formatTime(r.hora)], ['Aluno', r => r.aluno], ['Situação', r => r.status, 'badge']], data?.items, [['Registros no período', this.count(data?.total)]]);
   },
   async carregarPagamentos(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
-    const { data } = await API.get('/relatorios/financeiro' + query);
+    const { data } = await API.get('/relatorios/financeiro' + query, { timeoutMs: 15000 });
     if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Movimentações registradas no período', [['Data efetiva', r => this.formatDate(r.dataPagamento)], ['Aluno', r => r.aluno], ['Recibo', r => '#' + r.paymentId], ['Situação', r => r.status, 'badge'], ['Valor', r => this.formatMoney(r.valor)], ['Motivo / responsável', r => r.tipo === 'recebimento' ? 'Recebimento original' : (r.motivo || '') + ' · ' + (r.responsavel || '')]], data?.items,
-      [['Recebimentos brutos', this.formatMoney(data?.resumo?.totalBruto)], ['Correções internas', this.formatMoney(data?.resumo?.totalCorrecoes)], ['Devoluções informadas', this.formatMoney(data?.resumo?.totalDevolucoesInformadas)], ['Líquido registrado', this.formatMoney(data?.resumo?.totalReceita)], ['Pendentes', this.formatMoney(data?.resumo?.totalPendente)], ['Vencidos', this.formatMoney(data?.resumo?.totalVencido)], ['Checkout em conferência (atual)', this.count(data?.resumo?.conferenciasProvedor)]]);
+      [], data?.resumo || {});
     document.getElementById('aviso-filtro-data').textContent = data?.resumo?.criterio || 'Recebimentos e ajustes pela data efetiva; valores registrados, sem confirmação bancária.';
   },
   async carregarAlunos(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
-    const { data } = await API.get('/relatorios/alunos');
+    const { data } = await API.get('/relatorios/alunos', { timeoutMs: 15000 });
     if (version !== this.requestVersion || !this.atual(context)) return;
     this.table('Situação atual dos alunos', [['Matrícula', r => this.formatDate(r.dataMatricula, false)], ['Aluno', r => r.nome], ['E-mail', r => r.email], ['Plano', r => r.plano], ['Situação', r => r.status, 'badge']], data?.items, [['Ativos', this.count(data?.resumo?.ativos)], ['Bloqueados', this.count(data?.resumo?.bloqueados)], ['Inativos', this.count(data?.resumo?.inativos)]]);
   }

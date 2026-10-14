@@ -27,7 +27,7 @@ const groundedResult = (result = valid) => ({ blocks: [result.sourceIds?.length
   kind: result.kind, program: null });
 const stageUpstream = (options, result = valid) => {
   const request = JSON.parse(options.body);
-  if (request.response_format.type === 'json_object') {
+  if (request.response_format.json_schema?.name === 'fitflow_routine') {
     assert.equal(request.model, 'openai/gpt-oss-120b');
     return upstream(program());
   }
@@ -87,7 +87,7 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
     assert.equal(body.include_reasoning, false); assert.equal(body.tools, undefined);
     assert.equal(body.reasoning_effort, 'medium'); assert.equal(body.temperature, calls === 1 ? 0.2 : 0.1);
     const schema = JSON.parse(body.messages[0].content.split('JSON Schema de referência:\n')[1]);
-    const providerSchema = calls === 1 ? body.response_format.json_schema.schema : schema;
+    const providerSchema = body.response_format.json_schema.schema;
     if (calls === 1) {
       assert.equal(body.response_format.type, 'json_schema');
       assert.equal(body.response_format.json_schema.strict, true);
@@ -96,7 +96,8 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
       assert.equal(providerSchema.properties.sessions, undefined); assert.equal(providerSchema.properties.program, undefined);
       assert.equal(body.max_completion_tokens, 4000);
     } else {
-      assert.deepEqual(body.response_format, { type: 'json_object' });
+      assert.equal(body.response_format.json_schema.name, 'fitflow_routine');
+      assert.equal(body.response_format.json_schema.strict, true);
       assert.deepEqual(providerSchema.required, ['context', 'sessions']);
       assert.equal(providerSchema.properties.program, undefined); assert.equal(providerSchema.properties.message, undefined);
       assert.equal(providerSchema.properties.sessions.items.type, 'object');
@@ -249,7 +250,8 @@ test('primeira etapa compacta só rascunho reconhecido, preserva doses e falas u
       assert.deepEqual(sourceContext.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title });
       assert.equal(body.max_completion_tokens, 4000);
     } else {
-      assert.deepEqual(body.response_format, { type: 'json_object' });
+      assert.equal(body.response_format.json_schema.name, 'fitflow_routine');
+      assert.equal(body.response_format.json_schema.strict, true);
       assert.equal(body.max_completion_tokens, 6000);
     }
     assert.ok(options.body.length < 18000);
@@ -407,7 +409,7 @@ test('prazo único cobre fetch e corpo da segunda etapa, tanto seleção quanto 
       if (calls === 1) { await new Promise(resolve => setTimeout(resolve, 10)); return upstream(kind === 'answer' ? valid : routineTurn); }
       const format = JSON.parse(options.body).response_format;
       if (kind === 'answer') assert.equal(format.json_schema.name, 'fitflow_grounded_answer');
-      else assert.deepEqual(format, { type: 'json_object' });
+      else assert.equal(format.json_schema.name, 'fitflow_routine');
       return phase === 'fetch' ? new Promise(() => {}) : { ok: true, status: 200, json: () => new Promise(() => {}) };
     } });
     await assert.rejects(current.chat(input(routineUserText)), error => error.statusCode === 504);
@@ -441,7 +443,7 @@ test('gerador de rascunho rejeita sessions string, raiz incorreta e contexto que
     const current = service({ fetchImpl: async (_, options) => {
       calls++;
       if (calls === 1) return upstream(routineTurn);
-      assert.deepEqual(JSON.parse(options.body).response_format, { type: 'json_object' });
+      assert.equal(JSON.parse(options.body).response_format.json_schema.name, 'fitflow_routine');
       return upstream(result);
     } });
     await assert.rejects(current.chat({ consent: true, messages: [{ role: 'user', content: routineUserText },
@@ -546,7 +548,7 @@ test('diagnóstico upstream identifica etapa e tamanho sem registrar corpo, mens
       return new Response(JSON.stringify({ error: { code: 'request_too_large', type: 'private-type',
         message: 'private-org-key-history', failed_generation: 'private-conversation' } }), { status: 413 });
     } });
-    await assert.rejects(current.chat(input('Pergunta privada fictícia.')), error => error.statusCode === 413
+    await assert.rejects(current.chat(input(stage === 'routine' ? routineUserText : 'Pergunta privada fictícia.')), error => error.statusCode === 413
       && /Reduza o contexto/.test(error.message) && !/indisponível|private/.test(error.message));
     assert.deepEqual(events, [{ stage, status: 413, category: 'request_size', code: 'request_too_large' }]);
     assert.equal(calls, stage === 'primary' ? 1 : 2);

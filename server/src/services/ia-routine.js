@@ -108,6 +108,61 @@ function fieldDeclaration(field, text) {
   return (days.some(day => dayPatterns[day].test(statements)) || /dias uteis|fim de semana|weekdays|weekend/.test(statements))
     && (correction || /posso|consigo|dispon|livre|trein|somente|apenas|\bso\b/.test(statements));
 }
+function createProgramSchema(messages) {
+  // O provedor seleciona trechos originais, em vez de reescrevê-los. Estes
+  // recortes não comprovam interpretação: as verificações locais continuam.
+  const matches = {
+    availability: text => days.some(day => dayPatterns[day].test(text)) || /dias uteis|fim de semana|weekdays|weekend/.test(text),
+    duration: text => /\d\s*(?:min|h\b|hora)|\d+h\d|meia hora|uma hora|one hour/.test(text),
+    equipment: text => equipmentHints(text).length > 0 || /academia completa|peso corporal|bodyweight|fully equipped/.test(text),
+    experience: text => /iniciante|intermediario|avancado|beginner|intermediate|advanced/.test(text),
+    goal: text => explicitlyMentionedGoals(text).length > 0,
+    scope: text => /adult[oa]|maior de\s*(?:18|dezoito)|healthy/.test(text),
+  };
+  const quoteFields = { availability: 'availabilityQuote', duration: 'durationQuote', equipment: 'equipmentQuote',
+    experience: 'experienceQuote', goal: 'goalQuote', scope: 'healthyAdultQuote' };
+  const choices = Object.fromEntries(Object.keys(quoteFields).map(field => [field, []]));
+  for (const message of messages.filter(message => message.role === 'user')) {
+    const sentences = message.content.match(/(?:[^.!?\n]|\.(?=\d))+(?:[.!?\n]|$)/g) || [];
+    for (const sentence of sentences) {
+      // Uma frase longa pode conter cláusulas curtas. Nunca truncar no meio
+      // de uma palavra ou criar uma citação com reticências artificiais.
+      const clauses = sentence.split(/(?<=;)|(?=\b(?:mas|porém|contudo|but|however)\b)/iu);
+      const fragments = [...(sentence.length <= 300 ? [sentence] : []),
+        ...clauses.flatMap(clause => [clause, ...clause.split(/(?<!\d),(?!\d)/u)])];
+      for (const fragment of fragments) {
+        const quote = fragment.trim();
+        if (!plain(quote)) continue;
+        const text = normalized(quote);
+        for (const field of Object.keys(choices)) if (matches[field](text)) {
+          choices[field] = [...choices[field].filter(value => value !== quote), quote].slice(-8);
+        }
+      }
+    }
+  }
+  const missing = Object.keys(choices).filter(field => choices[field].length === 0);
+  if (missing.length) clarify(missing, 'missing_context');
+  const schema = structuredClone(programSchema);
+  for (const [field, key] of Object.entries(quoteFields)) {
+    schema.properties.context.properties[key] = { ...quoteSchema, enum: choices[field] };
+  }
+  return schema;
+}
+function deniedAvailability(text) {
+  const denied = new Set();
+  const clauses = normalized(text).split(/[.;!?\n]|\b(?:mas|porem|contudo|but|however)\b|,\s*(?=(?:eu\s+)?(?:posso|consigo|vou|quero|tenho disponibilidade)\b)/);
+  for (const clause of clauses) {
+    if (!/\bnao\s+(?:posso|consigo|vou|quero|tenho disponibilidade)|\bsem disponibilidade/.test(clause)) continue;
+    let mentioned = days.filter(day => dayPatterns[day].test(clause));
+    if (/dias uteis|weekdays/.test(clause)) mentioned = days.slice(0, 5);
+    if (/fim de semana|finais de semana|weekends/.test(clause)) mentioned = days.slice(5);
+    if (mentioned.length === 2 && /\s(?:a|ate|to|through)\s/.test(clause)) {
+      mentioned = days.slice(days.indexOf(mentioned[0]), days.indexOf(mentioned[1]) + 1);
+    }
+    mentioned.forEach(day => denied.add(day));
+  }
+  return denied;
+}
 function checkContextEvidence(context, userTexts) {
   const quotes = { availability: 'availabilityQuote', duration: 'durationQuote', equipment: 'equipmentQuote',
     experience: 'experienceQuote', goal: 'goalQuote', scope: 'healthyAdultQuote' };
@@ -121,6 +176,11 @@ function checkContextEvidence(context, userTexts) {
     if (fieldDeclaration(field, remainder) || userTexts.slice(index + 1).some(text => fieldDeclaration(field, text))) stale.push(field);
   }
   if (stale.length) clarify(stale);
+  // Um recorte como "quarta e sexta" também existe após "não posso".
+  // Preservar a negação de toda a declaração original, inclusive suas listas.
+  const availabilityOrigin = userTexts.findLast(text => text.includes(context.availabilityQuote));
+  const deniedDays = deniedAvailability(availabilityOrigin);
+  if (context.availableDays.some(day => deniedDays.has(day))) clarify(['availability']);
   const scopeText = normalized(context.healthyAdultQuote);
   const scopeOrigin = userTexts.findLast(text => text.includes(context.healthyAdultQuote));
   if (scopeContradiction(normalized(scopeOrigin))) clarify(['scope'], 'scope_confirmation');
@@ -157,12 +217,7 @@ function repetitionsRepresentable(name) {
 }
 function checkExplicitContext(context) {
   const available = normalized(context.availabilityQuote);
-  const deniedDays = new Set();
-  for (const clause of available.split(/[,.;!?\n]|\b(?:mas|porem|contudo|but|however)\b/)) {
-    if (/\bnao\s+(?:posso|consigo|vou|quero|tenho disponibilidade)|\bsem disponibilidade/.test(clause)) {
-      days.filter(day => dayPatterns[day].test(clause)).forEach(day => deniedDays.add(day));
-    }
-  }
+  const deniedDays = deniedAvailability(context.availabilityQuote);
   if (context.availableDays.some(day => deniedDays.has(day))) clarify(['availability']);
   let indicatedDays = days.filter(day => dayPatterns[day].test(available));
   if (/dias uteis|weekdays/.test(available)) indicatedDays = days.slice(0, 5);
@@ -335,4 +390,4 @@ function extractDraftContext(messages) {
   return null;
 }
 
-module.exports = { programSchema, validateProgram, renderProgram, extractDraftContext, groupLabels };
+module.exports = { programSchema, createProgramSchema, validateProgram, renderProgram, extractDraftContext, groupLabels };

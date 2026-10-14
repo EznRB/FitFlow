@@ -4,6 +4,8 @@ Escolha revisada em 11/10/2026 após o pedido de um modelo aberto ou serviço gr
 
 ## Chat contextual publicado — 11/10/2026
 
+Atualização: [seleção de citações e teste real de correção em 14/10](RODADA_2026_10_14.md#chat-correção-de-rotina-sem-perder-contexto). O gerador passou a selecionar recortes originais em enums estritos; as validações locais permanecem. Publicação e limites estão no estado da entrega.
+
 Fundamentos oferece mensagens livres, rascunhos segundo dias, tempo e equipamentos informados e perguntas de continuação. O navegador publicado gerou uma rotina em `5e4ec38`; preservada essa conversa e a interface, a continuação foi atendida em `943d495`. As contagens de peito (6 séries em 2 dias) e costas (9 em 2 dias), as três referências e os limites científicos foram conferidos nesta amostra. Não é certificação de doses individuais ou respostas futuras. [Publicação, CI e capturas](STATUS_ENTREGA.md).
 
 Uma continuação anterior foi recusada; sua causa exata não foi comprovada. A revisão atual alinha a resposta ao limite de 6.000 caracteres da interface: unidades completas, ressalvas preservadas e aviso explícito de tópicos omitidos. Os links representam somente fontes exibidas. Logs de validação contêm códigos fixos e etapa, sem conversa ou chave. A suíte integral passou em 401/401, sem migration ou dependência nova.

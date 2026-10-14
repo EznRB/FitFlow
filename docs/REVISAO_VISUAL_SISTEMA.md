@@ -2,6 +2,8 @@
 
 Pedido reafirmado em 12/10/2026: dar personalidade, cuidado e variedade às telas, preservando laranja/navy/Barlow. Pequenos ajustes de espaçamento não encerram essa revisão. O objetivo completo permanece aberto; implantação e CI ficam em [Estado da entrega](STATUS_ENTREGA.md).
 
+Pedido reafirmado em 14/10: [rodada de relatórios e editor](RODADA_2026_10_14.md#ux-editor-e-relatórios), com hierarquia financeira, estado vazio confirmado, ações de ficha e inspeção responsiva local. A auditoria integral abaixo continua aberta.
+
 ## Ordem e direção
 
 Concluir os gates técnicos disponíveis do financeiro e chat antes de publicar os próximos refinamentos visuais. Conta/credenciais de pagamento e telefone físico dependem do proprietário; perguntas ficam guardadas enquanto ele trabalha. Testes simulados não transformam esses gates em aprovação externa.

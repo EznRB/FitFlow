@@ -6,7 +6,8 @@ const path = require('node:path');
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 function fixture({ get = async () => ({ data: [] }), post = async () => ({ data: {} }), page = 'pagamentos' } = {}) {
   const nodes = new Map(), events = new Map(), timers = [], toasts = [], modals = [];
-  const node = id => { if (!nodes.has(id)) nodes.set(id, { innerHTML: '', textContent: '', value: '', style: {}, isConnected: true, firstElementChild: null, contains: () => true }); return nodes.get(id); };
+  const node = id => { if (!nodes.has(id)) nodes.set(id, { innerHTML: '', textContent: '', value: '', style: {}, isConnected: true, firstElementChild: null, contains: () => true,
+    attributes: new Map(), setAttribute(name, value) { this.attributes.set(name, String(value)); }, getAttribute(name) { return this.attributes.get(name) ?? null; } }); return nodes.get(id); };
   let epoch = 'session-a', open = false;
   const context = vm.createContext({ API: { get, post }, Auth: { user: { id: 7, role: 'admin' }, generation: 1, sessionEpoch: epoch, getSessionEpoch: () => epoch },
     App: { currentPage: page }, Intl, URLSearchParams, console: { warn() {} },

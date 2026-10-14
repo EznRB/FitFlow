@@ -300,6 +300,72 @@
   #app-screen .presence-heading .admin-page-actions { width: 100%; }
   #app-screen .presence-heading .btn { justify-content: center; flex: 1 1 100%; }
 }
+/* Relatórios: período confirmado, composição financeira e livro de movimentos. */
+#app-screen #relatorios-container .reports-heading { display: flex; justify-content: space-between; flex-wrap: wrap; }
+#app-screen #relatorios-container .reports-heading .btn { min-height: 44px; }
+#app-screen #relatorios-container .reports-controls { padding: 24px 0; margin: 0 0 22px; border-bottom: 1px solid #303c4e; }
+#app-screen #relatorios-container .reports-filters { display: grid; grid-template-columns: minmax(180px, 1.3fr) repeat(2, minmax(150px, 1fr)) auto; gap: 18px; align-items: end; }
+#app-screen #relatorios-container .reports-filters > div { min-width: 0; }
+#app-screen #relatorios-container .reports-filters input, #app-screen #relatorios-container .reports-filters select { min-width: 0; width: 100%; min-height: 48px; font-size: 16px; }
+#app-screen #relatorios-container .reports-filters .btn { min-height: 48px; }
+#app-screen #relatorios-container .reports-filter-note { margin: 16px 0 0; color: var(--text-secondary); font-size: 13px; line-height: 1.7; max-width: 90ch; }
+#app-screen #relatorios-container .reports-applied { margin: 0 0 18px; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+#app-screen #relatorios-container #relatorio-resumo { margin-bottom: 28px; }
+#app-screen #relatorios-container .reports-financial { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, .75fr); background: var(--workspace-paper); color: var(--workspace-ink); border-radius: 8px; border-top: 3px solid #c86119; overflow: hidden; }
+#app-screen #relatorios-container .reports-financial > div { min-width: 0; padding: 28px; }
+#app-screen #relatorios-container .reports-financial > div + div { border-left: 1px solid #c7beb0; }
+#app-screen #relatorios-container .reports-eyebrow { display: block; font-size: 11px; font-weight: 600; letter-spacing: .08em; line-height: 1.7; text-transform: uppercase; }
+#app-screen #relatorios-container .reports-net .reports-eyebrow { color: #91400e; margin-bottom: 10px; }
+#app-screen #relatorios-container .reports-financial h3 { font: 500 23px/1.2 var(--font-heading); color: var(--workspace-ink); margin: 0 0 18px; }
+#app-screen #relatorios-container .reports-net h3 { font-size: 29px; margin-bottom: 12px; }
+#app-screen #relatorios-container .reports-net strong { display: block; color: var(--workspace-ink); font: 600 clamp(35px, 3.1vw, 52px)/1.08 var(--font-heading); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#app-screen #relatorios-container .reports-net p { margin: 16px 0 0; color: #48566a; font-size: 13px; line-height: 1.7; max-width: 32ch; }
+#app-screen #relatorios-container .reports-financial dl { display: grid; gap: 18px; margin: 0; }
+#app-screen #relatorios-container .reports-financial dt { color: #48566a; font-size: 13px; line-height: 1.5; margin-bottom: 5px; }
+#app-screen #relatorios-container .reports-financial dd { font: 500 26px/1.2 var(--font-heading); color: var(--workspace-ink); font-variant-numeric: tabular-nums; margin: 0; overflow-wrap: anywhere; }
+#app-screen #relatorios-container .reports-review { display: flex; justify-content: space-between; gap: 24px; align-items: center; padding: 22px 2px 0; }
+#app-screen #relatorios-container .reports-review .reports-eyebrow { color: var(--text-secondary); }
+#app-screen #relatorios-container .reports-review h3 { font: 500 24px/1.2 var(--font-heading); margin: 8px 0; }
+#app-screen #relatorios-container .reports-review p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.7; max-width: 62ch; }
+#app-screen #relatorios-container .reports-review strong { font: 500 40px/1.1 var(--font-heading); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+#app-screen #relatorios-container .reports-summary { display: flex; flex-wrap: wrap; gap: 28px 44px; margin: 0; padding: 8px 0 22px; border-bottom: 1px solid #303c4e; }
+#app-screen #relatorios-container .reports-summary dt { color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; }
+#app-screen #relatorios-container .reports-summary dd { font: 500 38px/1.1 var(--font-heading); margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#app-screen #relatorios-container .reports-ledger { min-width: 0; border: 1px solid #303c4e; border-radius: 8px; padding: 20px; background: #111b2a; }
+#app-screen #relatorios-container .reports-table { width: 100%; text-align: left; }
+#app-screen #relatorios-container .reports-table caption { text-align: left; font: 500 27px/1.2 var(--font-heading); padding: 0 0 22px; color: var(--text-primary); }
+#app-screen #relatorios-container .reports-table td { line-height: 1.6; }
+#app-screen #relatorios-container .reports-state { padding: 26px 8px; color: var(--text-secondary); font-size: 15px; line-height: 1.7; max-width: 68ch; }
+#app-screen #relatorios-container #relatorio-error { color: #f0a4a6; }
+#app-screen #relatorios-container #relatorio-content:focus-visible { outline: 2px solid var(--primary-300); outline-offset: 4px; }
+@media (max-width: 1100px) {
+  #app-screen #relatorios-container .reports-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #app-screen #relatorios-container .reports-financial { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  #app-screen #relatorios-container .reports-net { grid-column: 1 / -1; }
+  #app-screen #relatorios-container .reports-financial .reports-breakdown { border-left: 0; }
+  #app-screen #relatorios-container .reports-breakdown, #app-screen #relatorios-container .reports-due { border-top: 1px solid #c7beb0; }
+}
+@media (max-width: 600px) {
+  #app-screen #relatorios-container .reports-filters { gap: 18px 12px; }
+  #app-screen #relatorios-container .reports-filters > div:first-child, #app-screen #relatorios-container .reports-filters .btn { grid-column: 1 / -1; }
+  #app-screen #relatorios-container .reports-financial { grid-template-columns: minmax(0, 1fr); }
+  #app-screen #relatorios-container .reports-financial > div { padding: 24px 22px; }
+  #app-screen #relatorios-container .reports-financial > div + div { border-left: 0; }
+  #app-screen #relatorios-container .reports-due dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  #app-screen #relatorios-container .reports-review { gap: 16px; align-items: start; }
+  #app-screen #relatorios-container .reports-review strong { font-size: 34px; }
+  #app-screen #relatorios-container .reports-ledger { padding: 18px 12px; }
+  #app-screen #relatorios-container .reports-heading .btn { width: 100%; justify-content: center; }
+}
+@media print {
+  #app-screen #relatorios-container[data-result-confirmed="false"] { display: none !important; }
+  #app-screen #relatorios-container .reports-financial { background: #fff; color: #000; border: 1px solid #aaa; }
+  #app-screen #relatorios-container .reports-financial h3, #app-screen #relatorios-container .reports-financial strong, #app-screen #relatorios-container .reports-financial dt, #app-screen #relatorios-container .reports-financial dd, #app-screen #relatorios-container .reports-financial p { color: #000; }
+  #app-screen #relatorios-container .reports-ledger { background: #fff; border-color: #aaa; }
+  #app-screen #relatorios-container .reports-review, #app-screen #relatorios-container .reports-applied, #app-screen #relatorios-container .reports-summary, #app-screen #relatorios-container .reports-review p, #app-screen #relatorios-container .reports-eyebrow, #app-screen #relatorios-container .reports-summary dt, #app-screen #relatorios-container .reports-table caption, #app-screen #relatorios-container .reports-state { color: #000; }
+  #app-screen #relatorios-container .reports-table th, #app-screen #relatorios-container .reports-table td { color: #000; background: #fff; border-bottom: 1px solid #ccc; }
+  #app-screen #relatorios-container #relatorio-content { overflow: visible !important; }
+}
 @media (prefers-reduced-motion: reduce) {
   #app-screen *, #app-screen *::before, #app-screen *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
