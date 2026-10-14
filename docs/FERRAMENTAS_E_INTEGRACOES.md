@@ -2,6 +2,8 @@
 
 Pesquisa inicial em 07/10/2026, integração e código de pagamentos revisados em 11/10/2026. Ferramenta disponível não implica conta conectada nem validação científica de suas respostas. MCPs apoiam o desenvolvimento; não precisam executar no aplicativo dos alunos.
 
+Atualização de 14/10: [contrato de provedores, Mercado Pago SDK, pix-utils e Hyperswitch](RODADA_2026_10_14.md#pagamentos-abertos-contrato-e-prazo-real). A pesquisa orientou o contrato aberto do FitFlow e o prazo real da comunicação externa; não substitui conta ou credenciais do processador.
+
 ## Já usados nesta etapa
 
 | Recurso | Estado verificado | Aplicação concreta |
