@@ -1,3 +1,11 @@
+/** Rótulos de apresentação; contagens e estimativas continuam vindo do servidor. */
+const IARoutineLabels = {
+  days: { monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta', thursday: 'Quinta', friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo' },
+  groups: { chest: 'Peito', back: 'Costas', shoulders: 'Ombros', quads: 'Quadríceps', hamstrings: 'Posteriores da coxa', glutes: 'Glúteos', calves: 'Panturrilhas', biceps: 'Bíceps', triceps: 'Tríceps', core: 'Abdômen' },
+  equipment: { bodyweight: 'peso corporal', dumbbells: 'halteres', barbell: 'barra', machines: 'máquinas', cables: 'polias', bands: 'elásticos', kettlebell: 'kettlebell', bench: 'banco' },
+  experience: { beginner: 'iniciante', intermediate: 'intermediário', advanced: 'avançado' },
+  goals: { hypertrophy: 'hipertrofia', strength: 'força', general: 'condicionamento geral' },
+};
 /** Referências visíveis e IA educativa: o texto gerado nunca altera cálculos ou dados. */
 const EvidenciasView = {
   chatState: null,
@@ -112,8 +120,114 @@ const EvidenciasView = {
     context.send.setAttribute('aria-busy', String(state.pending));
     context.reset.disabled = state.pending; context.input.readOnly = state.pending; context.consent.disabled = state.pending;
   },
-  drawChat(context) {
+  routinePresentation(program, message) {
+    const labels = IARoutineLabels, integer = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max;
+    const enums = (value, dictionary, max = Object.keys(dictionary).length) => Array.isArray(value) && value.length >= 1 && value.length <= max && new Set(value).size === value.length && value.every(item => Object.hasOwn(dictionary, item));
+    const plain = value => typeof value === 'string' && value.trim().length >= 3 && value.length <= 100 && !/[<>]|https?:\/\/|javascript:|[\u0000-\u001f\u007f]/i.test(value);
+    const context = program?.context;
+    if (!context || !enums(context.availableDays, labels.days) || !integer(context.minutesPerSession, 15, 150)
+      || !enums(context.equipment, labels.equipment) || !Object.hasOwn(labels.experience, context.experience)
+      || !Object.hasOwn(labels.goals, context.goal) || context.adultHealthyConfirmed !== true
+      || !Array.isArray(program.sessions) || !program.sessions.length || program.sessions.length > 6
+      || !Array.isArray(program.weeklySummary) || !program.weeklySummary.length || program.weeklySummary.length > 10
+      || !Array.isArray(program.sessionEstimates) || program.sessionEstimates.length !== program.sessions.length) return null;
+    const days = new Set(), groups = new Set(), estimates = new Map();
+    for (const estimate of program.sessionEstimates) {
+      if (!estimate || !Object.hasOwn(labels.days, estimate.day) || estimates.has(estimate.day)
+        || !integer(estimate.estimatedMinutes, 1, context.minutesPerSession)) return null;
+      estimates.set(estimate.day, estimate.estimatedMinutes);
+    }
+    const lines = ['Rascunho interpretado da conversa — revise com seu instrutor. Nenhuma ficha foi salva ou aplicada.',
+      `Interpretação: ${labels.experience[context.experience]}, objetivo de ${labels.goals[context.goal]}, ${context.minutesPerSession} min disponíveis por sessão. Equipamentos: ${context.equipment.map(item => labels.equipment[item]).join(', ')}. Se alguma interpretação estiver errada, corrija no chat.`];
+    for (const session of program.sessions) {
+      if (!session || !context.availableDays.includes(session.day) || days.has(session.day) || !estimates.has(session.day)
+        || !Array.isArray(session.exercises) || !session.exercises.length || session.exercises.length > 6) return null;
+      days.add(session.day);
+      lines.push(`${labels.days[session.day]} — logística estimada: ${estimates.get(session.day)} min`);
+      const names = new Set();
+      for (const exercise of session.exercises) {
+        if (!exercise || !plain(exercise.name) || names.has(exercise.name.trim().toLocaleLowerCase('pt-BR'))
+          || !Object.hasOwn(labels.groups, exercise.primaryGroup) || !enums(exercise.equipment, labels.equipment)
+          || exercise.equipment.some(item => !context.equipment.includes(item)) || !integer(exercise.sets, 1, 6)
+          || !integer(exercise.repsMin, 1, 30) || !integer(exercise.repsMax, exercise.repsMin, 30)
+          || !integer(exercise.rir, 0, 5) || !integer(exercise.restSeconds, 30, 300)) return null;
+        names.add(exercise.name.trim().toLocaleLowerCase('pt-BR'));
+        lines.push(`• ${exercise.name.trim()}: ${exercise.sets} séries × ${exercise.repsMin}–${exercise.repsMax} repetições; RIR ${exercise.rir}; descanso inicial ${exercise.restSeconds} s; grupo principal: ${labels.groups[exercise.primaryGroup]}.`);
+      }
+    }
+    lines.push('Contagem direta planejada, por grupo principal indicado no rascunho (não treino executado):');
+    for (const row of program.weeklySummary) {
+      if (!row || !Object.hasOwn(labels.groups, row.group) || groups.has(row.group)
+        || !integer(row.directPlannedSets, 1, 216) || !integer(row.sessionsPerWeek, 1, program.sessions.length)) return null;
+      groups.add(row.group);
+      lines.push(`• ${labels.groups[row.group]}: ${row.directPlannedSets} séries diretas em ${row.sessionsPerWeek} ${row.sessionsPerWeek === 1 ? 'sessão' : 'sessões'} por semana.`);
+    }
+    // Duas representações só coexistem se descrevem os mesmos dados. Divergência volta ao texto original.
+    const prefix = lines.join('\n\n') + '\n\n';
+    if (typeof message !== 'string' || !message.startsWith(prefix)) return null;
+    const remaining = message.slice(prefix.length).split('\n\n');
+    if (remaining.length < 4 || !remaining[0].startsWith('Participação indireta em outros músculos não foi quantificada.')
+      || !remaining[1].startsWith('Tempo é uma hipótese logística:')
+      || !remaining[2].startsWith('A razão individual de cada dose não foi documentada.')) return null;
+    return { program, warnings: remaining.slice(0, 3), interpretation: remaining.slice(3).join('\n\n'), introduction: lines[0] };
+  },
+  renderRoutine(presentation) {
+    const { program, warnings, interpretation, introduction } = presentation, labels = IARoutineLabels;
+    const make = (tag, className, text, parent) => {
+      const node = document.createElement(tag); node.className = className;
+      if (text !== undefined) node.textContent = text;
+      if (parent) parent.appendChild(node);
+      return node;
+    };
+    const doc = make('section', 'ia-routine-document'); doc.setAttribute('aria-label', 'Rascunho educativo de treino');
+    const header = make('header', 'ia-routine-heading', undefined, doc);
+    make('span', 'ia-routine-kicker', 'Planejamento · para revisar', header);
+    make('h3', '', 'Rascunho da sua semana', header);
+    make('p', 'ia-routine-notice', introduction, header);
+    const context = make('dl', 'ia-routine-context', undefined, doc);
+    const datum = (parent, label, value) => { const entry = make('div', '', undefined, parent); make('dt', '', label, entry); make('dd', '', value, entry); };
+    datum(context, 'Objetivo interpretado', labels.goals[program.context.goal]);
+    datum(context, 'Experiência interpretada', labels.experience[program.context.experience]);
+    datum(context, 'Tempo disponível', `${program.context.minutesPerSession} min / sessão`);
+    datum(context, 'Dias disponíveis', program.context.availableDays.map(day => labels.days[day]).join(', '));
+    datum(context, 'Equipamentos informados', program.context.equipment.map(item => labels.equipment[item]).join(', '));
+    make('p', 'ia-routine-context-help', 'Se alguma interpretação estiver errada, corrija no chat.', doc);
+    for (const session of program.sessions) {
+      const section = make('section', 'ia-routine-session', undefined, doc), heading = make('div', 'ia-routine-session-heading', undefined, section);
+      make('h4', '', labels.days[session.day], heading);
+      make('span', '', `${program.sessionEstimates.find(item => item.day === session.day).estimatedMinutes} min · hipótese logística`, heading);
+      const exercises = make('ol', 'ia-routine-exercises', undefined, section); exercises.setAttribute('role', 'list');
+      for (const exercise of session.exercises) {
+        const row = make('li', 'ia-routine-exercise', undefined, exercises), title = make('div', 'ia-routine-exercise-heading', undefined, row);
+        make('h5', '', exercise.name.trim(), title); make('span', '', `Grupo principal interpretado: ${labels.groups[exercise.primaryGroup]}`, title);
+        const dose = make('dl', 'ia-routine-dose', undefined, row);
+        datum(dose, 'Proposta', `${exercise.sets} séries`); datum(dose, 'Faixa proposta', `${exercise.repsMin}–${exercise.repsMax} repetições`);
+        datum(dose, 'Esforço estimado', `RIR ${exercise.rir}`); datum(dose, 'Pausa inicial', `${exercise.restSeconds} s`);
+      }
+    }
+    const weekly = make('section', 'ia-routine-weekly', undefined, doc);
+    make('h4', '', 'Contagem direta planejada', weekly);
+    make('p', '', 'Por grupo principal indicado no rascunho · não treino executado.', weekly);
+    const totals = make('dl', 'ia-routine-counts', undefined, weekly);
+    for (const row of program.weeklySummary) datum(totals, labels.groups[row.group], `${row.directPlannedSets} séries diretas · ${row.sessionsPerWeek} ${row.sessionsPerWeek === 1 ? 'sessão' : 'sessões'} / semana`);
+    const limits = make('div', 'ia-routine-limits', undefined, doc);
+    for (const warning of warnings) make('p', '', warning, limits);
+    const details = make('details', 'ia-routine-interpretation', undefined, doc);
+    make('summary', '', 'Como interpretar este rascunho', details);
+    make('div', 'ia-message-body ia-routine-guidance', interpretation, details);
+    return doc;
+  },
+  drawChat(context, revealReply = false) {
     const thread = context.thread, nearBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 100;
+    let addedMessage = null;
+    let readerViewport = null;
+    if (revealReply && nearBottom && document.visibilityState !== 'hidden' && thread.parentElement
+      && Number.isFinite(window.innerHeight) && window.innerHeight > 0) {
+      const workspace = thread.parentElement.getBoundingClientRect();
+      const stickyBottom = Math.max(0, document.querySelector('.topbar')?.getBoundingClientRect().bottom || 0);
+      readerViewport = { visible: workspace.bottom > stickyBottom && workspace.top < window.innerHeight,
+        top: stickyBottom + 12, height: window.innerHeight };
+    }
     context.rendered ||= [];
     for (const entry of context.rendered) if (!context.state.messages.includes(entry.message)) entry.node.remove();
     context.rendered = context.rendered.filter(entry => context.state.messages.includes(entry.message));
@@ -139,7 +253,9 @@ const EvidenciasView = {
       if (context.rendered.some(entry => entry.message === message)) continue;
       const article = document.createElement('article'); article.className = `ia-message ia-message-${message.role}`;
       const label = document.createElement('p'); label.className = 'ia-message-author'; label.textContent = message.role === 'user' ? 'Você' : 'FitFlow Assistente · IA';
-      const body = document.createElement('div'); body.className = 'ia-message-body'; body.textContent = message.content;
+      const body = document.createElement('div'); body.className = 'ia-message-body';
+      const presentation = message.role === 'assistant' && message.kind === 'routine_draft' ? this.routinePresentation(message.program, message.content) : null;
+      if (presentation) body.appendChild(this.renderRoutine(presentation)); else body.textContent = message.content;
       article.appendChild(label); article.appendChild(body);
       if (message.kind === 'routine_draft') {
         const note = document.createElement('p'); note.className = 'ia-draft-note'; note.textContent = 'Rascunho educativo — revise com seu instrutor. Sua ficha não foi alterada.'; article.appendChild(note);
@@ -153,11 +269,26 @@ const EvidenciasView = {
         const links = document.createElement('div'); this.renderSources(links, message.sources); sources.appendChild(links); article.appendChild(sources);
       }
       thread.appendChild(article); context.rendered.push({ message, node: article });
+      addedMessage = { message, node: article };
     }
     const note = context.container.querySelector('#ia-context-note'); note.hidden = !context.state.shortened;
     note.textContent = 'Esta conversa ficou longa. Os pares de mensagens mais antigos foram retirados; se necessário, informe novamente detalhes da rotina.';
-    // Never take keyboard focus from someone reading a reply or browsing sources.
-    if (nearBottom) thread.scrollTop = thread.scrollHeight;
+    // Uma resposta longa começa pelo contexto e exercícios; não saltamos sobre eles para o rodapé.
+    // Quem voltou ao histórico durante a geração mantém a posição e o foco de leitura.
+    if (nearBottom && addedMessage) {
+      if (addedMessage.message.role === 'assistant') {
+        const delta = addedMessage.node.getBoundingClientRect().top - thread.getBoundingClientRect().top;
+        thread.scrollTop = Math.max(0, thread.scrollTop + delta);
+        // Acompanhar o fim da conversa não significa que seu painel esteja visível na página.
+        // Só trazemos a leitura de volta se a pessoa ainda via o workspace antes da resposta.
+        if (readerViewport?.visible) {
+          const frame = thread.getBoundingClientRect();
+          if (frame.top < readerViewport.top || frame.bottom > readerViewport.height) {
+            thread.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+          }
+        }
+      } else thread.scrollTop = thread.scrollHeight;
+    }
   },
   async sendChat(context) {
     if (!this.ownsChat(context) || context.state.pending || !context.available) return;
@@ -176,10 +307,12 @@ const EvidenciasView = {
       const data = response.data;
       if (typeof data?.message !== 'string' || !data.message.trim() || data.message.length > 6000 || data.generatedByAI !== true) throw new Error('A resposta não pôde ser confirmada. Tente novamente.');
       const sources = [...new Set((Array.isArray(data.sources) ? data.sources : []).map(s => s.id))].filter(id => Object.hasOwn(FitFlowScience.references, id));
+      const presentation = data.kind === 'routine_draft' ? this.routinePresentation(data.program, data.message) : null;
       state.messages.push({ role: 'assistant', content: data.message, sources, kind: data.kind,
+        ...(presentation ? { program: presentation.program } : {}),
         ...(data.scientificTextFromCorpus === true ? { scientificTextFromCorpus: true } : {}) });
       state.draft = ''; context.input.value = ''; state.pending = false;
-      this.drawChat(context); context.status.textContent = data.scientificTextFromCorpus === true
+      this.drawChat(context, true); context.status.textContent = data.scientificTextFromCorpus === true
         ? 'Resposta organizada pela IA com conteúdo das referências do FitFlow. Sua ficha não foi alterada.'
         : 'Resposta gerada por IA. Fontes associadas oferecem contexto; não verificam automaticamente cada frase.';
     } catch (error) {

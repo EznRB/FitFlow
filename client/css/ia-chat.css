@@ -13,7 +13,7 @@
 .ia-reset { background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); border-radius:6px; padding:9px 12px; font:500 12px var(--font-family); cursor:pointer; flex-shrink:0; }
 .ia-reset:hover { color:var(--text-primary); border-color:var(--border-strong); }
 .ia-reset:disabled { opacity:.55; cursor:default; }
-.ia-thread { min-height:285px; max-height:610px; max-height:min(610px,68vh); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:30px 34px; scrollbar-gutter:stable; }
+.ia-thread { min-height:285px; max-height:610px; max-height:min(610px,68vh); overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; padding:30px 34px; scrollbar-gutter:stable; scroll-margin-top:calc(var(--topbar-height, 72px) + 12px); scroll-margin-bottom:12px; }
 .ia-welcome { padding:18px 0 8px; max-width:650px; }
 .ia-welcome-kicker { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--primary-400); }
 .ia-welcome h3 { font:600 clamp(24px,3vw,30px)/1.2 var(--font-family); letter-spacing:-.025em; margin:14px 0; text-transform:none; }
@@ -56,6 +56,42 @@
 .ia-principles-body { max-width:800px; padding:24px 0 5px; }
 .ia-principles-body h3 { font:600 17px var(--font-family); text-transform:none; margin-bottom:12px; }
 .ia-principles-body > p { font-size:14px; }
+/* O rascunho é um documento de planejamento, sem simular um treino executado. */
+.ia-routine-document { white-space:normal; color:var(--text-primary); font-size:14px; line-height:1.6; min-width:0; }
+.ia-routine-heading { padding:20px 0 22px; border-bottom:1px solid var(--border-color); }
+.ia-routine-kicker { display:block; color:var(--primary-400); font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:600; margin-bottom:10px; }
+.ia-routine-heading h3 { font:600 clamp(30px,3vw,39px)/1.05 var(--font-heading); letter-spacing:-.01em; margin:0 0 16px; text-transform:none; color:var(--text-primary); }
+.ia-routine-document .ia-routine-notice { font-size:13px; margin:0; color:var(--text-secondary); max-width:65ch; }
+.ia-routine-context { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 26px; margin:22px 0 12px; }
+.ia-routine-context > div, .ia-routine-dose > div, .ia-routine-counts > div { min-width:0; }
+.ia-routine-context dt { font-size:11px; color:var(--text-secondary); margin-bottom:4px; }
+.ia-routine-context dd { margin:0; font-weight:500; font-size:15px; overflow-wrap:anywhere; }
+.ia-routine-document .ia-routine-context-help { margin:0 0 26px; color:var(--text-secondary); font-size:12px; }
+.ia-routine-session { padding:24px 0; border-top:1px solid var(--border-color); }
+.ia-routine-session-heading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 20px; margin-bottom:18px; }
+.ia-routine-session h4, .ia-routine-weekly h4 { font:500 28px/1.2 var(--font-heading); color:var(--text-primary); margin:0; text-transform:none; }
+.ia-routine-session-heading > span { color:var(--text-secondary); font-size:12px; font-variant-numeric:tabular-nums; }
+.ia-routine-exercises { padding:0; margin:0; list-style:none; counter-reset:routine-exercise; }
+.ia-routine-exercise { position:relative; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1.25fr); padding:18px 0 18px 30px; gap:18px; border-top:1px solid var(--border-subtle); counter-increment:routine-exercise; }
+.ia-routine-exercise::before { content:counter(routine-exercise,decimal-leading-zero); position:absolute; left:0; top:20px; color:var(--text-muted); font:400 11px/1.5 var(--font-family); font-variant-numeric:tabular-nums; }
+.ia-routine-exercise h5 { font:500 19px/1.25 var(--font-heading); text-transform:none; color:var(--text-primary); margin:0 0 7px; overflow-wrap:anywhere; }
+.ia-routine-exercise-heading > span { color:var(--text-secondary); display:block; font-size:11px; line-height:1.6; }
+.ia-routine-dose { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; margin:0; }
+.ia-routine-dose dt { font-size:10px; line-height:1.4; color:var(--text-secondary); margin-bottom:4px; }
+.ia-routine-dose dd { margin:0; font-size:13px; font-weight:500; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.ia-routine-weekly { padding:22px 24px; background:var(--bg-base); border-left:2px solid var(--primary-400); }
+.ia-routine-weekly h4 { font-size:25px; }
+.ia-routine-weekly > p { margin:8px 0 20px; color:var(--text-secondary); font-size:12px; }
+.ia-routine-counts { display:grid; gap:10px; margin:0; }
+.ia-routine-counts > div { display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; border-top:1px solid var(--border-subtle); padding-top:10px; }
+.ia-routine-counts dt { font-size:13px; }
+.ia-routine-counts dd { margin:0; font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+.ia-routine-limits { display:grid; gap:12px; padding:20px 0; }
+.ia-routine-limits p { font-size:12px; color:var(--text-secondary); line-height:1.7; margin:0; }
+.ia-routine-interpretation { border-top:1px solid var(--border-color); padding-top:16px; }
+.ia-routine-interpretation summary { font-size:13px; color:var(--text-primary); cursor:pointer; min-height:32px; }
+.ia-routine-interpretation summary:focus-visible { outline:2px solid var(--primary-400); outline-offset:4px; }
+.ia-routine-guidance { font-size:13px; padding:16px 0 0; line-height:1.8; color:var(--text-secondary); }
 @media (max-width:768px) {
   .ia-workspace-header { padding:17px 18px; gap:10px; }
   .ia-thread { padding:24px 20px; min-height:290px; max-height:560px; max-height:min(560px,65vh); }
@@ -63,6 +99,8 @@
   .ia-message-user { margin-left:20px; padding:14px; }
   .ia-message-assistant { padding-left:13px; }
   .ia-workspace-footnote { padding:12px 18px 16px; }
+  .ia-routine-exercise { grid-template-columns:minmax(0,1fr); gap:14px; }
+  .ia-routine-dose { gap:12px 16px; }
 }
 @media (max-width:480px) {
   .ia-heading { padding-top:16px; }
@@ -76,4 +114,8 @@
   .ia-message-body { font-size:14px; }
   .ia-suggestions { flex-direction:column; }
   .ia-suggestions button { width:100%; }
+  .ia-routine-context { gap:16px; }
+  .ia-routine-context > div:last-child { grid-column:1 / -1; }
+  .ia-routine-session-heading { align-items:start; flex-direction:column; }
+  .ia-routine-weekly { padding:20px 16px; }
 }

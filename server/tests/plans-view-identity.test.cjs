@@ -176,7 +176,7 @@ test('logout/navegação invalidam cache e botões antigos; epoch antigo não in
 
 test('falha atual mantém formulário disponível para correção, sem apagar registro ou inventar sucesso', async () => {
   const h = fixture(); h.view.abrirModalCriacao();
-  const writing = h.view.submeterFormulario(); h.calls[0].reject(new Error('Valor inválido')); await writing;
+  const writing = h.view.submeterFormulario(); h.calls[0].reject(Object.assign(new Error('Valor inválido'), { status: 400 })); await writing;
   assert.equal(h.modals.at(-1).button.disabled, false); assert.equal(h.context.Modal.isOpen(), true);
   assert.equal(h.toasts.filter(([type]) => type === 'success').length, 0);
   h.node('input-plano-valor').value = '175.00'; const retry = h.view.submeterFormulario();

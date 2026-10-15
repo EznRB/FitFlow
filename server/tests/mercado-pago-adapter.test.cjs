@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createMercadoPagoAdapter } = require('../src/services/mercado-pago.adapter');
+const { createMercadoPagoAdapter, readSandboxConfig } = require('../src/services/mercado-pago.adapter');
 const { createCheckoutService } = require('../src/services/checkout.service');
 
 const config = { enabled: true, token: 'APP_USR-test-only', secret: 'test-only-secret-abcdefghijklmnopqrstuvwxyz',
@@ -18,6 +18,45 @@ async function observeDeadline(operation) {
   } finally { clearTimeout(timer); }
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
+
+function configuredEnvironment(baseUrl) {
+  return { MP_SANDBOX_ENABLED: 'true', MP_SANDBOX_ACCESS_TOKEN: config.token,
+    MP_SANDBOX_WEBHOOK_SECRET: config.secret, MP_SANDBOX_SELLER_ID: config.sellerId,
+    MP_SANDBOX_BUYER_EMAIL: config.buyerEmail, MP_SANDBOX_PUBLIC_URL: baseUrl };
+}
+
+test('origem pública recusa caminhos, porta personalizada e delimitadores vazios antes de abrir checkout', async () => {
+  for (const baseUrl of ['https://fitflow.example/?', 'https://fitflow.example/#',
+    'https://fitflow.example/?from=test', 'https://fitflow.example/#return',
+    'https://fitflow.example/subpath', 'https://fitflow.example:8443',
+    'http://fitflow.example', 'https://user:password@fitflow.example']) {
+    const invalid = readSandboxConfig(configuredEnvironment(baseUrl));
+    assert.equal(invalid.enabled, false, 'configuração de origem inválida deve permanecer desativada');
+    let requested = false;
+    const adapter = createMercadoPagoAdapter({ config: invalid, fetchImpl: async () => { requested = true; return response(seller); } });
+    await assert.rejects(adapter.ensureSandbox(), error => error.statusCode === 503);
+    assert.equal(requested, false, 'origem inválida não deve consultar o provedor');
+  }
+});
+
+test('origem HTTPS válida é normalizada para gerar retorno e webhook sem caminho duplicado', async () => {
+  for (const baseUrl of ['https://fitflow.example', 'https://fitflow.example/', 'https://FITFLOW.EXAMPLE:443/']) {
+    const normalized = readSandboxConfig(configuredEnvironment(baseUrl));
+    assert.equal(normalized.enabled, true);
+    assert.equal(normalized.baseUrl, 'https://fitflow.example');
+    let payload;
+    const adapter = createMercadoPagoAdapter({ config: normalized, fetchImpl: async (url, options) => {
+      if (url.endsWith('/users/me')) return response(seller);
+      payload = JSON.parse(options.body);
+      return response({ id: 'fixture-preference', collector_id: 123,
+        init_point: 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=fixture' });
+    } });
+    const id = '11111111-1111-4111-8111-111111111111';
+    await adapter.createPreference({ id, planId: 2, amount: 150 }, 'Plano de teste');
+    assert.equal(payload.notification_url, 'https://fitflow.example/api/checkout/webhook');
+    for (const value of Object.values(payload.back_urls)) assert.equal(value, `https://fitflow.example/?checkout_intent=${id}`);
+  }
+});
 
 test('HTTP 200 tardio é recusado mesmo se fetch ignorar abort; vendedor não fica em cache', async t => {
   const lateResponse = deferred(); t.after(() => lateResponse.resolve(response(seller)));

@@ -428,9 +428,9 @@ const App = {
       planos: `
         <div class="page-header admin-page-header">
           <div>
-            <span class="workspace-kicker">Gestão / assinaturas</span>
+            <span class="workspace-kicker">Gestão / planos</span>
             <h2>Planos de Academia</h2>
-            <p style="color:var(--text-muted)">Crie ou atualize os planos de assinatura disponíveis para os alunos.</p>
+            <p style="color:var(--text-muted)">Organize valores, vigência e condições para as matrículas da academia.</p>
           </div>
           <button id="btn-novo-plano" class="btn btn-primary">
             <i data-lucide="tag"></i>

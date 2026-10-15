@@ -1,0 +1,54 @@
+/* Oferta, comparação aritmética e disponibilidade têm hierarquias próprias. */
+#app-screen .workspace-plan { display: flex; flex-direction: column; gap: 18px; min-width: 0; overflow-wrap: anywhere; padding: 24px; border-radius: 8px; background: var(--bg-surface); }
+#app-screen .workspace-plan .workspace-plan-heading h3 { margin: 14px 0 0; font: 600 30px/1.1 var(--font-heading); }
+#app-screen .workspace-plan .workspace-plan-offer { padding: 18px 0; border-block: 1px solid var(--border-subtle); }
+#app-screen .workspace-plan .workspace-plan-label { color: var(--text-secondary); font-size: 12px; }
+#app-screen .workspace-plan .workspace-plan-price { margin: 8px 0 12px; font: 600 clamp(36px, 3vw, 46px)/1 var(--font-heading); font-variant-numeric: tabular-nums; }
+#app-screen .workspace-plan .workspace-plan-duration { color: var(--primary-300); font-size: 15px; margin: 0; }
+#app-screen .workspace-plan .workspace-plan-equivalent { color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 0; }
+#app-screen .workspace-plan .workspace-plan-description { flex: 1; color: var(--text-primary); font-size: 14px; line-height: 1.6; white-space: pre-wrap; margin: 0; }
+#app-screen .workspace-plan .workspace-plan-inactive { margin: 0; padding-top: 12px; color: var(--text-secondary); border-top: 1px solid var(--border-subtle); font-size: 13px; line-height: 1.5; }
+#app-screen .workspace-plan[data-plan-active="false"] { border-top-color: var(--border-strong); }
+#app-screen .workspace-plan .workspace-plan-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 4px; }
+#app-screen .workspace-plan .workspace-plan-actions .btn { min-height: 44px; }
+#app-screen .workspace-plan-detail { max-width: 920px; padding: clamp(22px, 4vw, 40px); }
+#app-screen .workspace-plan-detail > h2 { margin: 12px 0; font: 600 clamp(32px, 4vw, 46px)/1.1 var(--font-heading); }
+#app-screen .workspace-plan-detail > .workspace-plan-label { margin-top: 26px; color: var(--primary-300); font-size: 12px; letter-spacing: .06em; }
+#app-screen .workspace-plan-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; margin: 26px 0; padding-block: 26px; border-block: 1px solid var(--border-subtle); }
+#app-screen .workspace-plan-facts > div { min-width: 0; }
+#app-screen .workspace-plan-facts dt { margin-bottom: 8px; color: var(--text-secondary); font-size: 13px; }
+#app-screen .workspace-plan-facts dd { margin: 0; font-size: 18px; font-weight: 500; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#app-screen .workspace-plan-facts .workspace-plan-total { grid-column: 1 / -1; }
+#app-screen .workspace-plan-facts .workspace-plan-total dd { font: 600 clamp(36px, 5vw, 52px)/1.1 var(--font-heading); }
+#app-screen .workspace-plan-facts .workspace-plan-conditions { grid-column: 1 / -1; }
+#app-screen .workspace-plan-facts .workspace-plan-conditions dd { font-size: 15px; font-weight: 400; line-height: 1.65; white-space: pre-wrap; }
+#app-screen .workspace-plan-detail > p:not(.workspace-plan-label) { max-width: 65ch; color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+#app-screen .workspace-plan-detail .btn { min-height: 44px; }
+#form-plano { display: grid; gap: 20px; min-width: 0; }
+#form-plano .management-form-intro { margin: 0; color: var(--text-secondary); line-height: 1.6; max-width: 60ch; }
+#form-plano .management-form-section { border-color: var(--border-subtle); border-radius: 8px; background: var(--bg-surface); }
+#form-plano .management-fields { gap: 18px; }
+#form-plano .form-group { min-width: 0; }
+#form-plano input, #form-plano select, #form-plano textarea { font-size: 16px; min-height: 44px; }
+#form-plano .management-comparison { border-color: var(--border-subtle); background: var(--bg-elevated); color: var(--primary-200); line-height: 1.55; }
+#form-plano .plan-field-error:not(:empty) { display: block; margin-top: 6px; color: var(--primary-200); font-size: 13px; line-height: 1.5; }
+#form-plano [aria-invalid="true"] { border-color: var(--primary-300); }
+#form-plano [hidden] { display: none !important; }
+#form-plano .plan-review-list { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-elevated); overflow-wrap: anywhere; }
+#form-plano .plan-review-list h3 { margin: 0 0 10px; font: 600 22px/1.2 var(--font-heading); }
+#form-plano .plan-review-list p { color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
+#form-plano .plan-review-list ul { max-height: 240px; overflow-y: auto; list-style: none; padding: 0; margin: 12px 0 0; }
+#form-plano .plan-review-list li { display: grid; gap: 5px; padding: 12px 0; border-top: 1px solid var(--border-subtle); }
+#form-plano .plan-review-list li span { color: var(--text-secondary); font-size: 14px; }
+#modal:has(#form-plano) #plan-save-confirmation { flex: 1 0 100%; min-width: 0; text-align: left; }
+#modal:has(#form-plano) #plan-save-confirmation p { margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+#modal:has(#form-plano) #plan-save-feedback:not(:empty) { margin-top: 8px; padding: 10px 12px; background: var(--bg-elevated); border-left: 3px solid var(--primary-400); color: var(--text-primary); }
+#modal:has(#form-plano) #plan-check-saved { min-height: 44px; margin-top: 10px; max-width: 100%; white-space: normal; }
+#modal:has(#form-plano) #plan-check-saved[hidden] { display: none !important; }
+@media (max-width: 540px) {
+  #app-screen .workspace-plan-facts { grid-template-columns: minmax(0, 1fr); }
+  #app-screen .workspace-plan { padding: 20px; }
+  #app-screen .workspace-plan .workspace-plan-actions .btn { flex: 1 1 140px; }
+  #form-plano .management-fields { grid-template-columns: minmax(0, 1fr); }
+  #form-plano .management-wide { grid-column: auto; }
+}

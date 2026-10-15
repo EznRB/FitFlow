@@ -14,7 +14,13 @@ function readSandboxConfig(environment = process.env) {
     secret: environment.MP_SANDBOX_WEBHOOK_SECRET, sellerId: environment.MP_SANDBOX_SELLER_ID,
     buyerEmail: environment.MP_SANDBOX_BUYER_EMAIL, baseUrl: environment.MP_SANDBOX_PUBLIC_URL };
   let validUrl = false;
-  try { const url = new URL(config.baseUrl); validUrl = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash; } catch {}
+  try {
+    const url = new URL(config.baseUrl);
+    // Delimitadores vazios também desviam a concatenação da rota para query/fragmento.
+    validUrl = typeof config.baseUrl === 'string' && !/[?#]/.test(config.baseUrl) &&
+      url.protocol === 'https:' && !url.username && !url.password && !url.port && url.pathname === '/';
+    if (validUrl) config.baseUrl = url.origin;
+  } catch {}
   config.enabled = config.requested && typeof config.token === 'string' && /^(?:TEST-|APP_USR-)[A-Za-z0-9-]+$/.test(config.token) &&
     typeof config.secret === 'string' && config.secret.length >= 32 && /^[1-9]\d{0,19}$/.test(config.sellerId || '') &&
     /^test_user_[A-Za-z0-9_]+@testuser\.com$/.test(config.buyerEmail || '') && validUrl;

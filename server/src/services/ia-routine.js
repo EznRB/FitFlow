@@ -144,6 +144,18 @@ function createProgramSchema(messages) {
         }
       }
     }
+    // Uma afirmação e sua restrição podem estar em frases distintas do mesmo
+    // turno. Nesse caso, recortes isolados não são prova completa: o checker
+    // os trataria como anteriores a outra declaração de equipamento. Oferecer
+    // somente o turno literal completo evita essa escolha impossível, sem
+    // juntar textos, ampliar os 300 caracteres ou relaxar negações/correções.
+    if (turn >= latest.equipment && plain(original) && matches.equipment(normalized(original))) {
+      const splitDeclaration = choices.equipment.some(quote => {
+        const index = original.lastIndexOf(quote);
+        return index >= 0 && fieldDeclaration('equipment', original.slice(index + quote.length));
+      });
+      if (splitDeclaration) choices.equipment = [original];
+    }
   }
   const missing = Object.keys(choices).filter(field => choices[field].length === 0);
   if (missing.length) clarify(missing, 'missing_context');

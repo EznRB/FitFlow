@@ -151,7 +151,7 @@ const API = {
     return this.request(endpoint, { method: 'PUT', body, signal: options.signal, timeoutMs: options.timeoutMs });
   },
 
-  delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
+  delete(endpoint, options = {}) {
+    return this.request(endpoint, { method: 'DELETE', signal: options.signal, timeoutMs: options.timeoutMs });
   },
 };

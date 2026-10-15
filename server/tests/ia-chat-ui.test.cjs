@@ -12,6 +12,7 @@ class Element {
   remove() { if (this.parent) this.parent.children = this.parent.children.filter(c => c !== this); this.parent = null; }
   addEventListener(type, fn) { this.listeners[type] = fn; }
   setAttribute(key, value) { this.attributes[key] = value; }
+  getBoundingClientRect() { return { top: 0, bottom: 300, height: 300 }; }
   focus() { this.focusCount++; }
 }
 function fixture() {
