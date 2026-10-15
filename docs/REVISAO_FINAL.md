@@ -35,7 +35,7 @@ As fontes abaixo registram gates já executados; esta consolidação documental 
 | Aparelho físico | M01–M14 com modelo/OS/navegador/implantação, superfície aba/PWA, UUIDs e reconexão publicados, teclado e capturas. [Roteiro](VALIDACAO_MOBILE.md). | **Não realizado.** Não substituir por viewport emulada ou teste local. |
 | Rotação Groq | Chave exposta revogada pelo titular, nova chave armazenada privadamente e funcionamento validado após atualização/deploy. | **Pendente de ação do titular.** Não registrar segredo nesta documentação. |
 | Encerramento de UX/UI | Evidência por tela e estado requerido no [plano visual](REVISAO_VISUAL_SISTEMA.md), com correções, teclado/foco/contraste e largura aplicáveis. | **Em andamento**, trabalho independente disponível. |
-| Revisão/integração acadêmica | Aplicativo integrado à main em 13/10, PR fechado com `merged=true`; landing ainda draft. Roteiro e cinco acessos demonstrativos conferidos por HTTPS. | **Parcial.** Integração do app não certifica pagamentos externos, telefone físico ou revisão completa. |
+| Revisão/integração acadêmica | Aplicativo integrado à main em 13/10; landing revisada e integrada em 15/10, PR fechado com `merged=true` e `draft=false`. Roteiro e cinco acessos demonstrativos conferidos por HTTPS. | **Parcial.** Integração dos repositórios não certifica pagamentos externos, telefone físico ou revisão completa. |
 
 ## Registro de falhas e limites que permanece válido
 

@@ -1,15 +1,15 @@
-# Estado da entrega — 14/10/2026
+# Estado da entrega — 15/10/2026
 
-O objetivo completo ainda não foi concluído; o goal voltou ao estado ativo em 14/10 após o limite de uso de 13/10. A atualização solicitada para apresentação foi executada. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
+O objetivo completo permanece em desenvolvimento. A rodada de 15/10 publicou melhorias no chat, nos planos e na validação da configuração de pagamentos. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
 ## Implantação atual
 
 | Aplicação | Código publicado e evidência |
 |---|---|
-| [FitFlow](https://fit-flow-indol.vercel.app/) | Código `d0213fc` (`d0213fc8375ddb78b8c5892f506a19551c85fe03`) integrado na `main`. [CI da main aprovada](https://github.com/EznRB/FitFlow/actions/runs/38588905655/job/115938214672) e [publicação Git/Vercel concluída](https://vercel.com/eznrbs-projects/fit-flow/BcPcFVtZTdFvgLU2ABkbyy7f8Rv8). Suíte integral local **664/664**, zero falhas/ignorados; saúde HTTP 200, banco ready, API no-store e **25 assets** iguais aos blobs Git. HTTPS aprovou a correção contextual do treino; browser publicou o resumo financeiro vazio e gerou outro rascunho fictício. [Provas e limites](RODADA_2026_10_14.md). |
-| [Landing](https://fitflow-lp.vercel.app/) | `754b27f` (`754b27f60cb9eb3886410ddc89970b64a16cee7a`), Production READY `dpl_G157NAMK6HzXawYqQi1ZHBry48DS`. [URL exata](https://fitflow-2nzi5b3g2-eznrbs-projects.vercel.app). Build/typecheck e comparação SHA-256 de HTML/JS/CSS/hero/captura aprovados; inspeção pública desktop/mobile registrada. A revisão documental posterior não é uma nova versão visual. |
+| [FitFlow](https://fit-flow-indol.vercel.app/) | Código funcional `49ae7c70cbb1de59933ae14c34407365f70c11a6` integrado à `main`. [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38812914446/job/116690334553) e [publicação Git/Vercel aprovada](https://vercel.com/eznrbs-projects/fit-flow/H3krM4C66uoErr2XGX6zjMct91kE). Suíte nativa **741/741**, zero falhas/ignorados; saúde HTTP 200, banco ready, API no-store e **28 assets** iguais aos blobs Git por SHA-256. Browser público gerou rascunho fictício e confirmou leitura/edição/cancelamento do plano sem escrita. [Provas e limites](RODADA_UX_CHAT_PLANOS_2026_10_14.md). |
+| [Landing](https://fitflow-lp.vercel.app/) | Código funcional `7f0d1f62f7ff87d27ae0666c3d45ff29da859276`; documentação `cd4f069caa770fade8b3c16e5a2e4bab379485f5`, ambos na `main`. [CI aprovada](https://github.com/EznRB/fitflow-LP/actions/runs/38813031385/job/116690731098) e [publicação Git/Vercel aprovada](https://vercel.com/eznrbs-projects/fitflow-lp/4eZ7eoFSFfjx5pJwHBY6jDVJvaS4). Build/typecheck, cinco testes de destinos e SHA-256 de HTML/JS/CSS/hero/captura aprovados; [inspeção pública](evidence/153-landing-integrated-20261015.jpg). |
 
-[PR do aplicativo](https://github.com/EznRB/FitFlow/pull/1) integrado e fechado: GitHub confirmou `merged=true`, após avanço normal de `main` sem force-push em 13/10, autorizado pelo pedido de atualização para apresentação. O [PR da landing](https://github.com/EznRB/fitflow-LP/pull/1) continua draft. A suíte, os hashes e as capturas demonstram os respectivos escopos, não a conclusão integral do projeto.
+[PR do aplicativo](https://github.com/EznRB/FitFlow/pull/1) integrado e fechado em 13/10. O [PR da landing](https://github.com/EznRB/fitflow-LP/pull/1) foi revisado, marcado como pronto e integrado em 15/10: GitHub confirmou `merged=true`, `draft=false`. Avanços normais de `main`, sem force-push, autorizados pelo pedido de atualização para apresentação. A suíte, os hashes e as capturas demonstram os respectivos escopos, não a conclusão integral do projeto.
 
 [Acesso e roteiro da apresentação](APRESENTACAO.md): cinco contas tiveram login e restauração de sessão 200 por HTTPS em 13/10. Senhas atuais estão em arquivo privado ignorado para compartilhar com o professor; não foram commitadas. README e roteiro na `main` foram comparados por SHA-256 com os arquivos locais.
 
@@ -28,6 +28,8 @@ O objetivo completo ainda não foi concluído; o goal voltou ao estado ativo em 
 
 ## Próximas etapas obrigatórias
 
+[Rodada publicada de 15/10](RODADA_UX_CHAT_PLANOS_2026_10_14.md): apresentação estruturada do rascunho, correção de falsa contradição de equipamento, leitura da nova resposta, recuperação sem descarte de rascunho nos planos e configuração estrita da origem do webhook. **741/741** locais; CI, assets e amostra real no browser publicado aprovados. A integração da landing também foi concluída, com seus gates próprios.
+
 [Rodada publicada de 14/10](RODADA_2026_10_14.md): seleção estrita de citações originais e exclusão de provas obsoletas no rascunho da IA; prazo total da chamada externa de pagamentos; contrato de provedores; editor de ficha e relatório financeiro refinados. Suíte integral **664/664**, CI e publicação aprovadas; correção fictícia real conferida por HTTPS e nova conversa aprovada no browser. Checkout externo permanece desativado, confirmado por endpoint autenticado.
 
 Rodada publicada em 12/10: contrato de contexto/esclarecimentos do chat corrigido, presenças protegidas contra callbacks/consultas antigas e composição de livro diário. Browser público confirmou restauração do aluno e conversa real: contexto incompleto gerou perguntas controladas, continuação fictícia completa gerou rascunho de segunda/quarta/sexta com 50 minutos disponíveis, fontes e contagens revisáveis. Gates locais e limites em [IA gratuita](IA_GRATUITA.md) e [revisão visual](REVISAO_VISUAL_SISTEMA.md). Documentação consolidada sem apagar as narrativas históricas.
@@ -36,7 +38,7 @@ Rodada publicada em 12/10: contrato de contexto/esclarecimentos do chat corrigid
 2. Quando o proprietário estiver disponível, configurar conta de teste, token e webhook Mercado Pago. Executar cartão aprovado/rejeitado/pendente, webhook assinado/replay e Pix QR/pendente **sem renovar plano**. Sandbox não comprova liquidação Pix.
 3. Executar o roteiro M01–M14 em aparelho físico e registrar plataforma, implantação e evidências.
 4. Rotacionar a chave Groq exposta anteriormente pelo titular e validar a substituição privada.
-5. Revisar e decidir a integração do PR draft da landing; manter os gates das próximas mudanças e a documentação da entrega acadêmica. A revisão contínua do aplicativo não termina com sua integração à main.
+5. Manter os gates das próximas mudanças e a documentação da entrega acadêmica. A integração dos repositórios não encerra a revisão contínua de todas as jornadas e estados.
 
 ## Publicação automática pelo GitHub
 

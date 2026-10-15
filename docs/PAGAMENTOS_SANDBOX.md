@@ -4,6 +4,8 @@ Revisão: 10 de outubro de 2026. Este roteiro corresponde ao checkout **Preferen
 
 ## Estado e critério de entrega
 
+[Rodada de 15/10](RODADA_UX_CHAT_PLANOS_2026_10_14.md#pagamentos): URL pública normalizada como origem HTTPS, sem caminho, porta personalizada ou delimitadores vazios `?`/`#`. Configuração incorreta permanece desativada antes de consultar o provedor. 35 testes focados e integração nativa controlada aprovados; isso não substitui os gates externos abaixo.
+
 [Rodada de 14/10](RODADA_2026_10_14.md#pagamentos-abertos-contrato-e-prazo-real): contrato explícito de provedores, prazo total por chamada externa e status com capacidades separadas. Mercado Pago continua a única implementação real; cartão e Pix externos seguem aguardando preparação da conta.
 
 O projeto contém checkout hospedado, verificação de assinatura, conciliação no servidor e renovação idempotente. Os testes automatizados usam respostas controladas do provedor; o teste local do repositório utiliza banco real e respostas simuladas do Mercado Pago. Eles verificam a lógica do FitFlow, sem comprovar que a conta externa está configurada.

@@ -37,7 +37,7 @@ O objetivo permanece aberto e voltou ao estado ativo em 14/10, após o limite de
 2. Continuar a revisão de UX/UI do site inteiro pelo [brief visual](REVISAO_VISUAL_SISTEMA.md): comparar composição por tarefa com referências primárias; conferir carregamento, vazio, falha, formulário, resultado, foco/teclado/contraste e desktop/tablet/mobile. Preservar laranja/navy/Barlow, ciência, licenças e histórico.
 3. Manter documentação corrente curta e consistente, execução reproduzível e relatos históricos separados. Conferir links, segredos conhecidos e critérios acadêmicos, sem usar documentação ou CI como substituto dos gates funcionais.
 4. Retomar os gates externos quando o proprietário disponibilizar os acessos e aparelho. O pedido para guardar perguntas enquanto ele trabalha continua aplicável; avançar autonomamente no trabalho independente.
-5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. O aplicativo está integrado à main para apresentação; o PR da landing continua sujeito a revisão/integração.
+5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. Aplicativo e landing estão integrados à main para apresentação; novas mudanças continuam sujeitas a revisão e validação.
 
 A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. A configuração externa do Mercado Pago permanece pendente e não se torna aprovada por testes simulados ou recebimentos manuais.
 
@@ -49,7 +49,7 @@ A validação técnica do financeiro/chat e os avanços publicados permitem cont
 | Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
 | Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
 | Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |
-| Revisão/integração de PRs | Aplicativo integrado à main em 13/10, com revisão contínua das lacunas; revisar o PR draft da landing, resolver achados e conferir gates/resultados. | [Estado e PRs](STATUS_ENTREGA.md) |
+| Revisão/integração de PRs | Aplicativo integrado à main em 13/10 e landing em 15/10, com CI/implantação e arquivos servidos conferidos. A revisão contínua das lacunas permanece aberta. | [Estado e PRs](STATUS_ENTREGA.md) |
 
 ## Invariantes do desenvolvimento
 

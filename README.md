@@ -86,7 +86,7 @@ O objetivo completo ainda tem trabalho pendente. Os gates obrigatórios incluem:
 - **Pix/cartão externo:** conta, credenciais e webhook Mercado Pago de teste; cartão aprovado/rejeitado/pendente e Pix QR/pendente sem renovar plano. Sandbox não comprova liquidação Pix. Recebimento manual não cobra nem confirma Pix/cartão; ajuste administrativo não executa reembolso no provedor.
 - **Telefone físico:** instalação PWA, teclado, rotação e reconexão publicada conforme M01–M14. Emulação e testes locais de fila não substituem aparelho físico; nova abertura offline exige reconexão para validar identidade.
 - **IA:** rotação da chave anteriormente exposta pelo titular. Amostras reais conferidas não certificam toda resposta futura; reprovações permanecem documentadas. Histórico do chat fica em memória, não há aplicação automática da ficha nem fallback pago.
-- **UX/UI e landing:** encerramento da revisão de todas as jornadas/estados e revisão do PR draft da landing antes da sua integração. A integração do aplicativo não comprova os gates externos.
+- **UX/UI e landing:** encerramento da revisão de todas as jornadas/estados. A landing foi revisada e integrada em 15/10; integrar os repositórios não comprova os gates externos.
 
 [Auditoria de requisitos e evidências](docs/REVISAO_FINAL.md) · [Plano completo](docs/PLANO_MESTRE_DESENVOLVIMENTO.md).
 

@@ -48,4 +48,14 @@ No navegador, o início da nova resposta ficou abaixo do cabeçalho. [Exercício
 
 Em 768 × 1024, documento de 762 pixels e exercício de 666 pixels também foram inspecionados. O fluxo lista → detalhe → editar → cancelar preservou o plano e devolveu foco ao botão Editar plano, sem escrita. O detalhe recebeu hierarquia de preço total, vigência, equivalência e condições; não representa uma assinatura recorrente.
 
-Publicação do aplicativo ainda precisa de confirmação Git/CI, assets e fluxo servido; os resultados acima são locais. A meta integral e os gates externos permanecem abertos.
+### Publicação confirmada — 15/10
+
+Código funcional `49ae7c70cbb1de59933ae14c34407365f70c11a6`, [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/38812914446/job/116690334553) e [integração Git/Vercel aprovada](https://vercel.com/eznrbs-projects/fit-flow/H3krM4C66uoErr2XGX6zjMct91kE). Saúde canônica 200, banco ready, API no-store e 28 assets iguais aos blobs Git por SHA-256.
+
+O navegador publicado repetiu a conversa de duas mensagens: confirmação de escopo seguida de rascunho terça/35 minutos, halteres/peso corporal, sem banco/barra. A amostra pública teve supino no chão, remada, elevação lateral e agachamento livre, com 3/3/3/2 séries diretas por grupo principal e logística estimada de 28 minutos. A diferença frente à amostra local é variação do modelo, não erro de aritmética ou garantia de prescrição individual. [Chat publicado](evidence/154-chat-exercises-vercel-20261015.jpg). Três limites essenciais continuam visíveis fora do detalhe expansível; nenhuma ficha foi salva.
+
+Planos publicados também passaram pelo fluxo lista → detalhe → editar → cancelar, devolvendo foco ao botão Editar plano, sem escrita ou overflow desktop. [Detalhe publicado](evidence/155-plan-detail-vercel-20261015.jpg). Estados de timeout/concorrência foram verificados nos testes controlados, não provocados no banco publicado.
+
+A landing foi revisada, marcada como pronta e integrada na main: PR #1 fechado, `merged=true` e `draft=false`. Código funcional `7f0d1f6`, documentação `cd4f069`, CI/Vercel aprovadas; HTML/JS/CSS/hero/captura comparados por SHA-256. [Landing pública](evidence/153-landing-integrated-20261015.jpg) e CTA do laboratório conferidos no navegador. Uma primeira divergência de HTML decorreu da extração Windows com CRLF; reconstruir o snapshot a partir de `HEAD:index.html` original passou sem alterar o comparador.
+
+A meta integral, telefone físico, rotação da chave pelo titular e homologação externa de Pix/cartão permanecem abertos. Outras alterações acadêmicas locais para ZIP foram preservadas fora destes commits.
