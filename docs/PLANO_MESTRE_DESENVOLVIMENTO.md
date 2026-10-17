@@ -49,7 +49,6 @@ A validação técnica do financeiro/chat e os avanços publicados permitem cont
 | Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
 | Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
 | Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |
-| Revisão/integração de PRs | Aplicativo integrado à main em 13/10 e landing em 15/10, com CI/implantação e arquivos servidos conferidos. A revisão contínua das lacunas permanece aberta. | [Estado e PRs](STATUS_ENTREGA.md) |
 
 ## Invariantes do desenvolvimento
 
