@@ -92,3 +92,17 @@
 .hevy-layout .ex-grid { grid-template-columns:1fr 1fr !important; }
 }
 @media (max-width:380px) { .science-card { padding:18px; } .science-advanced summary span { display:block; margin-left:18px; } }
+
+/* A prévia identifica o cenário local; a confirmação do servidor tem região própria. */
+#nutrition-account #nutrition-save-summary { margin: 20px 0; padding: 18px 20px; border-left: 2px solid var(--primary-400); background: var(--bg-base); font-size: 14px; line-height: 1.75; color: var(--text-primary); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#nutrition-account #nutrition-account-status:not(:empty) { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border-subtle); font-size: 14px; line-height: 1.7; color: var(--text-primary); overflow-wrap: anywhere; }
+#nutrition-account .science-actions { gap: 12px; }
+#nutrition-account .nutrition-review { margin-top: 24px; padding: 20px; border: 1px solid var(--border-color); border-left: 2px solid var(--primary-400); background: var(--bg-base); border-radius: 6px; }
+#nutrition-account .nutrition-review h4 { margin: 0 0 12px; font: 600 21px/1.2 var(--font-heading); }
+#nutrition-account .nutrition-review .science-note { font-size: 14px; line-height: 1.7; }
+#nutrition-account .nutrition-review .science-check { margin-block: 20px; }
+#nutrition-account .nutrition-review .btn { min-height: 44px; white-space: normal; }
+@media (max-width: 540px) {
+  #nutrition-account .science-actions > button { flex: 1 1 100%; text-align: center; justify-content: center; white-space: normal; }
+  #nutrition-account #nutrition-save-summary { padding: 16px; }
+}

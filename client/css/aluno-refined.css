@@ -87,7 +87,26 @@
 .ff-student-error h3 { font-size: 20px; margin-bottom: 10px; }
 .ff-student-error p { color: var(--text-secondary); margin-bottom: 18px; line-height: 1.5; }
 .ff-student button:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
+/* A lista inicial mantém a leitura leve; a expansão preserva todos os registros consultados. */
+.ff-student-records li > span { min-width: 0; flex: 1 1 200px; font-variant-numeric: tabular-nums; }
+.ff-student-records li small { display: block; margin-top: 6px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.ff-student-section .ff-student-record-count { margin-top: 16px; font-size: 13px; }
+.ff-student-history-more { margin-top: 12px; border-block: 1px solid var(--border-color); }
+.ff-student-history-more summary { padding: 15px 0; min-height: 48px; color: var(--primary-400); font-size: 14px; font-weight: 600; line-height: 1.5; cursor: pointer; }
+.ff-student-history-more summary:focus-visible { outline: 2px solid var(--primary-400); outline-offset: 3px; }
+.ff-student-history-more[open] { padding-bottom: 16px; }
+.ff-student-history-more .ff-student-records { margin-top: 0; }
+.ff-student-recovery { display: grid; gap: 16px; }
+.ff-student-recovery [hidden], .ff-student-load-form > button[hidden] { display: none !important; }
+.ff-student-recovery > div:empty { display: none; }
+.ff-student-recovery .btn { min-height: 44px; white-space: normal; }
+.ff-student-load-review { padding: 18px; border: 1px solid var(--border-subtle); border-left: 2px solid var(--primary-400); border-radius: 6px; background: var(--bg-base); }
+.ff-student-load-review h4 { margin: 0 0 10px; font: 600 23px/1.2 var(--font-heading); }
+.ff-student-load-review h5 { margin: 20px 0 0; font-size: 16px; }
+.ff-student-load-review p, .ff-student-load-form .ff-student-draft-note { font-size: 13px; line-height: 1.6; }
+.ff-student-load-form #aluno-carga-feedback:not(:empty) { margin: 0; padding: 14px 0; border-block: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 14px; }
 @media (max-width: 700px) {
+  .ff-student-recovery .btn { width: 100%; }
   .ff-student-columns { grid-template-columns: 1fr; gap: 0; }
   .ff-student-stats { grid-template-columns: 1fr; }
   .ff-student-stat { border-right: 0; border-bottom: 1px solid var(--border-subtle); padding: 20px; }

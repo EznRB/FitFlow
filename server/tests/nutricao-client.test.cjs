@@ -10,14 +10,14 @@ function viewFixture(api, authenticated = true) {
   const elements = Object.fromEntries(Object.keys(input).map(key => [key, { value: 'typed', checked: true, focus() {} }]));
   const form = { elements, addEventListener() {}, reset() {} };
   const nodes = { '#nutrition-form': form };
-  for (const selector of ['#nutrition-save', '#nutrition-restore', '#nutrition-delete', '#nutrition-save-summary', '#nutrition-account-status', '#nutrition-error', '#nutrition-result', '#nutrition-sources', '#nutrition-ai']) {
+  for (const selector of ['#nutrition-save', '#nutrition-restore', '#nutrition-delete', '#nutrition-save-summary', '#nutrition-account-status', '#nutrition-error', '#nutrition-result', '#nutrition-sources', '#nutrition-ai', '#nutrition-review', '#nutrition-review-summary', '#nutrition-review-ack', '#nutrition-review-confirm']) {
     nodes[selector] = { textContent: '', innerHTML: 'local result', disabled: false };
   }
   const container = { isConnected: true, innerHTML: '', querySelector: selector => nodes[selector] };
-  const context = { window: { addEventListener() {} }, document: {}, structuredClone, FitFlowScience: science, API: api,
+  const context = { window: { addEventListener() {} }, document: {}, structuredClone, AbortController, setTimeout, clearTimeout, FitFlowScience: science, API: api,
     EvidenciasView: { renderSources() {}, mountAI() {} }, ...(authenticated ? { Auth: { user: { id: 1, role: 'student' } } } : {}) };
   vm.createContext(context); vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js/nutricao.js'), 'utf8'), context);
-  const view = vm.runInContext('NutricaoView', context); view.container = container; view.lastInputs = structuredClone(input);
+  const view = vm.runInContext('NutricaoView', context); view.render(container); view.lastInputs = structuredClone(input);
   return { view, nodes, elements, context, container };
 }
 test('erro ao salvar conserva cálculo local e só envia após o clique explícito', async () => {
