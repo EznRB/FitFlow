@@ -205,9 +205,11 @@ const AlunosView = {
         <fieldset class="management-form-section"><legend><span>03</span> Matrícula</legend>
         <div class="form-group">
           <label for="input-aluno-plano">Plano associado *</label>
-          <select id="input-aluno-plano" required>
+          <select id="input-aluno-plano" aria-describedby="aluno-planos-status" required disabled>
             <option value="">Carregando planos...</option>
           </select>
+          <p id="aluno-planos-status" class="management-help" role="status" aria-live="polite">Consultando planos ativos. Os outros campos podem ser preenchidos enquanto isso.</p>
+          <button id="aluno-planos-retry" class="btn btn-secondary" type="button" hidden>Consultar planos novamente</button>
         </div></fieldset>
       </form>
     `;
@@ -218,25 +220,71 @@ const AlunosView = {
       { text: 'Criar matrícula', class: 'btn-primary', action: () => this.submeterFormulario(context) },
     ]);
     context = this.vincularFormulario(null);
+    const select = context.form.querySelector('#input-aluno-plano');
+    select.onchange = () => this.atualizarEstadoPlanos(context);
+    context.form.querySelector('#aluno-planos-retry').onclick = () => this.carregarPlanosSelect(context);
     this.carregarPlanosSelect(context);
   },
 
+  atualizarEstadoPlanos(context) {
+    if (!this.formularioAtual(context) || context.id !== null) return;
+    const select = context.form.querySelector('#input-aluno-plano'), ready = context.planState === 'ready';
+    const selected = ready && context.planIds?.has(select.value);
+    select.disabled = !ready;
+    select.setAttribute('aria-busy', String(context.planState === 'loading'));
+    context.form.querySelector('#aluno-planos-status').textContent = selected
+      ? 'Plano ativo selecionado. Confira os demais campos antes de criar a matrícula.' : context.planMessage;
+    const retry = context.form.querySelector('#aluno-planos-retry');
+    retry.hidden = !['error', 'empty'].includes(context.planState);
+    retry.disabled = context.planState === 'loading' || !!context.pending;
+    if (context.button) context.button.disabled = !!context.pending || !selected;
+  },
+
   async carregarPlanosSelect(context = this.activeForm) {
-    if (!this.formularioAtual(context)) return;
+    if (!this.formularioAtual(context) || context.id !== null || context.pending) return;
+    if (context.planLookup) return context.planLookup.promise;
     const select = context.form.querySelector('#input-aluno-plano');
     if (!select) return;
-
-    try {
-      const resp = await API.get('/planos?ativo=true');
-      if (!this.formularioAtual(context) || document.getElementById('input-aluno-plano') !== select) return;
-      const planos = resp.data;
-      
-      select.innerHTML = '<option value="">Selecione um plano</option>' + 
-        planos.map(p => `<option value="${Number(p.id)}">${FitFlowSecurity.escapeHtml(p.name)} · ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.price))}</option>`).join('');
-    } catch (e) {
-      if (!this.formularioAtual(context) || document.getElementById('input-aluno-plano') !== select) return;
-      select.innerHTML = '<option value="">Erro ao carregar planos</option>';
-    }
+    const selected = context.planState === 'ready' && context.planIds?.has(select.value) ? select.value : '';
+    const current = () => this.formularioAtual(context) && document.getElementById('input-aluno-plano') === select;
+    context.planState = 'loading'; context.planIds = new Set();
+    context.planMessage = 'Consultando planos ativos. Os outros campos podem ser preenchidos enquanto isso.';
+    this.atualizarEstadoPlanos(context);
+    const lookup = context.planLookup = {};
+    lookup.promise = (async () => {
+      try {
+        const resp = await API.get('/planos?ativo=true', { timeoutMs: 15000 });
+        if (!current()) return;
+        const planos = resp?.data;
+        if (!Array.isArray(planos) || planos.some(p => !p || !Number.isSafeInteger(p.id) || p.id < 1 || p.active !== true
+          || typeof p.name !== 'string' || !p.name.trim() || p.name.length > 100
+          || !['number', 'string'].includes(typeof p.price) || !/^\d+(?:\.\d{1,2})?$/.test(String(p.price))
+          || !Number.isFinite(Number(p.price)) || Number(p.price) < 0.01 || Number(p.price) > 99999999.99)
+          || new Set(planos.map(p => p.id)).size !== planos.length) {
+          context.planMessage = 'Não foi possível confirmar os planos recebidos. Consulte novamente antes de criar a matrícula.';
+          context.planState = 'error';
+        } else {
+          context.planIds = new Set(planos.map(p => String(p.id)));
+          context.planState = planos.length ? 'ready' : 'empty';
+          context.planMessage = planos.length ? 'Selecione um plano ativo para criar a matrícula.'
+            : 'Nenhum plano ativo foi encontrado. Cadastre ou ative um plano na seção Planos e consulte novamente. Os campos preenchidos permanecem neste formulário.';
+          select.innerHTML = '<option value="">Selecione um plano</option>' +
+            planos.map(p => `<option value="${p.id}">${FitFlowSecurity.escapeHtml(p.name)} · ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(p.price))}</option>`).join('');
+          select.value = context.planIds.has(selected) ? selected : '';
+        }
+      } catch {
+        if (!current()) return;
+        context.planState = 'error';
+        context.planMessage = 'Não foi possível consultar os planos. Confira a conexão e tente novamente. Os campos preenchidos permanecem neste formulário.';
+      } finally {
+        if (context.planLookup === lookup) context.planLookup = null;
+        if (current()) {
+          if (context.planState === 'error' || context.planState === 'empty') { select.innerHTML = '<option value="">Nenhum plano disponível para seleção</option>'; select.value = ''; }
+          this.atualizarEstadoPlanos(context);
+        }
+      }
+    })();
+    return lookup.promise;
   },
 
   /**
@@ -295,6 +343,9 @@ const AlunosView = {
   async submeterFormulario(context = this.activeForm) {
     if (!this.formularioAtual(context)) return;
     if (context.pending) return context.pending;
+    if (context.id === null && (context.planState !== 'ready' || !context.planIds?.has(context.form.querySelector('#input-aluno-plano')?.value))) {
+      this.atualizarEstadoPlanos(context); return;
+    }
     if (!context.form.reportValidity()) return;
     const value = id => context.form.querySelector(`#input-aluno-${id}`)?.value;
     const name = value('nome'), email = value('email');
@@ -333,6 +384,7 @@ const AlunosView = {
         context.pending = null;
         if (this.formularioAtual(context) && button && button.isConnected !== false) {
           button.disabled = false; button.textContent = label;
+          if (context.id === null) this.atualizarEstadoPlanos(context);
         }
       }
     })();

@@ -100,4 +100,18 @@ Código funcional enviado em `b84c5b520ba6267a656cccd21f682dbb46f8acb4`. O estad
 
 CI e Git/Vercel concluíram com sucesso; o alias canônico respondeu saúde 200/banco ready/API no-store e **30 assets** foram comparados aos blobs Git por SHA-256. No browser HTTPS, login e consulta de presenças demonstrativas confirmaram o estado publicado, com recuperação oculta e sem registrar nova entrada. [Captura publicada](evidence/170-student-presence-vercel-20261017.jpg). O gate local de 12 logs não foi repetido gravando dados no banco remoto.
 
+Na nutrição publicada, idade fictícia 18 foi recusada com foco no campo e ajustes fechados. Corrigir para 30 produziu novamente o cenário de 2.670 kcal; o resumo usou atividade 1,5/proteína 1,6 e o bloco de revisão permaneceu oculto. [Prévia publicada](evidence/174-nutrition-preview-vercel-20261017.jpg), sem salvar, recuperar ou excluir medidas no banco demonstrativo. Mensalidade confirmou “Aguardando configuração” e ausência de cobrança/renovação, sem iniciar checkout.
+
 Uma nova geração real de treino respeitou contexto/equipamentos, mas revelou distribuição corporal insuficientemente explicada; [amostra reprovada e próxima correção](IA_GRATUITA.md#revisão-de-cobertura-do-rascunho--17102026). Esse achado mantém o gate científico do chat aberto, mesmo com CI e deploy aprovados.
+
+## 17/10/2026 — matrícula e recuperação da consulta de planos
+
+A revisão do formulário identificou uma consulta sem recuperação: uma falha na lista de planos deixava apenas uma opção de erro. A matrícula agora mantém aviso inline associado ao seletor, nova consulta manual e prazo de 15 segundos. Lista vazia explica a necessidade de cadastrar ou ativar um plano. O botão e o envio por Enter exigem consulta íntegra e um ID selecionado entre os planos ativos retornados. A edição de um aluno permanece independente dessa consulta.
+
+| Passo | Estado e evidência | Resultado |
+|---|---|---|
+| 1. Consulta indisponível | [Erro inline no desktop](evidence/181-alunos-plan-error-local-20261017.jpg). Falha 503 controlada somente na instância local de teste. | A criação ficou desabilitada, o aviso explicou a nova tentativa e o nome fictício preenchido permaneceu no mesmo formulário. |
+| 2. Consulta vazia | [Lista vazia em 375 × 812](evidence/183-alunos-plan-empty-mobile-local-20261017.jpg). Resposta controlada sem planos ativos, sem alterar o banco. | Mensagem e retry visíveis; ação com pelo menos 44 px, sem overflow horizontal. A primeira captura cortava o aviso e foi rejeitada. |
+| 3. Recuperação | [Plano real da demonstração selecionado](evidence/185-alunos-plan-selected-local-20261017.jpg). A simulação foi retirada antes da consulta. | Retry oculto por `display:none`; criação bloqueada até selecionar um plano válido. O status passou a confirmar a seleção. Campos obrigatórios vazios impediram o envio e levaram o foco ao e-mail; Cancelar devolveu o foco a Nova Matrícula. |
+
+**27/27 testes focados** cobrem erro, vazio, resposta inválida/inativa/duplicada, retry concorrente, seleção, identidade, formulário substituído e preservação dos dados. A validação não confia apenas no atributo `disabled`: o handler também confere o plano. Nenhuma matrícula, senha inicial ou dado pessoal foi criado ou alterado nesse roteiro. Capturas e emulação não certificam acessibilidade integral, falha de produção ou telefone físico. O teste utiliza a mesma interface e API, com substituição controlada apenas da leitura de planos no processo local ignorado pelo Git.

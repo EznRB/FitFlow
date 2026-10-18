@@ -166,6 +166,8 @@
 .management-form .form-group input, .management-form .form-group select, .management-form .form-group textarea { min-width: 0; width: 100%; min-height: 44px; font-size: 16px; }
 .management-wide { grid-column: 1 / -1; }
 .management-help { font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin: 12px 0 0; }
+#aluno-planos-retry { margin-top: 12px; min-height: 44px; white-space: normal; }
+#aluno-planos-retry[hidden] { display: none; }
 .management-comparison { display: block; min-height: 44px; padding: 12px; border: 1px solid #303c4e; border-radius: 6px; background: #172233; color: var(--primary-300); font-size: 14px; line-height: 1.5; }
 .management-list-state { grid-column: 1 / -1; padding: 28px 20px; }
 .management-list-state h3 { margin: 0 0 10px; font: 600 26px/1.15 var(--font-heading); }

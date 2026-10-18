@@ -11,18 +11,22 @@ function fixture() {
   const nodes = new Map(), calls = [], notices = [], listeners = {}, autocomplete = [];
   let epoch = 'initial', modalOpen = false, closes = 0, footerActions = [];
   function node(id, value = '') { const n = { id, value, innerHTML: '', textContent: '', isConnected: true, disabled: false,
+    attributes: {}, setAttribute(name, value) { this.attributes[name] = String(value); },
     contains: () => true, reportValidity: () => true }; nodes.set(id, n); return n; }
   node('alunos-table-body'); node('btn-novo-aluno'); node('filtro-nome-aluno');
   const Auth = { user: { id: 7, role: 'admin' }, generation: 1, sessionEpoch: 'initial', getSessionEpoch: () => epoch };
   function clearModal() {
-    for (const [id, n] of nodes) if (id.startsWith('input-aluno-') || ['form-aluno', 'confirm-aluno-inativacao', 'modal-save'].includes(id)) { n.isConnected = false; nodes.delete(id); }
+    for (const [id, n] of nodes) if (id.startsWith('input-aluno-') || id.startsWith('aluno-planos-') || ['form-aluno', 'confirm-aluno-inativacao', 'modal-save'].includes(id)) { n.isConnected = false; nodes.delete(id); }
   }
   const Modal = {
     open(title, html, actions) {
       clearModal(); modalOpen = true; footerActions = actions;
       const fields = new Map();
-      for (const match of html.matchAll(/<(?:input|select)[^>]*id="([^"]+)"[^>]*>/g)) {
-        const field = node(match[1], match[0].match(/value="([^"]*)"/)?.[1] || ''); fields.set(match[1], field);
+      for (const match of html.matchAll(/<(?:input|select|p|button)[^>]*id="([^"]+)"[^>]*>/g)) {
+        const field = node(match[1], match[0].match(/value="([^"]*)"/)?.[1] || '');
+        field.hidden = /\bhidden\b/.test(match[0]); field.disabled = /\bdisabled\b/.test(match[0]);
+        for (const attribute of match[0].matchAll(/(aria-[\w-]+|role)="([^"]*)"/g)) field.attributes[attribute[1]] = attribute[2];
+        fields.set(match[1], field);
       }
       if (html.includes('id="form-aluno"')) { const form = node('form-aluno'); form.querySelector = selector => fields.get(selector.slice(1)) || null; }
       if (html.includes('id="confirm-aluno-inativacao"')) node('confirm-aluno-inativacao');
@@ -36,16 +40,17 @@ function fixture() {
   const context = vm.createContext({ console, TextEncoder, window: { addEventListener: (name, fn) => { listeners[name] = fn; } }, Auth,
     App: { currentPage: 'alunos' }, Modal,
     document: { getElementById: id => nodes.get(id) || null, querySelectorAll: () => nodes.has('modal-save') ? [nodes.get('modal-save')] : [] },
-    API: Object.fromEntries(['get', 'post', 'put', 'delete'].map(method => [method, (route, payload) => { const response = deferred(); calls.push({ method, route, payload, ...response }); return response.promise; }])),
+    API: Object.fromEntries(['get', 'post', 'put', 'delete'].map(method => [method, (route, payload, options) => { const response = deferred(); calls.push({ method, route, payload, options, ...response }); return response.promise; }])),
     Toast: { error: message => notices.push(['error', message]), success: message => notices.push(['success', message]) },
     Autocomplete: { init: (...args) => autocomplete.push(args) },
     FitFlowSecurity: { escapeHtml: value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) },
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js/alunos.js'), 'utf8') + '\nglobalThis.view = AlunosView;', context);
   const view = context.view;
-  function fill() { for (const [key, value] of Object.entries({ nome: 'Nome válido', email: 'aluno@example.invalid', senha: 'own-password', plano: '3' })) if (nodes.has(`input-aluno-${key}`)) nodes.get(`input-aluno-${key}`).value = value; }
+  function fill() { for (const [key, value] of Object.entries({ nome: 'Nome válido', email: 'aluno@example.invalid', senha: 'own-password', plano: '3' })) if (nodes.has(`input-aluno-${key}`)) nodes.get(`input-aluno-${key}`).value = value; nodes.get('input-aluno-plano')?.onchange?.(); }
+  async function readyPlan() { calls.find(call => call.route === '/planos?ativo=true').resolve({ data: [{ id: 3, name: 'Mensal', price: '99.90', active: true }] }); await tick(); }
   return { view, context, Auth, nodes, node, calls, notices, listeners, autocomplete, Modal, fill,
-    epoch: value => { epoch = value; }, actions: () => footerActions, closes: () => closes };
+    readyPlan, epoch: value => { epoch = value; }, actions: () => footerActions, closes: () => closes };
 }
 
 test('matrícula abre enquanto a lista ainda carrega e conserva o formulário após a resposta', async () => {
@@ -102,13 +107,13 @@ test('planos usa ativo=true e resposta antiga não altera outro formulário', as
   const h = fixture(); h.view.abrirModalCriacao(); const first = h.nodes.get('input-aluno-plano');
   h.view.abrirModalCriacao(); const second = h.nodes.get('input-aluno-plano');
   assert.equal(h.calls[0].route, '/planos?ativo=true');
-  h.calls[1].resolve({ data: [{ id: 8, name: 'Atual', price: 20 }] }); await tick();
-  h.calls[0].resolve({ data: [{ id: 4, name: 'Antigo', price: 10 }] }); await tick();
+  h.calls[1].resolve({ data: [{ id: 8, name: 'Atual', price: 20, active: true }] }); await tick();
+  h.calls[0].resolve({ data: [{ id: 4, name: 'Antigo', price: 10, active: true }] }); await tick();
   assert.match(second.innerHTML, /Atual/); assert.doesNotMatch(second.innerHTML, /Antigo/); assert.doesNotMatch(first.innerHTML, /Antigo/);
 });
 
 test('Enter impede navegação e compartilha o envio pendente com o botão do mesmo formulário', async () => {
-  const h = fixture(); h.view.abrirModalCriacao(); h.fill();
+  const h = fixture(); h.view.abrirModalCriacao(); await h.readyPlan(); h.fill();
   const form = h.nodes.get('form-aluno'); assert.equal(typeof form.onsubmit, 'function');
   let prevented = 0; const first = form.onsubmit({ preventDefault: () => prevented++ });
   const second = form.onsubmit({ preventDefault: () => prevented++ });
@@ -120,7 +125,7 @@ test('Enter impede navegação e compartilha o envio pendente com o botão do me
 });
 
 test('formulário inválido não envia e erro atual permite tentar novamente sem duplicar', async () => {
-  const h = fixture(); h.view.abrirModalCriacao(); h.fill(); const form = h.nodes.get('form-aluno');
+  const h = fixture(); h.view.abrirModalCriacao(); await h.readyPlan(); h.fill(); const form = h.nodes.get('form-aluno');
   form.reportValidity = () => false; const invalid = h.view.submeterFormulario(); assert.equal(h.calls.length, 1); await invalid;
   form.reportValidity = () => true; const first = h.view.submeterFormulario(); h.calls[1].reject(new Error('Falhou')); await first;
   assert.equal(h.closes(), 0); assert.equal(h.nodes.get('modal-save').disabled, false);
@@ -136,7 +141,7 @@ test('salvamento antigo não fecha modal novo nem altera seu botão ou Toast', a
     const result = { data: { id: 5 } };
     if (rejectOld) h.calls[0].reject(new Error('Antigo')); else h.calls[0].resolve(result);
     const received = await writing; if (!rejectOld) assert.equal(received, result, 'resultado real da escrita deve ser preservado');
-    assert.equal(h.closes(), 0); assert.equal(button.innerHTML, 'Novo formulário'); assert.equal(button.disabled, false);
+    assert.equal(h.closes(), 0); assert.equal(button.innerHTML, 'Novo formulário'); assert.equal(button.disabled, true);
     assert.deepEqual(h.notices, []); assert.equal(h.calls.filter(c => c.route === '/alunos' && c.method === 'get').length, 0);
   }
 });
@@ -189,7 +194,7 @@ test('inativação exige confirmação atual e resposta tardia não afeta modal 
 test('troca de conta, papel, geração, epoch ou tela descarta continuação do salvamento', async () => {
   for (const switchIdentity of [h => { h.Auth.user.id = 8; }, h => { h.Auth.user.role = 'instructor'; },
     h => { h.Auth.generation++; }, h => h.epoch('remote'), h => { h.context.App.currentPage = 'dashboard'; }]) {
-    const h = fixture(); h.view.abrirModalCriacao(); h.fill(); const writing = h.view.submeterFormulario();
+    const h = fixture(); h.view.abrirModalCriacao(); await h.readyPlan(); h.fill(); const writing = h.view.submeterFormulario();
     switchIdentity(h); h.calls.find(c => c.method === 'post').resolve({ data: { id: 5 } }); await writing;
     assert.equal(h.closes(), 0); assert.deepEqual(h.notices, []); assert.equal(h.calls.length, 2);
   }
@@ -201,4 +206,74 @@ test('autocomplete antigo e confirmação de inativação não agem depois de su
   assert.equal(h.nodes.get('alunos-table-body').innerHTML, 'Outra view');
   h.view.inativarAluno(5); const confirmAction = h.actions().at(-1).action;
   h.Auth.generation++; await confirmAction(); assert.equal(h.calls.filter(c => c.method === 'delete').length, 0);
+});
+
+test('matrícula aguarda consulta íntegra e escolha de plano ativo tanto no botão quanto em Enter', async () => {
+  const h = fixture(); h.view.abrirModalCriacao(); h.fill();
+  const form = h.nodes.get('form-aluno'), button = h.nodes.get('modal-save'), select = h.nodes.get('input-aluno-plano');
+  assert.equal(button.disabled, true); assert.equal(select.disabled, true);
+  assert.equal(h.calls[0].payload.timeoutMs, 15000);
+  await form.onsubmit({ preventDefault() {} }); await h.actions().find(action => action.class === 'btn-primary').action();
+  assert.equal(h.calls.filter(call => call.method === 'post').length, 0);
+  await h.readyPlan();
+  assert.equal(select.disabled, false); assert.equal(button.disabled, true, 'consulta não confirma o ID escrito antes de receber opções');
+  select.value = '3'; select.onchange(); assert.equal(button.disabled, false);
+  assert.match(h.nodes.get('aluno-planos-status').textContent, /Plano ativo selecionado/);
+  select.value = '999'; select.onchange(); assert.equal(button.disabled, true);
+  await form.onsubmit({ preventDefault() {} });
+  assert.equal(h.calls.filter(call => call.method === 'post').length, 0);
+});
+
+test('falha de planos mantém campos e permite retry manual sem duplicar consulta', async () => {
+  const h = fixture(); h.view.abrirModalCriacao(); h.fill();
+  const form = h.nodes.get('form-aluno'), name = h.nodes.get('input-aluno-nome');
+  h.calls[0].reject(new Error('<img src=x> Consulta indisponível')); await tick();
+  const status = h.nodes.get('aluno-planos-status'), retry = h.nodes.get('aluno-planos-retry');
+  assert.ok(status); assert.equal(status.attributes.role, 'status');
+  assert.equal(h.nodes.get('input-aluno-plano').attributes['aria-describedby'], 'aluno-planos-status');
+  assert.match(status.textContent, /Não foi possível consultar os planos/); assert.doesNotMatch(status.textContent, /<img/);
+  assert.equal(retry.hidden, false); assert.equal(h.nodes.get('modal-save').disabled, true);
+  const first = retry.onclick(); retry.onclick(); h.view.carregarPlanosSelect();
+  assert.equal(h.calls.length, 2); assert.equal(retry.disabled, true);
+  h.calls[1].resolve({ data: [{ id: 3, name: '<Plano>', price: '99.90', active: true }] }); await first;
+  assert.equal(h.nodes.get('form-aluno'), form); assert.equal(name.value, 'Nome válido');
+  assert.equal(h.nodes.get('input-aluno-email').value, 'aluno@example.invalid');
+  assert.equal(h.nodes.get('input-aluno-senha').value, 'own-password');
+  assert.match(h.nodes.get('input-aluno-plano').innerHTML, /&lt;Plano&gt;/);
+  assert.equal(retry.hidden, true); assert.equal(h.notices.length, 0);
+});
+
+test('consulta vazia explica plano ativo necessário e bloqueia matrícula sem descartar rascunho', async () => {
+  const h = fixture(); h.view.abrirModalCriacao(); h.fill();
+  h.calls[0].resolve({ data: [] }); await tick();
+  const status = h.nodes.get('aluno-planos-status'), retry = h.nodes.get('aluno-planos-retry');
+  assert.ok(status, 'Consulta vazia precisa de aviso inline');
+  assert.match(status.textContent, /Nenhum plano ativo/); assert.match(status.textContent, /cadastre|ative/i);
+  assert.equal(retry.hidden, false); assert.equal(h.nodes.get('modal-save').disabled, true);
+  await h.view.submeterFormulario(); assert.equal(h.calls.length, 1);
+  assert.equal(h.nodes.get('input-aluno-nome').value, 'Nome válido'); assert.equal(h.Modal.isOpen(), true);
+});
+
+for (const data of [null, {}, [{ id: 3, name: 'Inativo', price: '99.90', active: false }], [{ id: 0, name: 'Inválido', price: '99.90', active: true }], [{ id: 3, name: '', price: '99.90', active: true }], [{ id: 3, name: 'Inválido', price: 'NaN', active: true }], [{ id: 3, name: 'Duplicado', price: '99.90', active: true }, { id: 3, name: 'Duplicado', price: '99.90', active: true }]]) {
+  test(`consulta de planos inválida (${JSON.stringify(data)}) não autoriza criação`, async () => {
+    const h = fixture(); h.view.abrirModalCriacao(); h.fill(); h.calls[0].resolve({ data }); await tick();
+    assert.ok(h.nodes.get('aluno-planos-status'), 'Resposta inválida precisa de recuperação inline');
+    assert.match(h.nodes.get('aluno-planos-status').textContent, /Não foi possível confirmar os planos/);
+    assert.equal(h.nodes.get('aluno-planos-retry').hidden, false); assert.equal(h.nodes.get('modal-save').disabled, true);
+    await h.view.submeterFormulario(); assert.equal(h.calls.filter(call => call.method === 'post').length, 0);
+  });
+}
+
+test('retry e resposta da consulta antiga não tocam formulário novo nem outra identidade', async () => {
+  for (const mutate of [h => { h.view.abrirModalCriacao(); }, h => { h.Auth.generation++; }, h => { h.epoch('remote'); }, h => { h.context.App.currentPage = 'dashboard'; }]) {
+    const h = fixture(); h.view.abrirModalCriacao(); h.calls[0].reject(new Error('Indisponível')); await tick();
+    const retry = h.nodes.get('aluno-planos-retry'), status = h.nodes.get('aluno-planos-status');
+    assert.ok(retry, 'Consulta com erro precisa de retry manual');
+    const reading = retry.onclick(); mutate(h);
+    const count = h.calls.length, before = status.textContent; retry.onclick();
+    assert.equal(h.calls.length, count);
+    h.calls[1].resolve({ data: [{ id: 3, name: 'Resultado antigo', price: '99.90', active: true }] }); await reading;
+    assert.equal(status.textContent, before);
+    assert.doesNotMatch(h.nodes.get('input-aluno-plano').innerHTML, /Resultado antigo/);
+  }
 });
