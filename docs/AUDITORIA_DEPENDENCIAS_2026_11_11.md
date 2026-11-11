@@ -44,3 +44,11 @@ O `gh` não está instalado/autenticado para o coletor. O relatório registra se
 ## Persistência móvel
 
 Uma revisão independente estática de `sw.js`, `pwa.js`, `training-store.js` e integrações de autenticação/sessões não encontrou defeito concreto no escopo examinado. Cache público, exclusão de respostas privadas e isolamento da fila por conta foram conferidos por código e cobertura existente, sem repetir testes inalterados. O roteiro M01–M14 em aparelho físico continua pendente.
+
+## Publicação isolada da correção
+
+A branch de desenvolvimento `103b5a8` teve [CI Node 24 aprovada](https://github.com/EznRB/FitFlow/actions/runs/43105305251). Para publicar a correção sem importar a IA/UX ainda em revisão, uma worktree nativa partiu da produção `daa9191` e recebeu somente os dois patches, três testes e documentação específica. Sua suíte própria aprovou **804/804 testes locais**, zero falhas ou ignorados. [PR 3](https://github.com/EznRB/FitFlow/pull/3) integrada após [CI Node 24](https://github.com/EznRB/FitFlow/actions/runs/43105679648) e preview com saúde/login/restauração de sessão HTTP 200.
+
+O merge `67f1f34e3ca2a2828ba993f1602203421ee15184` foi publicado como Production READY e confirmado pelo endereço canônico. Saúde/banco, login de aluno demonstrativo e `/api/auth/me` retornaram 200. A árvore Git `ee23b4a577b1fd190f0815e5d4460ad8775b2180` é idêntica à da revisão `6336a77` testada em CI; não foi localizado um run próprio do merge até a última consulta. A documentação posterior `94bd5b4` não altera runtime. [Prova resumida da produção](PATCH_SEGURANCA_2026_11_11.md).
+
+Payloads, cookies e respostas temporárias de autenticação criados pela verificação foram removidos; o arquivo original de credenciais demonstrativas foi preservado. O ambiente local copiado para a worktree também foi removido. A prova sanitizada está em `server/tmp/security-production-verification-20261111.json`, ignorada pelo Git. A PR 2 recebeu a main por merge normal, preservando alterações acadêmicas locais e sem force-push.
