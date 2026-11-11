@@ -24,8 +24,11 @@ Resultados fictícios, capturas do provedor e logs completos ficaram em `server/
 
 ## Gates desta rodada
 
+- [PR #2 em rascunho](https://github.com/EznRB/FitFlow/pull/2), com revisão funcional `83cd863` e checkpoint `1354c72a8acbbe6881627e155ee42daea12b270e`. A [CI desse checkpoint](https://github.com/EznRB/FitFlow/actions/runs/43056659556/job/130647795429) aprovou instalação, geração Prisma MySQL, 853 casos (852 aprovados, zero falhas e um caso de MariaDB ignorado no runner sem banco) e validação/geração PostgreSQL. O caso ignorado passou localmente no banco nativo.
+- [Preview do checkpoint](https://fit-flow-7ompdqzgp-eznrbs-projects.vercel.app) confirmado `READY` por metadata de SHA da Vercel. Saúde HTTP 200, banco `ready`, API `no-store` e login demonstrativo 200. Geração fictícia por HTTPS: duas sessões, 4.032 caracteres, estimativa de 37 minutos para 40 disponíveis e metadados correspondentes ao catálogo.
+- A continuação imediata por HTTPS retornou **429 de quota gratuita**, com mensagem controlada, sem tentativa automática ou fallback. Após intervalo, uma única nova tentativa manual retornou 200: somente terça-feira, 35 minutos disponíveis, halteres/peso corporal, 3.180 caracteres; quatro movimentos de três séries e estimativa logística de 30 minutos. Citações pertenciam às mensagens do usuário; banco/polia não foram incluídos. O 429 permanece registrado, não foi apagado do histórico. Quota compartilhada limita conversas consecutivas; essas amostras não demonstram capacidade multiusuário irrestrita.
 - Revisão visual desktop/mobile ainda pendente: Computer Use não conseguiu estabelecer a URL com confiança; uma tentativa posterior de abrir navegador automatizado foi rejeitada pela revisão automática, sem motivo detalhado. Nenhuma dessas tentativas conta como inspeção aprovada.
-- CI e implantação desta revisão precisam ser conferidas por SHA. Até concluir os gates, a produção permanece na versão anterior documentada no [estado da entrega](STATUS_ENTREGA.md).
+- Até concluir a revisão visual, a produção permanece na versão anterior documentada no [estado da entrega](STATUS_ENTREGA.md). CI e preview citados correspondem ao checkpoint indicado, não a commits futuros.
 - Não houve teste novo de Pix/cartão externo, instalação em telefone físico ou rotação da chave Groq exposta. Esses gates continuam abertos.
 
-Próximo passo: conferir CI/preview, finalizar inspeção visual e testar a revisão por HTTPS antes de integrar em `main`. A apresentação será preparada sobre a versão estabilizada, depois do desenvolvimento.
+Próximo passo: finalizar inspeção visual antes de integrar em `main`. A apresentação será preparada sobre a versão estabilizada, depois do desenvolvimento.

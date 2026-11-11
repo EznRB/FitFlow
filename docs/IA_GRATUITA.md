@@ -4,7 +4,7 @@ Escolha revisada em 11/10/2026 após o pedido de um modelo aberto ou serviço gr
 
 ## Revisão local atual — 11/11/2026
 
-O protocolo novo separa contexto e seleção de exercícios por IDs elegíveis. O servidor fornece metadados fixos de 26 variantes, valida doses e calcula contagens/logística. O classificador passa a usar 120B como padrão após uma comparação real de continuação; o modelo é escolhido antes da primeira chamada, sem fallback. **Produção e revisão visual desta rodada ainda não estão confirmadas.** [Código, amostras, testes e limites](RODADA_IA_CATALOGO_2026_11_11.md).
+O protocolo novo separa contexto e seleção de exercícios por IDs elegíveis. O servidor fornece metadados fixos de 26 variantes, valida doses e calcula contagens/logística. O classificador passa a usar 120B como padrão após uma comparação real de continuação; o modelo é escolhido antes da primeira chamada, sem fallback. CI e geração/continuação por HTTPS passaram no preview do checkpoint `1354c72`; uma continuação imediata atingiu quota 429 e foi mantida no registro. **Produção e revisão visual desta rodada ainda não estão confirmadas.** [Código, amostras, testes e limites](RODADA_IA_CATALOGO_2026_11_11.md).
 
 As seções datadas abaixo preservam o histórico de publicações e reprovações anteriores.
 
