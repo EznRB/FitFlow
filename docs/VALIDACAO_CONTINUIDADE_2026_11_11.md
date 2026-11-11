@@ -61,3 +61,11 @@ Em presenças, a atualização da tabela agora transfere o foco de um controle q
 O primeiro teste reproduziu uma falha. A revisão independente identificou que desabilitar o botão poderia perder o foco antes da transferência; o cenário ampliado reproduziu a falha residual, corrigida antes do envio. Revisão final sem achados residuais concretos. **877/877 testes locais**, sem falhas ou ignorados, código 0; log completo `server/tmp/full-presence-focus-reviewed-20261111.log` e logs RED/GREEN preservados no mesmo diretório ignorado.
 
 A auditoria estática de relatórios não encontrou defeito concreto nos fluxos examinados de filtros, impressão, respostas obsoletas e loading/erro; não houve alteração nem repetição de seus testes isolados. Inspeção real de teclado/tecnologia assistiva continua pendente. Essa rodada não encerra os demais gates do projeto.
+
+Presenças `25ade18908f240d8a6ca9ffc648ae2c4bff1ec79`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43065863617) e [preview READY](https://fit-flow-4dpl0g42d-eznrbs-projects.vercel.app), com SHA da implantação conferido.
+
+## Recuperação do painel administrativo
+
+A consulta do painel agora usa prazo de 15 segundos pelo cliente HTTP existente. O botão de recuperação confere sessão, papel, conta, geração, epoch, versão de consulta e identidade dos elementos antes de navegar; o callback é consumido após um clique. A tela de erro pode recuperar o painel mesmo após remover o layout original, sem permitir que callbacks obsoletos reabram a página de outra jornada.
+
+Os dois testes novos falharam antes da correção. A suíte integral após a mudança aprovou **879/879 testes**, zero falhas ou ignorados, saída 0, log `server/tmp/full-dashboard-recovery-20261111.log`. Revisão independente estática sem regressão concreta. Sem mudanças de permissões de backend, dados financeiros ou credenciais. CI e preview dessa mudança devem ser conferidos por seu próprio SHA antes de atribuir aprovação.

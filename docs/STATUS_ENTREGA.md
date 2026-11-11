@@ -4,6 +4,8 @@ O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou mel
 
 ## Rodada em revisão
 
+Painel administrativo: prazo de consulta e recuperação vinculada à instância/sessão, com **879/879 testes locais** e revisão independente estática sem regressão concreta. A revisão anterior de presenças `25ade18` teve CI aprovada e preview READY; isso não substitui os gates da nova revisão do painel. [Evidências](VALIDACAO_CONTINUIDADE_2026_11_11.md#recuperação-do-painel-administrativo).
+
 Retomada automática: foco estável ao recuperar a lista de presenças, com proteção de clique repetido preservada e revisão independente encerrada. **877/877 testes locais**, sem falhas ou ignorados; a nova revisão ainda exige sua própria CI/implantação. Auditoria estática de relatórios sem defeito concreto nos fluxos examinados. [Evidências](VALIDACAO_CONTINUIDADE_2026_11_11.md#retomada-automática-presenças-e-relatórios).
 
 Na continuação funcional `88e3fce`, os formulários de alunos/exercícios receberam envio por Enter e o caderno passou a preservar expansão/foco do histórico durante atualizações. **875/875 testes locais**, sem falhas ou ignorados; [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43063712394), [preview READY](https://fit-flow-4tow4gv7o-eznrbs-projects.vercel.app), saúde/banco e três assets conferidos. Revisão independente estática encerrada sem achados relevantes. Inspeção visual permanece aberta e a PR 2 segue em rascunho, sem integrar em produção. [Detalhes](VALIDACAO_CONTINUIDADE_2026_11_11.md#formulários-de-gestão-e-caderno).
