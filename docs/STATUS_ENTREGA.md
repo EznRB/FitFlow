@@ -10,6 +10,12 @@ As rodadas desta revisão incluem catálogo de 26 variantes para a IA, contexto/
 
 A [auditoria de dependências](AUDITORIA_DEPENDENCIAS_2026_11_11.md) registra 15 diretas e 118 transitivas, com os dois avisos corrigidos e limites de avaliação explícitos. A revisão estática de persistência móvel não encontrou defeito concreto no escopo examinado. Inspeção visual integral, aparelho físico, provedor de pagamentos externo e rotação da chave Groq continuam abertos. A apresentação será preparada após a estabilização, conforme combinado.
 
+## Revisão estática e limpeza de 11/11
+
+Codex Security finalizou a rodada `38767c67-ab80-40a7-9b66-e35d8b1ec5ee` no código `6fa69ec`: 105/244 arquivos rastreados foram integralmente revisados, incluindo todos os 80 arquivos de `server/src` e os scripts operacionais. Nenhuma vulnerabilidade foi confirmada nesse escopo. A cobertura é **parcial**: 139 arquivos, principalmente testes, migrations e configuração, estão enumerados como pendentes no relatório local. Não houve execução ofensiva nem consulta a credenciais durante essa auditoria; isso não substitui validação de produção, visual ou mobile.
+
+Removidos `server/database/schema.sql` e `seed.sql`, sem consumidores atuais: criavam tabelas antigas como `usuarios`, incompatíveis com a autenticação Prisma atual em `users`. O seed também sugeria credencial fixa obsoleta. Migrations, históricos, schemas Prisma e dados existentes foram preservados. A referência na análise de outubro permanece como registro histórico. Nenhuma alteração de runtime; a suíte aprovada não foi repetida.
+
 ## Implantação atual
 
 Atualização de segurança de 11/11: os patches da PR 3 foram publicados separadamente das melhorias de IA/UX em revisão na PR 2. A árvore `ee23b4a577b1fd190f0815e5d4460ad8775b2180` é idêntica na revisão testada `6336a77` e no merge `67f1f34`; não foi localizado run de CI próprio do merge até a última consulta. O teste do pacote vulnerável ficou restrito a localhost.
