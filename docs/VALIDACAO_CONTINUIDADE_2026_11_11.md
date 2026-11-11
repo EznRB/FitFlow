@@ -51,3 +51,13 @@ A revisão anterior `20cb718` teve [CI aprovada](https://github.com/EznRB/FitFlo
 Revisão funcional `88e3fce85a1ae79cf03186328ca078ea12826d49`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43063712394) e [preview READY](https://fit-flow-4tow4gv7o-eznrbs-projects.vercel.app). Saúde HTTP 200 com banco ready; alunos, catálogo e caderno responderam 200 e corresponderam por SHA-256 aos blobs dessa revisão. Revisão independente estática do diff `39205bd..88e3fce`, incluindo os cinco arquivos de runtime e quatro testes novos, não encontrou defeitos relevantes; não incluiu inspeção no navegador.
 
 A conferência local de configuração encontrou token sandbox e segredo de webhook ausentes em todos os arquivos privados `.env` existentes, sem imprimir valores ou modificá-los. Esse resultado não comprova a configuração remota nem encerra o gate do provedor externo.
+
+## Retomada automática: presenças e relatórios
+
+A CI da revisão documental `f833b9b` foi [aprovada](https://github.com/EznRB/FitFlow/actions/runs/43064019875). MariaDB nativo conferido em escuta local na porta 3308; não havia servidor de frontend nas portas 3107/3108 durante a consulta.
+
+Em presenças, a atualização da tabela agora transfere o foco de um controle que será removido para o corpo estável da tabela, antes de substituir seu conteúdo. A resposta posterior não recupera foco se o usuário já tiver ido a outro campo. O botão de tentar novamente deixa de ser desabilitado antes dessa transferência; a versão da consulta e a substituição síncrona continuam recusando cliques de callbacks antigos.
+
+O primeiro teste reproduziu uma falha. A revisão independente identificou que desabilitar o botão poderia perder o foco antes da transferência; o cenário ampliado reproduziu a falha residual, corrigida antes do envio. Revisão final sem achados residuais concretos. **877/877 testes locais**, sem falhas ou ignorados, código 0; log completo `server/tmp/full-presence-focus-reviewed-20261111.log` e logs RED/GREEN preservados no mesmo diretório ignorado.
+
+A auditoria estática de relatórios não encontrou defeito concreto nos fluxos examinados de filtros, impressão, respostas obsoletas e loading/erro; não houve alteração nem repetição de seus testes isolados. Inspeção real de teclado/tecnologia assistiva continua pendente. Essa rodada não encerra os demais gates do projeto.
