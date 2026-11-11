@@ -125,7 +125,19 @@ async function completionContent(response, stage, onDiagnostic) {
       code: diagnosticCodes.has(detail?.error?.code) ? detail.error.code : 'unknown' }); } catch { /* Log não altera a resposta. */ }
   }
   if ([401, 403].includes(response.status)) throw new AppError('IA indisponível. A administração precisa verificar o acesso ao provedor.', 503);
-  if (response.status === 429) throw new AppError('A quota gratuita da IA foi atingida. Tente novamente mais tarde.', 429);
+  if (response.status === 429) {
+    const header = response.headers?.get?.('retry-after');
+    const seconds = /^\d{1,5}$/.test(header || '') ? Number(header) : NaN;
+    const validWait = Number.isSafeInteger(seconds) && seconds >= 1 && seconds <= 86400;
+    const minutes = Math.ceil(seconds / 60);
+    const wait = seconds < 60 ? `${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`
+      : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+    const error = new AppError(validWait
+      ? `A quota gratuita da IA foi atingida. Aguarde pelo menos ${wait} antes de tentar novamente. A quota pode continuar indisponível.`
+      : 'A quota gratuita da IA foi atingida. Tente novamente mais tarde.', 429);
+    if (validWait) error.retryAfterSeconds = seconds;
+    throw error;
+  }
   if (response.status === 413) throw new AppError('A conversa ultrapassou o limite de tamanho do provedor de IA. Reduza o contexto ou inicie uma nova conversa.', 413);
   if (response.status === 400 && detail?.error?.code === 'json_validate_failed') throw new AppError('A IA não concluiu o formato exigido para a resposta. Tente reformular a pergunta.', 502);
   if (!response.ok) throw new AppError('O provedor de IA está indisponível. Tente novamente mais tarde.', 502);

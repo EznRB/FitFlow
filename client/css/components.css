@@ -669,7 +669,8 @@ textarea {
   border-bottom: none;
 }
 
-.autocomplete-item:hover {
+.autocomplete-item:hover,
+.autocomplete-item[aria-selected="true"] {
   background: var(--bg-hover);
 }
 

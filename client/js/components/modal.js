@@ -66,6 +66,7 @@ const Modal = {
     }
 
     this.titleEl.textContent = title;
+    this.overlay.querySelector?.('[data-modal-toast-container]')?.remove();
     this.bodyEl.innerHTML = bodyHTML;
 
     // Gera os botões no footer
@@ -101,6 +102,7 @@ const Modal = {
     this.revision++;
     if (!this.overlay) return;
     this.overlay.style.display = 'none';
+    this.overlay.querySelector?.('[data-modal-toast-container]')?.remove();
     document.body.style.overflow = '';
     this.titleEl.textContent = '';
     this.bodyEl.innerHTML = '';
