@@ -35,3 +35,13 @@ A conclusão geral continua dependente dos demais gates do plano, incluindo insp
 - A revisão anterior `39205bd` teve [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43061885778) e [preview READY](https://fit-flow-7ngmmz8bx-eznrbs-projects.vercel.app). Saúde HTTP 200/banco ready; sidebar, autocomplete, toast, modal e CSS de componentes retornaram 200 e SHA-256 igual aos blobs Git dessa revisão. Esses resultados antecedem as mudanças desta seção e não constituem inspeção visual.
 
 A ferramenta recusou criar outra meta porque a antiga permanece inacabada e pausada. Nenhuma meta foi marcada como concluída para contornar essa restrição. A automação de continuidade é independente desse estado.
+
+## Formulários de gestão e caderno
+
+Criação e edição de alunos e exercícios agora oferecem submissão por Enter. Os handlers, validações nativas e proteções contra callbacks obsoletos foram preservados. Dois testes novos falharam antes de inserir os controles de submit.
+
+O caderno transfere foco ao seletor de exercício, título de finalização ou próxima ficha quando a ação substitui o controle focado. Atualizações de histórico iguais preservam o DOM; quando o conteúdo muda, expansão e foco são restaurados por ID da sessão. Detalhes aninhados usam posição dentro do snapshot histórico; isso não garante correspondência se o próprio snapshot reordenar seus exercícios. Atualizações não tiram foco das notas digitadas. Duas falhas funcionais foram reproduzidas antes da correção e três regressões cobrem os cenários.
+
+Após integração: **875/875 testes**, nenhuma falha ou ignorado, saída 0, log local ignorado `server/tmp/full-management-sessions-a11y-20261111.log`. A mudança não altera store, fila, propriedade dos dados ou processamento financeiro.
+
+A revisão anterior `20cb718` teve [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43062837248) e [preview READY](https://fit-flow-njiaf9ika-eznrbs-projects.vercel.app); catálogo, pagamentos e CSS alterados retornaram 200 e hashes iguais aos blobs Git. Esses resultados antecedem as mudanças desta seção. O contraste nominal do texto de erro `#ef4444` sobre o fundo do modal `#111827` é 4,71:1; esse cálculo de tokens não substitui inspeção das telas renderizadas.

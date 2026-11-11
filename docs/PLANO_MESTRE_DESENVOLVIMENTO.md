@@ -6,7 +6,7 @@ Meta criada em 07/10/2026 a pedido do usuário. A conclusão exige todos os crit
 
 Entrega em **25/11/2026**, com apresentação individual de aproximadamente **20–30 minutos**. Planejamento revisto em 11/11: buscar concluir desenvolvimento até 18/11, estabilizar e preparar demonstração em 19–21/11, elaborar a apresentação sobre a versão estabilizada em 22–23/11 e ensaiar em 24/11. São estimativas condicionadas aos gates abaixo, não comprovação de conclusão. A apresentação será elaborada depois do desenvolvimento, conforme solicitado.
 
-A ferramenta de meta retornou `usageLimited` em 11/11; o objetivo não foi concluído e este documento não reativa a execução automática. O trabalho autorizado e as pendências permanecem registrados. [Eficiência de contexto](EFICIENCIA_CONTEXTO.md) documenta Ponytail, Caveman e o perfil Alethe adaptado, sem reduzir requisitos.
+A ferramenta de meta retornou `usageLimited` e depois `paused` em 11/11. A tentativa de criar outra meta foi recusada por existir uma meta inacabada; a ferramenta disponível não oferece retomada. O objetivo não foi concluído. Separadamente, foi criada e confirmada ativa a automação `concluir-desenvolvimento-do-fitflow`, com retomadas deste chat a cada 30 minutos, sujeitas aos limites do aplicativo. Ela mantém todos os critérios deste plano e não altera o estado da meta antiga. [Continuidade e evidências](VALIDACAO_CONTINUIDADE_2026_11_11.md). [Eficiência de contexto](EFICIENCIA_CONTEXTO.md) documenta Ponytail, Caveman e o perfil Alethe adaptado, sem reduzir requisitos.
 
 ## Direção e ordem
 

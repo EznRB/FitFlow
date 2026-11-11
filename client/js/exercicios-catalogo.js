@@ -225,7 +225,7 @@ const ExerciciosCatalogoView = {
         <div class="form-group management-wide"><label for="ex-instrucoes">Descrição de execução</label><textarea id="ex-instrucoes" rows="5" maxlength="10000">${this.escapar(ex?.instrucoes || '')}</textarea></div>
         <div class="form-group management-wide"><label for="ex-imagem">URL HTTPS da imagem</label><input type="url" id="ex-imagem" value="${this.escapar(ex?.imagem_url || '')}" placeholder="https://" maxlength="255"><p class="management-help">Use uma imagem com autorização e créditos. Uma descrição de catálogo não substitui prescrição ou avaliação técnica.</p></div>
       </div></fieldset>
-      ${ex ? this.renderizarFonte(ex) : ''}${ex?.source === 'wger' ? '<p class="management-help">Salvar registra edição local e preserva o conteúdo editado nas próximas sincronizações; não certifica validação científica.</p>' : ''}</form>`;
+      ${ex ? this.renderizarFonte(ex) : ''}${ex?.source === 'wger' ? '<p class="management-help">Salvar registra edição local e preserva o conteúdo editado nas próximas sincronizações; não certifica validação científica.</p>' : ''}<button type="submit" hidden>${ex ? 'Atualizar exercício' : 'Criar exercício'}</button></form>`;
   },
   abrirFormulario(ex, scope, sequence) {
     if (!this.atual(scope) || sequence !== this.modalSequence) return;
