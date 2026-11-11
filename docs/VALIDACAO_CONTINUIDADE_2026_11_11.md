@@ -45,3 +45,9 @@ O caderno transfere foco ao seletor de exercício, título de finalização ou p
 Após integração: **875/875 testes**, nenhuma falha ou ignorado, saída 0, log local ignorado `server/tmp/full-management-sessions-a11y-20261111.log`. A mudança não altera store, fila, propriedade dos dados ou processamento financeiro.
 
 A revisão anterior `20cb718` teve [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43062837248) e [preview READY](https://fit-flow-njiaf9ika-eznrbs-projects.vercel.app); catálogo, pagamentos e CSS alterados retornaram 200 e hashes iguais aos blobs Git. Esses resultados antecedem as mudanças desta seção. O contraste nominal do texto de erro `#ef4444` sobre o fundo do modal `#111827` é 4,71:1; esse cálculo de tokens não substitui inspeção das telas renderizadas.
+
+## Fechamento da revisão funcional
+
+Revisão funcional `88e3fce85a1ae79cf03186328ca078ea12826d49`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43063712394) e [preview READY](https://fit-flow-4tow4gv7o-eznrbs-projects.vercel.app). Saúde HTTP 200 com banco ready; alunos, catálogo e caderno responderam 200 e corresponderam por SHA-256 aos blobs dessa revisão. Revisão independente estática do diff `39205bd..88e3fce`, incluindo os cinco arquivos de runtime e quatro testes novos, não encontrou defeitos relevantes; não incluiu inspeção no navegador.
+
+A conferência local de configuração encontrou token sandbox e segredo de webhook ausentes em todos os arquivos privados `.env` existentes, sem imprimir valores ou modificá-los. Esse resultado não comprova a configuração remota nem encerra o gate do provedor externo.
