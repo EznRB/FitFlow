@@ -18,6 +18,8 @@ Removidos `server/database/schema.sql` e `seed.sql`, sem consumidores atuais: cr
 
 ## Implantação atual
 
+Em revisão na PR 2: [paridade da identidade do catálogo](PARIDADE_CATALOGO_2026_11_11.md), com migration nova aprovada no PostgreSQL local e no Neon isolado de verificação. **Ainda não aplicada em produção.** A tela de nutrição recebeu fontes FAO diretas, com 39 testes de interação aprovados e inspeção visual pendente. Esses gates focados não alteram o total da suíte integral registrado acima.
+
 Atualização de segurança de 11/11: os patches da PR 3 foram publicados separadamente das melhorias de IA/UX em revisão na PR 2. A árvore `ee23b4a577b1fd190f0815e5d4460ad8775b2180` é idêntica na revisão testada `6336a77` e no merge `67f1f34`; não foi localizado run de CI próprio do merge até a última consulta. O teste do pacote vulnerável ficou restrito a localhost.
 
 | Aplicação | Código publicado e evidência |
