@@ -168,7 +168,12 @@ const ExerciciosCatalogoView = {
     if (count) count.textContent = filtered.length ? `${start + 1}–${start + shown.length} de ${filtered.length} exercícios · ${this.dados.length} na consulta` : `0 exercícios encontrados · ${this.dados.length} na consulta`;
     if (page) page.textContent = `Página ${this.page} de ${pages}`;
     const previous = document.getElementById('catalog-prev'), next = document.getElementById('catalog-next');
+    const focusedControl = document.activeElement;
     if (previous) previous.disabled = this.page === 1; if (next) next.disabled = this.page === pages;
+    if (focusedControl && (focusedControl === previous || focusedControl === next) && focusedControl.disabled) {
+      const availableControl = [previous, next].find(control => control && !control.disabled);
+      availableControl?.focus();
+    }
   },
   renderizarTabela(exercicios) {
     const context = this.contexto(), tbody = context.table; if (!tbody) return;
