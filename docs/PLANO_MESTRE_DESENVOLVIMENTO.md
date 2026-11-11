@@ -1,6 +1,12 @@
 # Desenvolvimento completo do FitFlow
 
-Meta ativa criada em 07/10/2026 a pedido do usuário. A conclusão exige todos os critérios abaixo; a conclusão de uma etapa não encerra a meta.
+Meta criada em 07/10/2026 a pedido do usuário. A conclusão exige todos os critérios abaixo; a conclusão de uma etapa não encerra a meta.
+
+## Prazo e sequência acordada
+
+Entrega em **25/11/2026**, com apresentação individual de aproximadamente **20–30 minutos**. Planejamento revisto em 11/11: buscar concluir desenvolvimento até 18/11, estabilizar e preparar demonstração em 19–21/11, elaborar a apresentação sobre a versão estabilizada em 22–23/11 e ensaiar em 24/11. São estimativas condicionadas aos gates abaixo, não comprovação de conclusão. A apresentação será elaborada depois do desenvolvimento, conforme solicitado.
+
+A ferramenta de meta retornou `usageLimited` em 11/11; o objetivo não foi concluído e este documento não reativa a execução automática. O trabalho autorizado e as pendências permanecem registrados. [Eficiência de contexto](EFICIENCIA_CONTEXTO.md) documenta Ponytail, Caveman e o perfil Alethe adaptado, sem reduzir requisitos.
 
 ## Direção e ordem
 
@@ -31,7 +37,7 @@ Manter a identidade laranja/navy e Barlow. O usuário rejeitou o aspecto genéri
 
 ## Estado e prioridade de execução
 
-O objetivo permanece aberto e voltou ao estado ativo em 14/10, após o limite de uso de 13/10. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
+O objetivo permanece aberto; o estado da ferramenta de meta foi conferido na seção de prazo acima. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
 
 1. Validar e corrigir problemas concretos das jornadas de gestão/aluno, incluindo estados de presença e do chat, preservando identidade, rascunhos e resultados reais. Reproduzir o problema e verificar os casos relevantes antes de publicar.
 2. Continuar a revisão de UX/UI do site inteiro pelo [brief visual](REVISAO_VISUAL_SISTEMA.md): comparar composição por tarefa com referências primárias; conferir carregamento, vazio, falha, formulário, resultado, foco/teclado/contraste e desktop/tablet/mobile. Preservar laranja/navy/Barlow, ciência, licenças e histórico.

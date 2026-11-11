@@ -1,6 +1,10 @@
-# Estado da entrega — 17/10/2026
+# Estado da entrega — 11/11/2026
 
 O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou melhorias de confirmação/recuperação na nutrição, no registro avulso e na presença do aluno, além da expansão do histórico. A atualização seguinte acrescentou recuperação da consulta de planos na matrícula, com bloqueio até selecionar um plano ativo confirmado. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
+
+## Rodada em revisão
+
+IA: commit funcional `83cd863dc42c29ae4bcdcf0b5ac1979a73abd8a3`, com catálogo de 26 variantes e seleção por IDs. **853/853 testes locais** aprovados, revisão independente focada encerrada e duas amostras reais fictícias conferidas, incluindo continuação com mudança de dia/tempo/equipamento. O padrão do classificador passa a 120B. Revisão visual, CI/preview e teste HTTPS desta revisão ainda pendentes; não atribuir esses resultados à produção anterior. [Evidências e limites](RODADA_IA_CATALOGO_2026_11_11.md).
 
 ## Implantação atual
 

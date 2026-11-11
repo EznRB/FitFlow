@@ -2,6 +2,12 @@
 
 Escolha revisada em 11/10/2026 após o pedido de um modelo aberto ou serviço gratuito. O adaptador está implementado e a geração real foi verificada localmente. O console da organização confirmou plano **Free, US$ 0**. Não habilitar plano pago para concluir a demonstração.
 
+## Revisão local atual — 11/11/2026
+
+O protocolo novo separa contexto e seleção de exercícios por IDs elegíveis. O servidor fornece metadados fixos de 26 variantes, valida doses e calcula contagens/logística. O classificador passa a usar 120B como padrão após uma comparação real de continuação; o modelo é escolhido antes da primeira chamada, sem fallback. **Produção e revisão visual desta rodada ainda não estão confirmadas.** [Código, amostras, testes e limites](RODADA_IA_CATALOGO_2026_11_11.md).
+
+As seções datadas abaixo preservam o histórico de publicações e reprovações anteriores.
+
 ## Chat contextual publicado — 11/10/2026
 
 Atualização: [seleção de citações e teste real de correção em 14/10](RODADA_2026_10_14.md#chat-correção-de-rotina-sem-perder-contexto). O gerador passou a selecionar recortes originais em enums estritos; as validações locais permanecem. Publicação e limites estão no estado da entrega.
@@ -42,7 +48,7 @@ A canonicalização agora tolera somente caixa e conserva o trecho exato mais re
 
 ## Escolha e limites
 
-O [GPT-OSS](https://github.com/openai/gpt-oss) tem pesos abertos sob Apache 2.0. A inferência ocorre na Groq: não exige Docker, virtualização ou GPU no computador. As explicações legadas usam `GROQ_MODEL`, configurado em `openai/gpt-oss-120b`. O chat usa `GROQ_CHAT_MODEL`, padrão `openai/gpt-oss-20b`, para classificar e esclarecer. Respostas gerais são organizadas por `openai/gpt-oss-120b` mediante seleção de conteúdo do corpus e ações controladas; o texto candidato da primeira etapa é descartado. Esses papéis são definidos antes da solicitação, sem troca de modelo após erro ou quota.
+O [GPT-OSS](https://github.com/openai/gpt-oss) tem pesos abertos sob Apache 2.0. A inferência ocorre na Groq: não exige Docker, virtualização ou GPU no computador. As explicações legadas usam `GROQ_MODEL`, configurado em `openai/gpt-oss-120b`. Na revisão de 11/11, o chat usa `GROQ_CHAT_MODEL`, padrão `openai/gpt-oss-120b`, para classificar e esclarecer; `openai/gpt-oss-20b` permanece como escolha explícita permitida. Respostas gerais são organizadas por `openai/gpt-oss-120b` mediante seleção de conteúdo do corpus e ações controladas. Esses papéis são definidos antes da solicitação, sem troca de modelo após erro ou quota. A versão publicada anterior e os gates da revisão estão separados no estado da entrega.
 
 Os dois modelos suportam [JSON Schema estrito](https://console.groq.com/docs/structured-outputs). Formato e IDs válidos não comprovam a veracidade de cada frase. A interface identifica o conteúdo como IA e mantém as referências originais para conferência. Fórmulas e indicadores continuam determinísticos. O chat pode sugerir uma divisão educativa para revisão, mas não aplica fichas, não escolhe carga em kg e não prescreve dieta ou treino clínico.
 
@@ -63,7 +69,7 @@ Esse arquivo é um recipiente privado de configuração; não é carregado autom
 ```dotenv
 IA_PROVIDER=groq
 GROQ_MODEL=openai/gpt-oss-120b
-GROQ_CHAT_MODEL=openai/gpt-oss-20b
+GROQ_CHAT_MODEL=openai/gpt-oss-120b
 GROQ_API_KEY=CHAVE_PRIVADA_DO_SERVIDOR
 GROQ_FREE_TIER_CONFIRMED=true
 ```
