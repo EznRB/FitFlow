@@ -10,7 +10,7 @@ const { prisma } = require('../config/prisma');
 const AppError = require('../utils/AppError');
 const bcrypt = require('bcryptjs');
 const planosService = require('./planos.service');
-const { validateAccount } = require('../utils/accountValidation');
+const { validateAccount, normalizeName, normalizeEmail } = require('../utils/accountValidation');
 const { brazilDate, paymentDate } = require('../utils/paymentValidation');
 const { lockStudent } = require('../utils/membershipRenewal');
 
@@ -136,7 +136,11 @@ class AlunosService {
   async atualizar(id, data) {
     const studentId = Number(id);
     if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados do aluno inválidos.', 400);
-    const { name, email, phone, address, notes, status, planId } = data;
+    const { phone, address, notes, status, planId } = data;
+    // Match registration/login independently of the database collation.
+    // Omitted/null identity fields retain the existing partial-update contract.
+    const name = data.name == null ? undefined : normalizeName(data.name);
+    const email = data.email == null ? undefined : normalizeEmail(data.email);
     const cpf = optionalCpf(data.cpf), birthDate = optionalBirthDate(data.birthDate);
 
     // Garante que o aluno alvo existe
