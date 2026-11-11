@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createProgramSchema, validateProgram } = require('../src/services/ia-routine');
 const { createIaChatService } = require('../src/services/ia-chat.service');
+const { selectedExercise } = require('./fixtures/ia-routine-selection.cjs');
 const first = 'Contexto fictício de teste: adulto saudável, iniciante, objetivo hipertrofia. Minha única disponibilidade é terça, 35 minutos. Equipamentos: apenas halteres, espaço no chão; sem banco ou barra. Organize um rascunho de treino revisável com instrutor.';
 const confirmation = 'Confirmo explicitamente: neste cenário fictício sou adulto saudável, sem limitação clínica relevante. Sou iniciante, busco hipertrofia e posso treinar só terça-feira por 35 minutos, apenas com halteres e chão. Sem banco ou barra.';
 const history = [{ role: 'user', content: first }, { role: 'assistant', content: 'Confirme explicitamente o cenário de adulto saudável.' }, { role: 'user', content: confirmation }];
@@ -30,9 +31,15 @@ test('equipamento afirmado e negação complementar em frases diferentes oferece
 test('conversa real completa gera rascunho com duas chamadas controladas, sem nova confirmação falsa', async () => {
   let calls = 0;
   const service = createIaChatService({ provider: 'groq', groqApiKey: 'fixture-only', freeTierConfirmed: true, fetchImpl: async (_, options) => {
-    if (++calls === 1) return upstream({ kind: 'routine_draft', message: 'Vou organizar um rascunho revisável para sua rotina.', sourceIds: [] });
-    const properties = JSON.parse(options.body).response_format.json_schema.schema.properties.context.properties;
-    return upstream(draft(properties.equipmentQuote.enum[0]));
+    if (++calls === 1) {
+      const variant = JSON.parse(options.body).response_format.json_schema.schema.properties.turn.anyOf.find(row => row.properties.kind.enum[0] === 'routine_draft');
+      return upstream({ turn: { kind: 'routine_draft', context: draft(variant.properties.context.properties.equipmentQuote.enum[0]).context } });
+    }
+    const schema = JSON.parse(options.body).response_format.json_schema.schema.properties.sessions.items.properties.exercises.items.properties;
+    assert.ok(schema.exerciseId.enum.includes('db-floor-press'));
+    assert.ok(!schema.exerciseId.enum.includes('db-flat-press'));
+    assert.equal(schema.name, undefined); assert.equal(schema.primaryGroup, undefined); assert.equal(schema.equipment, undefined);
+    return upstream({ sessions: [{ day: 'tuesday', exercises: [selectedExercise('db-floor-press', 2, 90)] }] });
   } });
   const result = await service.chat({ consent: true, messages: history });
   assert.equal(result.kind, 'routine_draft'); assert.equal(calls, 2);

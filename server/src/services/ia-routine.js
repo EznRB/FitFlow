@@ -1,5 +1,6 @@
 /** Valida e apresenta um rascunho de IA; nunca cria ficha ou mede treino executado. */
 const AppError = require('../utils/AppError');
+const { eligibleVariants } = require('./ia-exercise-catalog');
 
 const dayLabels = { monday: 'Segunda', tuesday: 'Terça', wednesday: 'Quarta', thursday: 'Quinta',
   friday: 'Sexta', saturday: 'Sábado', sunday: 'Domingo' };
@@ -77,7 +78,8 @@ function scopeContradiction(text) {
   // ou aptidão de sintomas. Casos não reconhecidos precisam de confirmação.
   return text.split(/[.;!?\n]|\b(?:mas|porem|contudo|but|however)\b/).some(clause =>
     /\b(?:nao sou|nao me considero|nao confirmo|nao confirmei|nao estou)\b[^.;!?]{0,90}\b(?:adult[oa]|saudavel|escopo)\b/.test(clause)
-    || /\b(?:sou|estou|tenho)\s+(?:com\s+)?(?:uma?\s+)?(?:menor de idade|gestante|gravida|lesao|condicao clinica)/.test(clause));
+    || /\b(?:sou|estou|tenho)\s+(?:com\s+)?(?:uma?\s+)?(?:menor de\s+(?:idade|18(?:\s+anos)?|dezoito(?:\s+anos)?)|adolescente|crianca|gestante|gravida|lesao|condicao clinica)/.test(clause)
+    || /\btenho\s+(?:[0-9]|1[0-7])\s+anos\b/.test(clause));
 }
 function positiveScopeDeclaration(text, quote) {
   const source = normalized(text), quoted = normalized(quote);
@@ -95,7 +97,7 @@ function fieldDeclaration(field, text) {
   const statements = normalized(text).split(/(?<=[.!?;])\s*|\n/).filter(clause => !clause.trim().endsWith('?')).join(' ');
   if (!statements) return false;
   const correction = /correcao|corrig|na verdade|agora|mudei|mudou/.test(statements);
-  if (field === 'scope') return /adult[oa]|saudavel|menor de idade|gestante|gravida|lesao|condicao clinica/.test(statements)
+  if (field === 'scope') return /adult[oa]|saudavel|menor de\s+(?:idade|18|dezoito)|\b\d{1,3}\s+anos\b|gestante|gravida|lesao|condicao clinica/.test(statements)
     && /sou|estou|confirm|tenho|correcao|na verdade/.test(statements);
   if (field === 'goal') return explicitlyMentionedGoals(statements).length > 0
     && (correction || /objetivo|quero|busco|foco|prioridade/.test(statements));
@@ -225,6 +227,17 @@ function exerciseEquipmentConsistent(exercise) {
     && (!/maquina|machine/.test(name) || /smith/.test(name))) hints.push('bench');
   return hints.every(item => exercise.equipment.includes(item));
 }
+function exerciseSupportsConfirmed(exercise, context) {
+  const name = normalized(exercise.name), declaration = normalized(context.equipmentQuote);
+  // O enum atual não representa fixação de tornozelos, barras de suspensão ou
+  // estruturas de apoio. Não tratar uma polia ou peso corporal como prova deles.
+  if (/nordic|nordic[ao]|barra fixa|pull[- ]?up|chin[- ]?up|suspens|pendurad|hanging/.test(name)) return false;
+  // Inclinar o tronco não exige banco regulável. Variações inclinadas de
+  // supino/crucifixo e bancos explicitamente inclinados precisam da declaração.
+  const inclinedBench = /(?:supino|crucifixo|bench press)[^.;]{0,45}inclinad|banco\s+inclinad|incline[d]?\s+(?:bench|dumbbell|chest)/.test(name)
+    && !/maquina|machine/.test(name);
+  return !inclinedBench || /banco\s+(?:ajustavel|regulavel|inclinavel|inclinad[oa])|adjustable\s+bench|incline[d]?\s+bench/.test(declaration);
+}
 function repetitionsRepresentable(name) {
   const value = normalized(name);
   if (/isometr|wall[- ]?sit|sustentacao|dead hang/.test(value)) return false;
@@ -265,12 +278,31 @@ function checkExplicitContext(context) {
 }
 function checkEquipmentContext(context) {
   const equip = normalized(context.equipmentQuote);
+  const statements = equip.match(/[^.;!?\n]+[.;!?]?/g) || [];
+  // Disponibilidade não se deduz de desejo, hipótese ou uma dúvida posterior
+  // referindo-se aos recursos já citados. Pedir confirmação nesses casos.
+  for (const statement of statements) {
+    const aboutResources = equipmentHints(statement).length || /\b(?:esta|estao|disponiveis|disponivel|acesso)\b/.test(statement);
+    if (aboutResources && /\b(?:talvez|nao sei|nao tenho certeza|acho que|se tiver|se eu tiver|caso tenha|quero comprar|pretendo comprar|vou comprar|quero adquirir|pretendo adquirir|teria|costumava|antigamente)\b/.test(statement)) invalid();
+  }
   const allowed = new Set(['bodyweight']);
   if (/(?:academia|ginasio)\s+complet[ao]|(?:full|fully equipped)\s+gym/.test(equip)) {
     ['machines', 'dumbbells', 'barbell', 'cables', 'bench'].forEach(item => allowed.add(item));
   }
   equipmentHints(equip).forEach(item => allowed.add(item));
   const denied = new Set();
+  for (const clause of equip.split(/[,.;!?\n]|\b(?:mas|porem|contudo|but|however)\b/)) {
+    for (const [item, pattern] of Object.entries(equipmentPatterns)) {
+      const mention = clause.match(pattern);
+      if (!mention) continue;
+      const suffix = clause.slice(mention.index + mention[0].length);
+      const denial = suffix.match(/\bnao\s+(?:tenho|possuo|ha|disponho|esta disponivel|estao disponiveis)\b/);
+      // "banco não tenho" nega banco; "halteres e não tenho banco" não
+      // nega halteres nem transfere a negação para um objeto anterior.
+      if (denial && !/\b(?:e|ou)\b/.test(suffix.slice(0, denial.index))
+        && !equipmentHints(suffix.slice(denial.index + denial[0].length)).length) denied.add(item);
+    }
+  }
   const negativeClauses = equip.match(/(?:nao\s+(?:tenho|possuo|ha|disponho(?:\s+de)?)|sem(?:\s+acesso\s+a)?)\s+[^;,.]+/g) || [];
   for (const clause of negativeClauses) {
     const negativePart = clause.split(/\b(?:mas|porem|contudo|but|however)\b/)[0];
@@ -288,9 +320,20 @@ function checkEquipmentContext(context) {
   if (context.equipment.some(item => !allowed.has(item))) invalid();
 }
 
-function validateProgram(program, messages) {
-  if (!keys(program, ['context', 'sessions']) || !keys(program.context, Object.keys(contextProperties))) invalid();
-  let context = program.context;
+/** Revisa apenas classificações explícitas; nomes não comprovam anatomia ou estímulo. */
+function reviewDeclaredCoverage(sessions) {
+  const represented = new Set();
+  const declaredSessions = sessions.map(session => {
+    const primaryGroups = [...new Set(session.exercises.map(exercise => exercise.primaryGroup))];
+    primaryGroups.forEach(group => represented.add(group));
+    return { day: session.day, primaryGroups };
+  });
+  return { unrepresentedPrimaryGroups: groups.filter(group => !represented.has(group)), sessions: declaredSessions };
+}
+
+function validateContext(value, messages) {
+  if (!keys(value, Object.keys(contextProperties))) invalid();
+  let context = value;
   if (!enumArray(context.availableDays, days, 1, 7) || !integer(context.minutesPerSession, 15, 150)
     || !enumArray(context.equipment, equipment) || !Object.hasOwn(experienceLabels, context.experience)
     || !Object.hasOwn(goalLabels, context.goal) || context.adultHealthyConfirmed !== true) invalid();
@@ -308,6 +351,22 @@ function validateProgram(program, messages) {
   }
   checkContextEvidence(context, userTexts);
   checkExplicitContext(context);
+  return context;
+}
+
+function createSessionsSchema(context) {
+  const variants = eligibleVariants(context);
+  if (!variants.length) clarify(['equipment'], 'missing_context');
+  const doses = Object.fromEntries(['sets', 'repsMin', 'repsMax', 'rir', 'restSeconds']
+    .map(field => [field, structuredClone(exerciseProperties[field])]));
+  return objectSchema({ sessions: arraySchema(objectSchema({ day: enumSchema([...context.availableDays]),
+    exercises: arraySchema(objectSchema({ exerciseId: enumSchema(variants.map(variant => variant.id)), ...doses }), 6) }),
+  Math.min(context.availableDays.length, 6)) });
+}
+
+function validateProgram(program, messages) {
+  if (!keys(program, ['context', 'sessions'])) invalid();
+  const context = validateContext(program.context, messages);
   if (!Array.isArray(program.sessions) || program.sessions.length < 1 || program.sessions.length > context.availableDays.length
     || program.sessions.length > 6 || new Set(program.sessions.map(session => session?.day)).size !== program.sessions.length) invalid();
   const weekly = new Map();
@@ -323,6 +382,7 @@ function validateProgram(program, messages) {
         || /s[ée]ries|seman|\brir\b|acsm|[óo]tim|estudo|revis[aã]o|m[ií]nimo/i.test(exercise.name)
         || !groups.includes(exercise.primaryGroup) || !enumArray(exercise.equipment, equipment)
         || !exerciseEquipmentConsistent(exercise)
+        || !exerciseSupportsConfirmed(exercise, context)
         || exercise.equipment.some(item => !context.equipment.includes(item))
         || !integer(exercise.sets, 1, 6) || !integer(exercise.repsMin, 1, 30)
         || !integer(exercise.repsMax, exercise.repsMin, 30) || !integer(exercise.rir, 0, 5)
@@ -341,7 +401,8 @@ function validateProgram(program, messages) {
     if (estimatedMinutes > context.minutesPerSession) invalid();
     sessionEstimates.push({ day: session.day, estimatedMinutes });
   }
-  return { context, sessions: program.sessions, weeklySummary: [...weekly.values()], sessionEstimates };
+  return { context, sessions: program.sessions, weeklySummary: [...weekly.values()], sessionEstimates,
+    coverageReview: reviewDeclaredCoverage(program.sessions) };
 }
 
 const guidance = [
@@ -352,7 +413,7 @@ const guidance = [
 ].join('\n\n');
 
 function renderProgram(plan) {
-  const { context, sessions, weeklySummary, sessionEstimates } = plan;
+  const { context, sessions, weeklySummary, sessionEstimates, coverageReview } = plan;
   const lines = [
     'Rascunho interpretado da conversa — revise com seu instrutor. Nenhuma ficha foi salva ou aplicada.',
     `Interpretação: ${experienceLabels[context.experience]}, objetivo de ${goalLabels[context.goal]}, ${context.minutesPerSession} min disponíveis por sessão. Equipamentos: ${context.equipment.map(item => equipmentLabels[item]).join(', ')}. Se alguma interpretação estiver errada, corrija no chat.`,
@@ -363,12 +424,19 @@ function renderProgram(plan) {
   }
   lines.push('Contagem direta planejada, por grupo principal indicado no rascunho (não treino executado):');
   lines.push(...weeklySummary.map(row => `• ${groupLabels[row.group]}: ${row.directPlannedSets} séries diretas em ${row.sessionsPerWeek} ${row.sessionsPerWeek === 1 ? 'sessão' : 'sessões'} por semana.`));
-  lines.push('Participação indireta em outros músculos não foi quantificada. Essas contagens não representam estímulo, tonelagem ou hipertrofia. A classificação de grupo e o contexto foram interpretados pela IA e precisam de revisão.');
+  lines.push('Participação indireta em outros músculos não foi quantificada. Essas contagens não representam estímulo, tonelagem ou hipertrofia. A classificação de grupo é descritiva; o contexto foi interpretado pela IA. Ambos precisam de revisão.');
   lines.push('Tempo é uma hipótese logística: 5 min de preparação, 45 s por série, os descansos entre séries e 1 min de transição por exercício. Não inclui filas ou toda a preparação específica; não garante duração real.');
   lines.push('A razão individual de cada dose não foi documentada. Tempo disponível não comprova necessidade dessa dose ou segurança; a distribuição é uma escolha prática inicial revisável.');
+  const classification = coverageReview.unrepresentedPrimaryGroups.length
+    ? coverageReview.unrepresentedPrimaryGroups.map(group => groupLabels[group]).join(', ')
+    : 'todas as categorias possuem uma entrada principal';
+  lines.push(`Classificação principal a revisar: ${classification}. Isso não comprova ausência de participação, equilíbrio, cobertura anatômica completa ou dose adequada. Revise a classificação e as escolhas com seu instrutor.`);
   lines.push(guidance);
   const message = lines.join('\n\n');
-  if (message.length > 6000) invalid();
+  if (message.length > 6000) {
+    const error = new AppError('A IA gerou um rascunho extenso demais para apresentar integralmente. Peça uma rotina mais concisa.', 502);
+    error.iaValidationCode = 'routine_size'; throw error;
+  }
   return message;
 }
 
@@ -381,7 +449,12 @@ function extractDraftContext(messages) {
     let day, declarationsComplete = true;
     for (const line of message.content.split('\n')) {
       const session = line.match(/^(Segunda|Terça|Quarta|Quinta|Sexta|Sábado|Domingo) — logística estimada: (\d{1,3}) min$/);
-      if (session) { day = session[1]; sessionEstimates.push({ day, estimatedMinutes: Number(session[2]) }); continue; }
+      if (session) {
+        day = session[1];
+        if (sessionEstimates.some(item => item.day === day)) declarationsComplete = false;
+        sessionEstimates.push({ day, estimatedMinutes: Number(session[2]) }); continue;
+      }
+      if (line.includes(' — logística estimada:')) { declarationsComplete = false; day = undefined; }
       const movement = line.match(/^• (.{3,100}): ([1-6]) séries × (\d{1,2})–(\d{1,2}) repetições; RIR ([0-5]); descanso inicial (\d{2,3}) s(?:; grupo principal: (Peito|Costas|Ombros|Quadríceps|Posteriores da coxa|Glúteos|Panturrilhas|Bíceps|Tríceps|Abdômen))?\.$/);
       if (/^• .*:.*séries\s*×/.test(line) && (!movement || !day)) declarationsComplete = false;
       if (movement && day) {
@@ -393,18 +466,26 @@ function extractDraftContext(messages) {
       if (summary) weeklySummary.push({ group: summary[1], directPlannedSets: Number(summary[2]), sessionsPerWeek: Number(summary[3]) });
     }
     if (!exercises.length || !weeklySummary.length) continue;
+    const classificationComplete = declarationsComplete && exercises.every(exercise => Boolean(exercise.primaryGroup))
+      && sessionEstimates.every(session => exercises.some(exercise => exercise.day === session.day));
+    const coverageReview = classificationComplete ? reviewDeclaredCoverage(sessionEstimates.map(session => ({
+      day: days.find(day => dayLabels[day] === session.day),
+      exercises: exercises.filter(exercise => exercise.day === session.day).map(exercise => ({
+        primaryGroup: groups.find(group => groupLabels[group] === exercise.primaryGroup),
+      })),
+    }))) : null;
     return {
       provenance: 'Campos explícitos em texto assistant enviado pelo cliente; sem comprovação de autoria, execução ou precisão da classificação.',
       interpretation: message.content.split('\n').find(line => line.startsWith('Interpretação:')) || null,
       individualDoseRationale: 'Não documentada; não inferir necessidade, equilíbrio, preencher tempo, segurança ou dose ideal.',
-      exercises, weeklySummary, sessionEstimates,
+      exercises, weeklySummary, sessionEstimates, coverageReview,
       declaredContributors: weeklySummary.map(row => ({ group: row.group,
         exercises: exercises.filter(exercise => exercise.primaryGroup === row.group).map(({ day, name, sets }) => ({ day, name, sets })),
-        classificationComplete: declarationsComplete && exercises.every(exercise => Boolean(exercise.primaryGroup)),
+        classificationComplete,
       })),
     };
   }
   return null;
 }
 
-module.exports = { programSchema, createProgramSchema, validateProgram, renderProgram, extractDraftContext, groupLabels };
+module.exports = { programSchema, createProgramSchema, createSessionsSchema, validateContext, validateProgram, renderProgram, extractDraftContext, groupLabels };

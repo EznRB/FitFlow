@@ -2,7 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createProgramSchema, validateProgram } = require('../src/services/ia-routine');
 const { createIaChatService } = require('../src/services/ia-chat.service');
-const { program, exercise } = require('./fixtures/ia-routine.cjs');
+const { program } = require('./fixtures/ia-routine.cjs');
+const { selectedExercise } = require('./fixtures/ia-routine-selection.cjs');
 
 const initial = 'Sou adulto saudável, sem limitações clínicas relevantes. Sou iniciante e meu objetivo é hipertrofia. Posso treinar segunda, quarta e sexta, por 50 minutos cada sessão. Tenho máquinas, halteres, barra, polias e banco.';
 const correction = 'Correção deste cenário fictício: agora só posso treinar terça por 35 minutos. Não tenho banco nem barra; tenho apenas halteres e espaço no chão. Mantenha meu objetivo e minha experiência que informei e revise o rascunho.';
@@ -30,23 +31,32 @@ test('schema oferece provas originais por campo, preservando contexto anterior n
   assert.equal(JSON.stringify(messages), before);
 });
 
-test('gerador usa schema estrito com citações selecionáveis, sem paráfrase ou chamada adicional', async () => {
+test('classificador extrai contexto com provas originais antes de gerar sessões restritas', async () => {
   let calls = 0;
+  const draft = program();
+  Object.assign(draft.context, { availableDays: ['tuesday'], minutesPerSession: 35, equipment: ['dumbbells', 'bodyweight'] });
+  const sessions = [{ day: 'tuesday', exercises: [selectedExercise('db-goblet-squat', 3)] }];
   const service = createIaChatService({ provider: 'groq', groqApiKey: 'fixture-only', freeTierConfirmed: true,
     fetchImpl: async (_, options) => {
-      if (++calls === 1) return response({ kind: 'routine_draft', message: 'Vou organizar um rascunho revisável para sua rotina.', sourceIds: [] });
       const request = JSON.parse(options.body);
       assert.equal(request.response_format.type, 'json_schema');
       assert.equal(request.response_format.json_schema.strict, true);
+      if (++calls === 1) {
+        const variant = request.response_format.json_schema.schema.properties.turn.anyOf.find(row => row.properties.kind.enum[0] === 'routine_draft');
+        const properties = variant.properties.context.properties;
+        const markers = { availabilityQuote: 'agora', durationQuote: '35 minutos', equipmentQuote: 'apenas halteres',
+          experienceQuote: 'Sou iniciante', goalQuote: 'hipertrofia', healthyAdultQuote: 'Sou adulto saudável' };
+        for (const [key, marker] of Object.entries(markers)) draft.context[key] = properties[key].enum.find(quote => quote.includes(marker));
+        return response({ turn: { kind: 'routine_draft', context: draft.context } });
+      }
       assert.equal(request.response_format.json_schema.name, 'fitflow_routine');
-      const properties = request.response_format.json_schema.schema.properties.context.properties;
-      const draft = program();
-      Object.assign(draft.context, { availableDays: ['tuesday'], minutesPerSession: 35, equipment: ['dumbbells', 'bodyweight'] });
-      const markers = { availabilityQuote: 'agora', durationQuote: '35 minutos', equipmentQuote: 'apenas halteres',
-        experienceQuote: 'Sou iniciante', goalQuote: 'hipertrofia', healthyAdultQuote: 'Sou adulto saudável' };
-      for (const [key, marker] of Object.entries(markers)) draft.context[key] = properties[key].enum.find(quote => quote.includes(marker));
-      draft.sessions = [{ day: 'tuesday', exercises: [exercise('Agachamento com halteres', 'quads', 3, ['dumbbells'])] }];
-      return response(draft);
+      assert.equal(request.response_format.json_schema.schema.properties.context, undefined);
+      assert.deepEqual(request.response_format.json_schema.schema.properties.sessions.items.properties.day.enum, ['tuesday']);
+      const exerciseSchema = request.response_format.json_schema.schema.properties.sessions.items.properties.exercises.items.properties;
+      assert.ok(exerciseSchema.exerciseId.enum.includes('db-goblet-squat'));
+      assert.ok(!exerciseSchema.exerciseId.enum.includes('db-flat-press'));
+      assert.equal(exerciseSchema.equipment, undefined);
+      return response({ sessions });
     } });
   const result = await service.chat({ consent: true, messages });
   assert.equal(calls, 2); assert.equal(result.kind, 'routine_draft');
