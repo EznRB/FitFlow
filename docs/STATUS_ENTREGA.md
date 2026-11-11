@@ -4,6 +4,8 @@ O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou mel
 
 ## Rodada em revisão
 
+Continuidade `65c27a0`: espera mínima da quota da IA e acessibilidade funcional das sugestões/avisos de formulários verificadas em **862/862 testes locais**, sem falhas ou ignorados. Mudanças enviadas à mesma branch da PR 2, ainda sem integração em produção; CI da nova revisão em execução no registro desta atualização. [Escopo, evidências e retomadas automáticas](VALIDACAO_CONTINUIDADE_2026_11_11.md).
+
 IA: commit funcional `83cd863dc42c29ae4bcdcf0b5ac1979a73abd8a3`, com catálogo de 26 variantes e seleção por IDs. **853/853 testes locais** aprovados e revisão independente focada encerrada. O [PR #2](https://github.com/EznRB/FitFlow/pull/2) permanece em rascunho. Checkpoint `1354c72`: [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43056659556/job/130647795429), 853 casos/852 aprovados/um ignorado sem banco; [preview READY](https://fit-flow-7ompdqzgp-eznrbs-projects.vercel.app), saúde/login 200 e geração/continuação reais fictícias por HTTPS conferidas. A continuação imediata recebeu 429 de quota; uma tentativa manual após intervalo passou. O padrão do classificador passa a 120B. **Revisão visual ainda pendente; nenhuma integração nova em produção.** [Evidências e limites](RODADA_IA_CATALOGO_2026_11_11.md).
 
 ## Implantação atual

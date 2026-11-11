@@ -21,4 +21,8 @@ Essa verificação é funcional e por código; não certifica aparência, contra
 
 A automação `concluir-desenvolvimento-do-fitflow` foi criada ativa com retomadas a cada 30 minutos neste chat, sujeitas aos limites do aplicativo. Ela mantém o plano completo e a apresentação após estabilização. Isso não altera o estado da meta antiga na ferramenta de goals, que continua pausada.
 
-Próxima frente: corrigir o foco da navegação móvel e verificar a integração sem interferir no diálogo modal. A conclusão geral continua dependente dos demais gates do plano, incluindo inspeção visual, celular físico e configuração do provedor de pagamentos.
+Na continuação, o menu móvel passou a conter Tab e Shift+Tab nos controles visíveis e habilitados, recuperar foco vindo do conteúdo coberto e respeitar a precedência do diálogo modal e de ancestrais inertes. Escape e mudança para desktop mantêm fechamento/restauração. Quatro regressões novas reproduziram as falhas antes da correção.
+
+A suíte integral após essa mudança terminou com código 0: **866/866 testes**, sem falhas ou ignorados; log local ignorado `server/tmp/full-sidebar-continuation-20261111.log`. A CI de `65c27a0` foi aprovada no [run 43061653288](https://github.com/EznRB/FitFlow/actions/runs/43061653288); esse resultado antecede a mudança do menu.
+
+A conclusão geral continua dependente dos demais gates do plano, incluindo inspeção visual, celular físico e configuração do provedor de pagamentos.

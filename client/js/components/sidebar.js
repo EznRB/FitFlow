@@ -130,7 +130,28 @@ const Sidebar = {
       this.mobileQuery = window.matchMedia('(max-width: 768px)');
       this.mobileQuery.addEventListener('change', () => this.closeMobile(false));
       document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && this.element?.classList.contains('open')) this.closeMobile();
+        if (!this.mobileQuery.matches || !this.element?.classList.contains('open') ||
+            this.element.closest('[inert]')) return;
+        // A dialog outside the drawer owns its own keyboard events, including
+        // the Escape that closes it and restores focus to the sidebar.
+        if (event.key === 'Escape' && this.element.contains(event.target)) this.closeMobile();
+        if (event.key === 'Tab') {
+          if (document.getElementById('modal-overlay')?.style.display === 'flex') return;
+          const controls = [...this.element.querySelectorAll('button, input, select, textarea, a[href], [tabindex]')]
+            .filter(node => !node.disabled && !node.hidden && node.tabIndex >= 0 &&
+              !node.closest('[inert]') && node.getClientRects().length);
+          const first = controls[0], last = controls[controls.length - 1];
+          if (!this.element.contains(document.activeElement)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first)?.focus();
+          } else if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }
       });
     }
     this.syncMobile();
