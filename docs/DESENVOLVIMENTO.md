@@ -61,6 +61,27 @@ O comando não imprime credenciais, cria somente o primeiro administrador e recu
 
 ## PostgreSQL nativo e Neon
 
+### Primeira instalação PostgreSQL em banco vazio
+
+Após `npm ci` em `server/`, configure privadamente `DATABASE_PROVIDER=postgresql`, `DATABASE_URL` e a conexão direta administrativa `DIRECT_URL`. Gere o Client antes de inicializar:
+
+```powershell
+npx prisma generate
+node scripts/bootstrap-postgresql.cjs --empty-database
+```
+
+O histórico PostgreSQL tem uma pasta antiga chamada `baseline`, posterior às migrations datadas na ordenação do Prisma. `migrate deploy` sozinho em banco vazio falha por tentar alterar `payments` antes de criá-la. O bootstrap aplica a baseline original, registra seu checksum com `migrate resolve --applied baseline` e executa as migrations seguintes. Não renomeia ou modifica migrations aplicadas. Exige conexão direta (`DIRECT_URL` ou `DATABASE_URL_UNPOOLED`) e schema `public`; recusa tabelas, tipos, funções existentes e esquemas de usuário. Usa lock para impedir dois bootstraps simultâneos; não execute outro migrador ou escritor durante a primeira instalação. Não cria contas ou dados demonstrativos.
+
+Para banco já instalado, continue usando **`npx prisma migrate deploy`**; não execute bootstrap, reset ou seed para atualizar. Se uma primeira instalação falhar parcialmente, preserve os logs e investigue o estado antes de qualquer recuperação; o comando não adota nem remove objetos existentes. `DIRECT_URL` deve usar conexão direta com permissão de DDL; a credencial limitada do runtime não serve para instalar o schema.
+
+Gate de instalação limpa, exclusivamente no cluster local gerenciado:
+
+```powershell
+node scripts/with-postgresql-test-env.cjs node tests/postgresql-clean-migrations.integration.cjs
+```
+
+O gate cria um banco aleatório exclusivo, confere migrations/tabelas/FK, testa a recusa de reinicialização e remove apenas esse banco. Cada execução preserva um log CLI próprio; o resumo revisado de 12/11 está em `server/tmp/postgresql-clean-bootstrap-reviewed-summary-20261112.log` e aponta seu arquivo completo. Uma falha de cleanup é erro do gate, não sucesso; confira o identificador da fixture e seus processos antes de qualquer limpeza manual. Não usa Neon nem reinicializa `fitflow_pg_test`. Em 12/11 passou com seis migrations e 15 tabelas de aplicação; logs completos em `server/tmp/postgresql-clean-bootstrap-20261112.log` e resumo em `postgresql-clean-bootstrap-summary-20261112.log`. O erro original está preservado em `postgresql-clean-migrations-20261112.log`; uma tentativa intermediária corrigiu o argumento `--schema` do CLI, com diagnóstico em `postgresql-clean-bootstrap-cli-args-failed-20261112.log`.
+
 O backend seleciona provider, schema e Client pelo protocolo da conexão e por `DATABASE_PROVIDER`; uma combinação incompatível é recusada. MySQL mantém seu histórico de migrations. PostgreSQL usa `server/prisma/postgresql/schema.prisma` e baseline separados, com Prisma 6.19.3. `DIRECT_URL` é a conexão direta para migrations; `DATABASE_URL` usa pooler no runtime Neon. Não reutilizar migrations MySQL em PostgreSQL.
 
 O cluster PostgreSQL local de teste utiliza os binários 17.10 já presentes neste computador, em `C:/Program Files/PostgreSQL/17/bin`, com dados isolados em `.local-db-postgresql/`, loopback `127.0.0.1:5448` e banco `fitflow_pg_test`. Não depende de Docker e não foi instalado como serviço. Em `server`:
