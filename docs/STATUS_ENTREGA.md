@@ -18,7 +18,7 @@ Removidos `server/database/schema.sql` e `seed.sql`, sem consumidores atuais: cr
 
 ## Implantação atual
 
-Também em revisão: [correção da edição de e-mail](EDICAO_EMAIL_2026_11_11.md), que podia salvar maiúsculas/espaços incompatíveis com a busca de login PostgreSQL. Reproduzida antes, validada depois com login real em PostgreSQL local e Neon de verificação. Consulta agregada de produção encontrou zero contas precisando de reparo. O fix ainda não foi publicado em produção.
+**Atualização funcional de 12/11:** a [PR 4](https://github.com/EznRB/FitFlow/pull/4) publicou a normalização de e-mail na edição de alunos, merge `8bb802c688110ac5aacf087ee2d3a176dee017d2`. Revisão com CI aprovada e árvore idêntica à integrada; suíte isolada com 805 aprovados/zero falhas/um ignorado, e o gate MariaDB omitido passou separadamente (1/1). Produção READY e alias conferidos; HTTPS validou saúde e login/me nos três perfis, autorização, catálogo, painel, CSRF e logout. [Provas e limites](PATCH_EMAIL_2026_11_12.md). A tabela abaixo preserva o marco anterior de segurança; o código funcional atual é `8bb802c`.
 
 Em revisão na PR 2: [paridade da identidade do catálogo](PARIDADE_CATALOGO_2026_11_11.md), com migration nova aprovada no PostgreSQL local e no Neon isolado de verificação. **Ainda não aplicada em produção.** A tela de nutrição recebeu fontes FAO diretas, com 39 testes de interação aprovados e inspeção visual pendente. Esses gates focados não alteram o total da suíte integral registrado acima.
 
