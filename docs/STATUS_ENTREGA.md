@@ -20,6 +20,8 @@ Removidos `server/database/schema.sql` e `seed.sql`, sem consumidores atuais: cr
 
 ## Implantação atual
 
+**Atualização funcional de datas de 12/11:** [PR 6](https://github.com/EznRB/FitFlow/pull/6), merge `dbce1c919096fc3d696b9a30df6430853bf320a7`, é o código funcional atual. CI da revisão aprovada e árvore idêntica à integrada. Produção READY/alias confirmados; gate público autenticado recusou data impossível com 400 antes da criação de sessão, e saúde/banco passaram. Históricos preservados. [Provas e limites](PATCH_DATAS_2026_11_12.md). Os marcos abaixo continuam históricos.
+
 **Atualização funcional de catálogo de 12/11:** [PR 5](https://github.com/EznRB/FitFlow/pull/5), merge `f654cc0ed028614cf145b32be86fb475655dd647`, é o código funcional atual. CI da revisão aprovada, árvore idêntica à integrada; migration adicional aplicada em produção e FK validada com UPDATE/DELETE RESTRICT. PostgreSQL agora tem seis migrations aplicadas, MySQL oito. Produção READY, alias e gate HTTPS pós-migration aprovados. [Provas e limites](PATCH_CATALOGO_2026_11_12.md). Os marcos de e-mail/segurança abaixo são históricos.
 
 **Atualização funcional de 12/11:** a [PR 4](https://github.com/EznRB/FitFlow/pull/4) publicou a normalização de e-mail na edição de alunos, merge `8bb802c688110ac5aacf087ee2d3a176dee017d2`. Revisão com CI aprovada e árvore idêntica à integrada; suíte isolada com 805 aprovados/zero falhas/um ignorado, e o gate MariaDB omitido passou separadamente (1/1). Produção READY e alias conferidos; HTTPS validou saúde e login/me nos três perfis, autorização, catálogo, painel, CSRF e logout. [Provas e limites](PATCH_EMAIL_2026_11_12.md). A tabela abaixo preserva o marco anterior de segurança; o código funcional atual é `8bb802c`.
