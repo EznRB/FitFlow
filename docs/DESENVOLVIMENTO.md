@@ -69,7 +69,9 @@ Dois testes do helper passaram após reproduzir a rejeição prematura de `Promi
 
 O gate HTTP PostgreSQL agora cria um administrador UUID próprio, sem depender da população de admins existente. A regressão com outro admin presente falhou antes e passou depois, conferindo que essa conta ficou intacta; o gate também passou no Neon isolado. O primeiro-admin foi transferido para o banco temporário da instalação limpa, onde criação/hash e recusa de segundo admin, inclusive após inativação, passaram. As fixtures foram removidas. Logs: `auth-shared-admin-{red,green}-20261112.log`, `auth-independent-neon-20261112.log` e `clean-bootstrap-admin-corrected-green-20261112.log`. Uma primeira asserção incorreta sobre o retorno `{id}` do bootstrap ficou registrada em `clean-bootstrap-admin-green-20261112.log`; a versão corrigida consulta o papel no banco.
 
-Permanece a premissa a resolver nos gates de quota: um lote pode cruzar uma fronteira real de janela. Nenhuma dessas revisões modifica as regras do aplicativo ou aprova pagamentos externos.
+Os gates de quota passaram a consultar o relógio do próprio banco antes do lote. Se faltarem até 30 segundos para a virada dos 15 minutos, aguardam essa virada (no máximo 30,05 segundos) antes de criar hits. Ao terminar, conferem que o lote permaneceu na mesma janela; se não, falham com `QUOTA_TEST_WINDOW`, resultado inconclusivo, sem retry automático. Mantêm modo production, limite dez, expectativa de dez aceitos/seis recusados e 16 hits. Os lotes drenam todas as operações antes da limpeza.
+
+Regressões com relógio simulado falharam antes; cinco testes dos helpers passaram depois. Gates reais passaram em MariaDB local, PostgreSQL local e Neon isolado de verificação, limpando apenas seus dois buckets UUID/HMAC. Logs: `quota-window-red-20261112.log`, `quota-window-diagnostics-green-20261112.log`, `quota-window-mariadb-20261112.log`, `quota-window-postgresql-20261112.log` e `quota-window-neon-20261112.log`. Revisão independente sem problemas acionáveis. Nenhuma regra ou quota de produção foi alterada; isso não aprova pagamentos externos.
 
 ### Primeira instalação PostgreSQL em banco vazio
 
