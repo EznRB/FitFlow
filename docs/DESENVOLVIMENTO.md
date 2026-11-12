@@ -61,6 +61,14 @@ O comando não imprime credenciais, cria somente o primeiro administrador e recu
 
 ## PostgreSQL nativo e Neon
 
+### Confiabilidade dos gates de integração — 12/11
+
+Os lotes concorrentes de recebimentos manuais e checkout local agora aguardam todas as mutações terminarem, inclusive quando uma falha, antes de iniciar a limpeza das fixtures. O helper `tests/helpers/settled-batch.cjs` preserva os erros originais e fornece códigos filtrados para diagnóstico; não repete operações. O provedor controlado do checkout usa data de aprovação fixa coerente com as datas da fixture, evitando expiração da expectativa em janeiro de 2027.
+
+Dois testes do helper passaram após reproduzir a rejeição prematura de `Promise.all`; os gates reais `manual-payment-local.integration.cjs` e `checkout-local.integration.cjs` também passaram no banco local gerenciado, removendo somente suas fixtures. Nenhum provedor externo ou cobrança real foi usado. Logs em `server/tmp/settled-batch-behavior-red-20261112.log`, `settled-batch-diagnostics-green-20261112.log`, `manual-fixture-drain-20261112.log` e `checkout-fixture-drain-20261112.log`. A primeira tentativa do teste tinha import sem extensão `.cjs`; esse erro de preparação permanece em `settled-batch-red-20261112.log`, sem ser confundido com a reprodução comportamental.
+
+A revisão identificou ainda premissas a resolver: o gate de autenticação testa primeiro administrador no destino compartilhado, e os gates de quota podem cruzar uma fronteira real de janela. Não executar integrações com bootstrap/admin em paralelo no mesmo banco. Isso não modifica as regras do aplicativo nem aprova pagamentos externos.
+
 ### Primeira instalação PostgreSQL em banco vazio
 
 Após `npm ci` em `server/`, configure privadamente `DATABASE_PROVIDER=postgresql`, `DATABASE_URL` e a conexão direta administrativa `DIRECT_URL`. Gere o Client antes de inicializar:
