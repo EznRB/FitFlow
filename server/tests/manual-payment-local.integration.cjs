@@ -1,6 +1,7 @@
 'use strict';
 // Somente bancos NATIVOS dedicados; não aceita nem a branch remota de verificação.
 const assert = require('node:assert/strict');
+const settledBatch = require('./helpers/settled-batch.cjs');
 const { randomUUID, randomBytes } = require('node:crypto');
 const target = new URL(process.env.DATABASE_URL || 'file:missing');
 assert.notEqual(process.env.NODE_ENV, 'production');
@@ -35,13 +36,13 @@ const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
     const originalEnd = students[0].planEndDate;
     await status(first.registrar({ ...payload, expectedActorId: users[1].id }, actor), 403);
     assert.equal(await db.payment.count({ where: { studentId } }), 0);
-    const repeats = await Promise.all([first.registrar(payload, actor), second.registrar(payload, actor)]);
+    const repeats = await settledBatch([first.registrar(payload, actor), second.registrar(payload, actor)]);
     assert.equal(repeats[0].id, repeats[1].id);
     assert.equal(await db.payment.count({ where: { studentId } }), 1);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), addDays(originalEnd, 30).toISOString());
     assert.match(repeats[0].manualRequestHash, /^[a-f0-9]{64}$/);
     await assert.rejects(db.payment.create({ data: { studentId, amount: '1.00', paymentDate: new Date('2099-10-08T00:00:00Z'), dueDate: new Date('2099-10-09T00:00:00Z'), manualRequestId: randomUUID(), manualRequestHash: null } }), error => /payments_manual_request_pair_check/.test(error.message));
-    await Promise.all([first.registrar({ ...payload, idempotencyKey: randomUUID() }, actor), second.registrar({ ...payload, idempotencyKey: randomUUID() }, actor)]);
+    await settledBatch([first.registrar({ ...payload, idempotencyKey: randomUUID() }, actor), second.registrar({ ...payload, idempotencyKey: randomUUID() }, actor)]);
     assert.equal(await db.payment.count({ where: { studentId } }), 3);
     const finalEnd = addDays(originalEnd, 90);
     assert.equal((await db.student.findUnique({ where: { id: studentId } })).planEndDate.toISOString(), finalEnd.toISOString());
@@ -89,4 +90,4 @@ const addDays = (date, days) => new Date(date.getTime() + days * 86400000);
       if (plan) await db.plan.delete({ where: { id: plan.id } });
     } finally { await Promise.all([db.$disconnect(), secondDb.$disconnect()]); }
   }
-})().catch(error => { console.error('FAIL manual payment native:', error.code || error.name); process.exitCode = 1; });
+})().catch(error => { console.error('FAIL manual payment native:', error.code || error.name, JSON.stringify(error.failureCodes || [])); process.exitCode = 1; });

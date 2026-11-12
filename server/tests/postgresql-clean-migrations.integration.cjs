@@ -35,6 +35,18 @@ async function run() {
     assert.deepEqual(applied.map(row => row.migration_name).sort(), migrations.sort());
     const constraints = await fixture.$queryRaw`SELECT confupdtype::text AS action, convalidated FROM pg_constraint WHERE conname = 'exercises_catalog_exercise_id_fkey' AND conrelid = 'public.exercises'::regclass`;
     assert.deepEqual(constraints, [{ action: 'r', convalidated: true }]);
+    // First-admin semantics require an empty population; never assert a global
+    // count against the shared PostgreSQL/Neon verification destination.
+    const { createFirstAdmin } = require('../scripts/bootstrap-admin.cjs');
+    const password = randomBytes(24).toString('base64url');
+    const firstAdmin = await createFirstAdmin(fixture, { name: 'Fresh admin fixture', email: 'first@example.invalid', password });
+    const adminRow = await fixture.user.findUnique({ where: { id: firstAdmin.id } });
+    assert.equal(adminRow.role, 'admin');
+    assert.equal(await require('bcryptjs').compare(password, adminRow.passwordHash), true);
+    await assert.rejects(createFirstAdmin(fixture, { name: 'Second admin fixture', email: 'second@example.invalid', password }), /Já existe um administrador/);
+    await fixture.user.update({ where: { id: firstAdmin.id }, data: { active: false } });
+    await assert.rejects(createFirstAdmin(fixture, { name: 'Second admin fixture', email: 'second@example.invalid', password }), /Já existe um administrador/);
+    assert.equal(await fixture.user.count({ where: { role: 'admin' } }), 1);
     const repeated = spawnSync(process.execPath, [path.resolve(__dirname, '../scripts/bootstrap-postgresql.cjs'), '--empty-database'], {
       cwd: path.resolve(__dirname, '..'), windowsHide: true, encoding: 'utf8', timeout: 30000,
       env: { ...process.env, DATABASE_PROVIDER: 'postgresql', DATABASE_URL: target.href, DIRECT_URL: target.href },

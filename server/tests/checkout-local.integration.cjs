@@ -1,6 +1,7 @@
 // Somente fixtures descartáveis no banco local gerenciado. Não faz chamadas ao Mercado Pago.
 // node scripts/with-local-env.cjs node tests/checkout-local.integration.cjs
 const assert = require('node:assert/strict');
+const settledBatch = require('./helpers/settled-batch.cjs');
 const { randomUUID, randomBytes } = require('node:crypto');
 const { PrismaClient } = require('@prisma/client');
 const target = new URL(process.env.DATABASE_URL || 'file:missing');
@@ -23,20 +24,20 @@ let user; let student; let plan;
     student = await db.student.create({ data: { userId: user.id, planId: plan.id, planEndDate: new Date('2026-11-01') } });
     const manual = createPagamentosService({ db });
     const payload = { studentId: student.id, planId: plan.id, amount: '150.00', paymentDate: '2026-10-08', paymentMethod: 'pix' };
-    await Promise.all([manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id), manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id)]);
+    await settledBatch([manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id), manual.registrar({ ...payload, idempotencyKey: randomUUID() }, user.id)]);
     let current = await db.student.findUnique({ where: { id: student.id } });
     assert.equal(current.planEndDate.toISOString().slice(0, 10), '2026-12-31');
     assert.equal(await db.payment.count({ where: { studentId: student.id } }), 2);
     const repository = createCheckoutRepository(db);
     const input = { planId: plan.id, idempotencyKey: randomUUID() };
-    const [first, repeated] = await Promise.all([repository.createOrGet(user.id, input), repository.createOrGet(user.id, input)]);
+    const [first, repeated] = await settledBatch([repository.createOrGet(user.id, input), repository.createOrGet(user.id, input)]);
     assert.equal(first.intent.id, repeated.intent.id);
     await assert.rejects(repository.getOwned(first.intent.id, user.id + 1000000), error => error.statusCode === 404);
     const payment = { id: String(Date.now()), live_mode: false, collector_id: '123', currency_id: 'BRL', status: 'approved',
       transaction_amount: '150.00', transaction_amount_refunded: 0, external_reference: first.intent.id,
-      metadata: { fitflow_intent_id: first.intent.id }, payment_method_id: 'pix', payment_type_id: 'bank_transfer', date_approved: new Date().toISOString() };
+      metadata: { fitflow_intent_id: first.intent.id }, payment_method_id: 'pix', payment_type_id: 'bank_transfer', date_approved: '2026-10-08T12:00:00.000Z' };
     const service = createCheckoutService({ repository, provider: { enabled: true, sellerId: '123', findPayment: async () => payment, getPayment: async () => payment } });
-    const results = await Promise.all(Array.from({ length: 4 }, () => service.get(user.id, first.intent.id)));
+    const results = await settledBatch(Array.from({ length: 4 }, () => service.get(user.id, first.intent.id)));
     assert.ok(results.every(result => result.state === 'paid' && result.settled));
     current = await db.student.findUnique({ where: { id: student.id } });
     assert.equal(current.planEndDate.toISOString().slice(0, 10), '2027-01-30');
@@ -69,4 +70,4 @@ let user; let student; let plan;
     if (plan) await db.plan.delete({ where: { id: plan.id } });
     await db.$disconnect();
   }
-})().catch(() => { console.error('FAIL checkout local; detalhes não exibidos para preservar credenciais.'); process.exitCode = 1; });
+})().catch(error => { console.error('FAIL checkout local; detalhes não exibidos para preservar credenciais.', JSON.stringify(error.failureCodes || [])); process.exitCode = 1; });
