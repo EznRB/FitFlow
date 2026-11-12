@@ -15,6 +15,11 @@ function numeric(value, label, min, max, integer = false) {
 }
 function date(value, now) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value)) throw new AppError('Data inválida: inclua o fuso horário.', 400);
+  // Date parses February 30 as March: validate the declared calendar day
+  // independently of its offset before converting the instant to UTC.
+  const calendarDay = value.slice(0, 10);
+  const calendar = new Date(`${calendarDay}T00:00:00.000Z`);
+  if (!Number.isFinite(calendar.getTime()) || calendar.toISOString().slice(0, 10) !== calendarDay) throw new AppError('Data inválida: informe um dia existente no calendário.', 400);
   const d = new Date(value);
   if (!Number.isFinite(d.getTime()) || (now && (d > new Date(now.getTime() + 300000) || d < new Date(now.getTime() - 366 * 86400000)))) throw new AppError('Data do registro fora do intervalo permitido.', 400);
   return d.toISOString();
