@@ -30,6 +30,6 @@ node scripts/with-neon-verification-env.cjs node tests/catalog-identity-postgres
 
 ## Limites preservados
 
-Os 17 modelos mantêm paridade estrutural; JSONB e TIMESTAMPTZ são adaptações intencionais do PostgreSQL. Collations continuam diferentes: igualdade/uniqueness de strings pode variar entre MySQL e PostgreSQL. Esta rodada não altera collations, não comprova todos os casos de normalização nem substitui os gates de autorização e persistência.
+Os 15 modelos mantêm paridade estrutural; JSONB e TIMESTAMPTZ são adaptações intencionais do PostgreSQL. A contagem anterior de 17 foi corrigida ao conferir ambos os schemas e a instalação limpa. Collations continuam diferentes: igualdade/uniqueness de strings pode variar entre MySQL e PostgreSQL. Esta rodada não altera collations, não comprova todos os casos de normalização nem substitui os gates de autorização e persistência.
 
 A tela de nutrição também passou a oferecer links diretos às fontes FAO do PAL e dos fatores energéticos gerais. São referências já documentadas, consultadas novamente; equações e hipóteses não mudaram. Syntax check e 39 testes de interação da nutrição passaram, sem falhas ou ignorados (`nutrition-source-links-20261111.log`). Inspeção visual desta revisão continua pendente.
