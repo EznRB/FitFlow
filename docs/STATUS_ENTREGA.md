@@ -2,9 +2,13 @@
 
 O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou melhorias de confirmação/recuperação na nutrição, no registro avulso e na presença do aluno, além da expansão do histórico. A atualização seguinte acrescentou recuperação da consulta de planos na matrícula, com bloqueio até selecionar um plano ativo confirmado. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
+## Confiabilidade da verificação — 12/11
+
+A [PR 9](https://github.com/EznRB/FitFlow/pull/9), merge `58d3ac6c245d720c47de27dec9c088d1ccdff62d`, integrou os gates isolados de autenticação/primeiro admin, drenagem de lotes financeiros antes do cleanup, data fixa do provedor controlado e verificação da janela de quota pelo relógio DB. [CI final aprovada](https://github.com/EznRB/FitFlow/actions/runs/43155396607) da revisão `154f912`; árvore idêntica à integrada (`7a6fef31615fc9fd3a2bc3402a454d5b429f587a`). Cinco regressões de helpers e gates reais MariaDB/PostgreSQL/Neon de verificação passaram, conforme [guia e logs](DESENVOLVIMENTO.md#confiabilidade-dos-gates-de-integração--1211). Sem alteração de runtime HTTP, schema, migrations, contas reais, UI ou quota de produção. Não foi repetido o gate público sem mudança que o justificasse.
+
 ## Implantação atual
 
-A revisão publicada mais recente do aplicativo é `f1f1ef91a269e1b3d2a766f49e414aa65e2ddb7d` (PR 8). PostgreSQL tem seis migrations aplicadas; MySQL mantém oito. As versões e contagens dos marcos anteriores ficam em seus relatos, sem atribuí-las à revisão atual.
+O último gate público completo de runtime HTTP foi executado em `f1f1ef91a269e1b3d2a766f49e414aa65e2ddb7d` (PR 8). As revisões posteriores abaixo alteram somente testes e documentação. PostgreSQL tem seis migrations aplicadas; MySQL mantém oito. As versões e contagens dos marcos anteriores ficam em seus relatos, sem atribuí-las à revisão atual.
 
 Marcos preservados: [dependências de segurança](PATCH_SEGURANCA_2026_11_11.md), [e-mail/login](PATCH_EMAIL_2026_11_12.md), [paridade do catálogo](PATCH_CATALOGO_2026_11_12.md), [calendário dos registros](PATCH_DATAS_2026_11_12.md) e [instalação PostgreSQL do zero](DESENVOLVIMENTO.md#primeira-instalação-postgresql-em-banco-vazio). A PR 7 integrou o instalador e guia após [CI aprovada](https://github.com/EznRB/FitFlow/actions/runs/43153306639), sem executá-lo nos bancos existentes.
 
