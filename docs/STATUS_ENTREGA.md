@@ -8,6 +8,8 @@ A [PR 2](https://github.com/EznRB/FitFlow/pull/2) continua em rascunho para a re
 
 As rodadas desta revisão incluem catálogo de 26 variantes para a IA, contexto/correções de conversa, espera da quota, sugestões de alunos por teclado, avisos em modal, foco de menus/paginação, submissão por Enter e preservação do histórico do caderno. Presenças e painel receberam recuperação com contexto protegido. Os testes, amostras, versões e limites de cada rodada ficam em [continuidade funcional](VALIDACAO_CONTINUIDADE_2026_11_11.md) e [IA/catálogo](RODADA_IA_CATALOGO_2026_11_11.md). O preview `1ebc099` teve saúde e assets conferidos, mas não constitui prova visual das revisões seguintes.
 
+Em 12/11, o comparador de divisões passou a remover o resultado anterior ao alterar dias, tempo, objetivo, regularidade ou equipamentos. Os campos, a ficha e o cálculo explícito de séries permanecem; uma nova comparação exige clique. A regressão falhou antes da correção; sete testes do planejador passaram depois, zero falhas/ignorados (`server/tmp/planner-context-{red,green}-20261112.log`). Correção na PR 2, ainda sujeita ao gate visual; não altera equações nem prescreve divisões automaticamente.
+
 A [auditoria de dependências](AUDITORIA_DEPENDENCIAS_2026_11_11.md) registra 15 diretas e 118 transitivas, com os dois avisos corrigidos e limites de avaliação explícitos. A revisão estática de persistência móvel não encontrou defeito concreto no escopo examinado. Inspeção visual integral, aparelho físico, provedor de pagamentos externo e rotação da chave Groq continuam abertos. A apresentação será preparada após a estabilização, conforme combinado.
 
 ## Revisão estática e limpeza de 11/11
