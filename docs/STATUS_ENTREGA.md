@@ -4,6 +4,8 @@ O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou mel
 
 ## Implantação atual
 
+**Atualização funcional de 12/11:** a [PR 4](https://github.com/EznRB/FitFlow/pull/4) publicou a normalização de e-mail na edição de alunos, merge `8bb802c688110ac5aacf087ee2d3a176dee017d2`. Revisão com CI aprovada e árvore idêntica à integrada; suíte isolada com 805 aprovados/zero falhas/um ignorado, e o gate MariaDB omitido passou separadamente (1/1). Produção READY e alias conferidos; HTTPS validou saúde e login/me nos três perfis, autorização, catálogo, painel, CSRF e logout. [Provas e limites](PATCH_EMAIL_2026_11_12.md). A tabela abaixo preserva o marco anterior de segurança; o código funcional atual é `8bb802c`.
+
 Atualização de segurança de 11/11: os patches da PR 3 foram publicados separadamente das melhorias de IA/UX em revisão na PR 2. A árvore `ee23b4a577b1fd190f0815e5d4460ad8775b2180` é idêntica na revisão testada `6336a77` e no merge `67f1f34`; não foi localizado run de CI próprio do merge até a última consulta. O teste do pacote vulnerável ficou restrito a localhost.
 
 | Aplicação | Código publicado e evidência |
