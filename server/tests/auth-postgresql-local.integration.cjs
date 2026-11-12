@@ -18,7 +18,6 @@ const PrismaClient = getPrismaClientClass();
 const db = new PrismaClient({ log: [] });
 globalThis.prisma = db;
 const bcrypt = require('bcryptjs');
-const { createFirstAdmin } = require('../scripts/bootstrap-admin.cjs');
 const { hashIdentity } = require('../src/middleware/quota');
 const app = require('../src/app');
 const testIp = '198.51.100.25';
@@ -35,16 +34,8 @@ let loginRequests = 0;
     const passwordHash = await bcrypt.hash(password, 10);
     const users = {};
     for (const role of ['admin', 'instructor', 'student']) {
-      if (role === 'admin') {
-        const created = await createFirstAdmin(db, { name: 'Fixture admin', email: `admin.${suffix}@fixture.invalid`, password });
-        userIds.push(created.id);
-        users[role] = await db.user.findUnique({ where: { id: created.id } });
-        assert.equal(users[role].role, 'admin');
-        assert.ok(await bcrypt.compare(password, users[role].passwordHash));
-        await assert.rejects(() => createFirstAdmin(db, { name: 'Second fixture admin', email: `second.${suffix}@fixture.invalid`, password }), /Já existe um administrador/);
-        assert.equal(await db.user.count({ where: { role: 'admin' } }), 1);
-        continue;
-      }
+      // HTTP auth is independent of the database's existing admin population.
+      // The first-admin bootstrap is exercised only in a fresh fixture database.
       users[role] = await db.user.create({ data: { name: `Fixture ${role}`, email: `${role}.${suffix}@fixture.invalid`, passwordHash, role } });
       userIds.push(users[role].id);
     }
@@ -126,7 +117,7 @@ let loginRequests = 0;
     assert.match(logout.headers.get('set-cookie'), /access_token=;/);
     assert.match(logout.headers.get('set-cookie'), /Expires=Thu, 01 Jan 1970/i);
     assert.equal((await get('/api/auth/me')).status, 401);
-    console.log('PASS auth PostgreSQL HTTP: bootstrap do primeiro admin sem reset, três perfis, cookie Secure/HttpOnly sem token no JSON, autorização, senha inválida, bloqueio, mudança de perfil, logout e quota real de login.');
+    console.log('PASS auth PostgreSQL HTTP: fixtures próprias nos três perfis, cookie Secure/HttpOnly sem token no JSON, autorização, senha inválida, bloqueio, mudança de perfil, logout e quota real de login.');
   } finally {
     server?.closeAllConnections(); server?.close();
     // Somente contas e bucket sintéticos criados por esta execução.

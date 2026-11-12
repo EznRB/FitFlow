@@ -61,6 +61,18 @@ O comando não imprime credenciais, cria somente o primeiro administrador e recu
 
 ## PostgreSQL nativo e Neon
 
+### Confiabilidade dos gates de integração — 12/11
+
+Os lotes concorrentes de recebimentos manuais e checkout local agora aguardam todas as mutações terminarem, inclusive quando uma falha, antes de iniciar a limpeza das fixtures. O helper `tests/helpers/settled-batch.cjs` preserva os erros originais e fornece códigos filtrados para diagnóstico; não repete operações. O provedor controlado do checkout usa data de aprovação fixa coerente com as datas da fixture, evitando expiração da expectativa em janeiro de 2027.
+
+Dois testes do helper passaram após reproduzir a rejeição prematura de `Promise.all`; os gates reais `manual-payment-local.integration.cjs` e `checkout-local.integration.cjs` também passaram no banco local gerenciado, removendo somente suas fixtures. Nenhum provedor externo ou cobrança real foi usado. Logs em `server/tmp/settled-batch-behavior-red-20261112.log`, `settled-batch-diagnostics-green-20261112.log`, `manual-fixture-drain-20261112.log` e `checkout-fixture-drain-20261112.log`. A primeira tentativa do teste tinha import sem extensão `.cjs`; esse erro de preparação permanece em `settled-batch-red-20261112.log`, sem ser confundido com a reprodução comportamental.
+
+O gate HTTP PostgreSQL agora cria um administrador UUID próprio, sem depender da população de admins existente. A regressão com outro admin presente falhou antes e passou depois, conferindo que essa conta ficou intacta; o gate também passou no Neon isolado. O primeiro-admin foi transferido para o banco temporário da instalação limpa, onde criação/hash e recusa de segundo admin, inclusive após inativação, passaram. As fixtures foram removidas. Logs: `auth-shared-admin-{red,green}-20261112.log`, `auth-independent-neon-20261112.log` e `clean-bootstrap-admin-corrected-green-20261112.log`. Uma primeira asserção incorreta sobre o retorno `{id}` do bootstrap ficou registrada em `clean-bootstrap-admin-green-20261112.log`; a versão corrigida consulta o papel no banco.
+
+Os gates de quota passaram a consultar o relógio do próprio banco antes do lote. Se faltarem até 30 segundos para a virada dos 15 minutos, aguardam essa virada (no máximo 30,05 segundos) antes de criar hits. Ao terminar, conferem que o lote permaneceu na mesma janela; se não, falham com `QUOTA_TEST_WINDOW`, resultado inconclusivo, sem retry automático. Mantêm modo production, limite dez, expectativa de dez aceitos/seis recusados e 16 hits. Os lotes drenam todas as operações antes da limpeza.
+
+Regressões com relógio simulado falharam antes; cinco testes dos helpers passaram depois. Gates reais passaram em MariaDB local, PostgreSQL local e Neon isolado de verificação, limpando apenas seus dois buckets UUID/HMAC. Logs: `quota-window-red-20261112.log`, `quota-window-diagnostics-green-20261112.log`, `quota-window-mariadb-20261112.log`, `quota-window-postgresql-20261112.log` e `quota-window-neon-20261112.log`. Revisão independente sem problemas acionáveis. Nenhuma regra ou quota de produção foi alterada; isso não aprova pagamentos externos.
+
 ### Primeira instalação PostgreSQL em banco vazio
 
 Após `npm ci` em `server/`, configure privadamente `DATABASE_PROVIDER=postgresql`, `DATABASE_URL` e a conexão direta administrativa `DIRECT_URL`. Gere o Client antes de inicializar:

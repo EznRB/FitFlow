@@ -1,5 +1,7 @@
 // Teste explicitamente local: node scripts/with-local-env.cjs node tests/quota-local.integration.cjs
 const assert = require('node:assert/strict');
+const quotaWindow = require('./helpers/quota-window.cjs');
+const settledBatch = require('./helpers/settled-batch.cjs');
 const { randomUUID } = require('node:crypto');
 const { PrismaClient } = require('@prisma/client');
 const express = require('express');
@@ -15,8 +17,12 @@ const httpKey = hashIdentity(endpoint, '127.0.0.1');
 let server;
 (async () => {
   try {
+    await quotaWindow(async () => {
+      const [{ databaseNow }] = await db.$queryRaw`SELECT UTC_TIMESTAMP(3) AS databaseNow`;
+      return databaseNow.getTime();
+    }, async () => {
     const first = createDatabaseQuotaStore({ db }); const second = createDatabaseQuotaStore({ db });
-    const results = await Promise.all(Array.from({ length: 20 }, (_, i) => (i % 2 ? first : second).increment(key)));
+    const results = await settledBatch(Array.from({ length: 20 }, (_, i) => (i % 2 ? first : second).increment(key)));
     assert.deepEqual(results.map(result => result.totalHits).sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
     assert.equal(new Set(results.map(result => result.resetTime.getTime())).size, 1);
     const resetTime = results[0].resetTime.getTime();
@@ -33,14 +39,15 @@ let server;
     app.use((error, req, res, next) => res.status(error.statusCode || 500).json({ message: 'Falha controlada' }));
     server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
     const url = `http://127.0.0.1:${server.address().port}`;
-    const responses = await Promise.all(Array.from({ length: 16 }, (_, i) => fetch(url + (i % 2 ? '/first' : '/second'), { method: 'POST', headers: { 'X-Forwarded-For': `198.51.100.${i}` } })));
+    const responses = await settledBatch(Array.from({ length: 16 }, (_, i) => fetch(url + (i % 2 ? '/first' : '/second'), { method: 'POST', headers: { 'X-Forwarded-For': `198.51.100.${i}` } })));
     assert.equal(responses.filter(response => response.status === 204).length, 10);
     assert.equal(responses.filter(response => response.status === 429).length, 6); assert.equal(accepted, 10);
     assert.equal((await db.rateLimitBucket.findUnique({ where: { key: httpKey } })).hits, 16);
+    });
     console.log('PASS quota MariaDB: UPSERT 20 concorrentes, 2 instâncias/10 permitidos, HMAC, reset UTC alinhado e limite inteiro.');
   } finally {
     server?.closeAllConnections(); server?.close();
     try { await db.rateLimitBucket.deleteMany({ where: { key: { in: [key, httpKey] } } }); }
     finally { await db.$disconnect(); }
   }
-})().catch(() => { console.error('FAIL quota local; detalhes internos não exibidos.'); process.exitCode = 1; });
+})().catch(error => { console.error('FAIL quota local; detalhes internos não exibidos.', error.code || error.name, JSON.stringify(error.failureCodes || [])); process.exitCode = 1; });

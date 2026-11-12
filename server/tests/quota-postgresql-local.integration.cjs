@@ -1,6 +1,8 @@
 // Executar somente pelo wrapper privado do cluster PostgreSQL dedicado de testes.
 // O guard roda antes de carregar Prisma e impede atingir outro banco do computador.
 const assert = require('node:assert/strict');
+const quotaWindow = require('./helpers/quota-window.cjs');
+const settledBatch = require('./helpers/settled-batch.cjs');
 const { randomUUID } = require('node:crypto');
 require('./helpers/postgresql-target.cjs').assertPostgresqlTestTarget();
 
@@ -19,9 +21,13 @@ let server;
 
 (async () => {
   try {
+    await quotaWindow(async () => {
+      const [{ databaseNow }] = await db.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
+      return databaseNow.getTime();
+    }, async () => {
     const first = createDatabaseQuotaStore({ db, provider: 'postgresql' });
     const second = createDatabaseQuotaStore({ db: secondDb, provider: 'postgresql' });
-    const results = await Promise.all(Array.from({ length: 20 }, (_, i) => (i % 2 ? first : second).increment(key)));
+    const results = await settledBatch(Array.from({ length: 20 }, (_, i) => (i % 2 ? first : second).increment(key)));
     assert.deepEqual(results.map(result => result.totalHits).sort((a, b) => a - b), Array.from({ length: 20 }, (_, i) => i + 1));
     assert.equal(new Set(results.map(result => result.resetTime.getTime())).size, 1);
     const [{ databaseNow }] = await db.$queryRaw`SELECT clock_timestamp() AS "databaseNow"`;
@@ -44,13 +50,14 @@ let server;
     server = app.listen(0, '127.0.0.1');
     await new Promise(resolve => server.once('listening', resolve));
     const url = `http://127.0.0.1:${server.address().port}`;
-    const responses = await Promise.all(Array.from({ length: 16 }, (_, i) => fetch(url + (i % 2 ? '/first' : '/second'), {
+    const responses = await settledBatch(Array.from({ length: 16 }, (_, i) => fetch(url + (i % 2 ? '/first' : '/second'), {
       method: 'POST', headers: { 'X-Forwarded-For': `198.51.100.${i}` },
     })));
     assert.equal(responses.filter(response => response.status === 204).length, 10);
     assert.equal(responses.filter(response => response.status === 429).length, 6);
     assert.equal(accepted, 10);
     assert.equal((await db.rateLimitBucket.findUnique({ where: { key: httpKey } })).hits, 16);
+    });
     console.log('PASS quota PostgreSQL: UPSERT 20 concorrentes entre dois clientes, 2 instâncias/10 permitidos, HMAC, reset alinhado pelo banco e saturação INT.');
   } finally {
     server?.closeAllConnections(); server?.close();
@@ -58,4 +65,4 @@ let server;
     try { await db.rateLimitBucket.deleteMany({ where: { key: { in: [key, httpKey] } } }); }
     finally { await Promise.all([db.$disconnect(), secondDb.$disconnect()]); }
   }
-})().catch(() => { console.error('FAIL quota PostgreSQL local; detalhes internos não exibidos.'); process.exitCode = 1; });
+})().catch(error => { console.error('FAIL quota PostgreSQL local; detalhes internos não exibidos.', error.code || error.name, JSON.stringify(error.failureCodes || [])); process.exitCode = 1; });
