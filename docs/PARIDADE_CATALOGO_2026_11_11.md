@@ -18,7 +18,7 @@ O schema PostgreSQL agora explicita `onUpdate: Restrict`. A migration adicional 
 | Neon de verificação, depois | Exit 0: UPDATE/DELETE RESTRICT e FK validada | `catalog-identity-neon-green-20261111.log` |
 | Prisma validate PostgreSQL | Exit 0 | `catalog-identity-schema-validate-20261111.log` |
 
-O gate `server/tests/catalog-identity-postgresql.integration.cjs` consulta a restrição efetiva em `pg_constraint`, sem alterar linhas. Usa o guard de destino gerenciado existente. A revisão independente não apontou bloqueantes. A migration ainda **não foi aplicada à branch de produção do Neon**, e o código permanece em revisão na PR 2.
+O gate `server/tests/catalog-identity-postgresql.integration.cjs` consulta a restrição efetiva em `pg_constraint`, sem alterar linhas. Usa o guard de destino gerenciado existente. A revisão independente não apontou bloqueantes. A migration foi posteriormente aplicada à produção pela PR 5 em 12/11. [Implantação e restrição efetiva verificadas](PATCH_CATALOGO_2026_11_12.md).
 
 Reexecutar somente após alteração relevante:
 
