@@ -11,7 +11,7 @@ function reorderedJson(value) {
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).reverse().map(([key, item]) => [key, reorderedJson(item)]));
   return value;
 }
-function fixture({ roundtripJson = false } = {}) {
+function fixture({ roundtripJson = false, instant = '2026-10-07T12:00:00Z' } = {}) {
   const sessions = new Map(), sets = new Map(), student = { id: 1, userId: 1, status: 'active', planEndDate: null };
   const workout = { id: 2, studentId: 1, active: true, name: 'Treino A', exercises: [
     { id: 3, name: 'Supino', muscleGroup: 'Peito', sets: 3, reps: '8–12', restSeconds: 90, suggestedLoad: '20', orderIndex: 0 } ] };
@@ -24,11 +24,31 @@ function fixture({ roundtripJson = false } = {}) {
     listSessions: async id => [...sessions.values()].filter(s => s.studentId === id),
     listRecentSessions: async id => [...sessions.values()].filter(s => s.studentId === id),
   };
-  return { service: createSessoesService(repo, { now: () => new Date('2026-10-07T12:00:00Z') }), sessions, workout, student, repo };
+  return { service: createSessoesService(repo, { now: () => new Date(instant) }), sessions, workout, student, repo };
 }
 const start = { id: SESSION, workoutId: 2, clientStartedAt: '2026-10-07T10:00:00.000Z' };
 const entry = { id: SET, exerciseId: 3, weightKg: 20, reps: 10, rir: 2, kind: 'working', performedAt: '2026-10-07T10:05:00.000Z', notes: 'Sem ajuda' };
 const rejectsStatus = (fn, status) => assert.rejects(fn, e => e.statusCode === status);
+
+test('datas impossíveis não são normalizadas para outro dia em sessões ou séries', async () => {
+  for (const value of ['2026-02-30T10:00:00Z', '2026-04-31T10:00:00-03:00', '2026-02-29T10:00:00Z']) {
+    const f = fixture();
+    await rejectsStatus(() => f.service.start(1, { ...start, clientStartedAt: value }), 400);
+    assert.equal(f.sessions.size, 0);
+    await f.service.start(1, start);
+    await rejectsStatus(() => f.service.addSet(1, SESSION, { ...entry, performedAt: value }), 400);
+    assert.equal(f.sessions.get(SESSION).sets.length, 0);
+  }
+});
+
+test('data civil válida é conferida antes da conversão do fuso para UTC', async () => {
+  const f = fixture();
+  const created = await f.service.start(1, { ...start, clientStartedAt: '2026-09-30T23:30:00-03:00' });
+  assert.equal(new Date(created.clientStartedAt).toISOString(), '2026-10-01T02:30:00.000Z');
+  const leap = fixture({ instant: '2024-03-01T12:00:00Z' });
+  const leapSession = await leap.service.start(1, { ...start, clientStartedAt: '2024-02-29T23:30:00-03:00' });
+  assert.equal(new Date(leapSession.clientStartedAt).toISOString(), '2024-03-01T02:30:00.000Z');
+});
 
 test('sessão captura origem da ficha e replay não a substitui por metadados atualizados', async () => {
   const f = fixture();
