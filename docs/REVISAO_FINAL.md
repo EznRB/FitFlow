@@ -1,4 +1,4 @@
-# Auditoria da entrega por requisitos — revisão de 17/10/2026
+# Auditoria da entrega por requisitos — revisão consolidada de 12/11/2026
 
 **Entrega completa ainda não demonstrada.** Esta auditoria confronta o [objetivo e critérios do plano mestre](PLANO_MESTRE_DESENVOLVIMENTO.md) com a evidência disponível. Implantação, CI e contagem vigente da suíte estão exclusivamente em [Estado da entrega](STATUS_ENTREGA.md). Relatos repetidos anteriores foram preservados no [histórico documental](HISTORICO_ENTREGA.md).
 
@@ -10,11 +10,21 @@
 
 As fontes abaixo registram gates já executados; esta consolidação documental não reexecutou código, banco ou navegador. A suíte integral atual comprova os casos existentes, não toda autorização, correção científica, acessibilidade ou integração externa. Subsuítes focadas estão incluídas nos totais de sua revisão e não devem ser somadas como novos testes.
 
+## Complementos verificados em novembro
+
+- Banco/login: [edição de e-mail normalizada e publicada](PATCH_EMAIL_2026_11_12.md), com login real PostgreSQL e gates HTTPS. Consulta agregada não encontrou contas existentes precisando de reparo.
+- Integridade/persistência: [FK do catálogo alinhada e migration aplicada](PATCH_CATALOGO_2026_11_12.md); [datas impossíveis recusadas pelo serviço e HTTP público](PATCH_DATAS_2026_11_12.md). Históricos e migrations anteriores preservados.
+- Instalação reproduzível: [bootstrap PostgreSQL para banco vazio](DESENVOLVIMENTO.md#primeira-instalação-postgresql-em-banco-vazio), integrado pela PR 7, com gate real de seis migrations/15 tabelas, recusa de banco ocupado e remoção da fixture.
+- Segurança: [dependências corrigidas](AUDITORIA_DEPENDENCIAS_2026_11_11.md); revisão estática parcial de 105 arquivos, incluindo todo `server/src` então rastreado, sem vulnerabilidade confirmada nesse escopo. 139 arquivos permaneceram fora da revisão integral; não declarar auditoria exaustiva.
+- IA/UX: melhorias da PR 2 continuam em revisão, com gate visual aberto. Testes funcionais e amostras preservadas não substituem essa inspeção.
+
+Esses complementos atualizam os requisitos relacionados; não alteram os gates externos abaixo nem tornam os demais requisitos completos.
+
 ## Matriz de requisitos
 
 | Requisito do objetivo | Evidência disponível | Cobertura e limite para a entrega |
 |---|---|---|
-| 1. Login/banco funcionam localmente e na Vercel | [Banco remoto/Vercel](BANCO_REMOTO_VERCEL.md), [desenvolvimento](DESENVOLVIMENTO.md), saúde atual e gates de três perfis; oito migrations MySQL e cinco PostgreSQL, bancos nativos e duas branches Neon. Login/restauração observados no navegador público. | **Cobertura verificada** nos destinos e gates registrados. Usa banco/contas novos; não recupera dados do Aiven. MariaDB local não comprova sozinho compatibilidade PostgreSQL; os gates PostgreSQL são separados. |
+| 1. Login/banco funcionam localmente e na Vercel | [Banco remoto/Vercel](BANCO_REMOTO_VERCEL.md), [desenvolvimento](DESENVOLVIMENTO.md), saúde atual e gates de três perfis; oito migrations MySQL e seis PostgreSQL, bancos nativos e duas branches Neon. Login/restauração observados no navegador público. | **Cobertura verificada** nos destinos e gates registrados. Usa banco/contas novos; não recupera dados do Aiven. MariaDB local não comprova sozinho compatibilidade PostgreSQL; os gates PostgreSQL são separados. |
 | 2. Segurança, autorização e isolamento | Gates de perfis, CSRF, usuário ativo/papel vigente, quotas, identidade/epoch entre abas e edição parcial; [troca de senha](TROCA_SENHA.md) com revogação, senha atual e outra conta preservada em bancos/HTTPS. Runtime SQL limitado e guard de arquivos privados. | **Parcial.** Casos testados não equivalem a auditoria exaustiva de todas as rotas/histórico Git. Guard cobre candidatos e segredos conhecidos. Rotação da chave Groq exposta anteriormente permanece obrigatória pelo titular. |
 | 3. Gestão de academia persistente | Gates reais de alunos/perfis, planos, fichas, presença/cancelamento, filtros/relatórios e renovação; [datas e fuso](DATAS_E_FUSO.md), [ajustes financeiros](AJUSTES_FINANCEIROS.md). Conflitos/replay e duas renovações concorrentes conferidos. | **Cobertura verificada** nesses fluxos; usa fixtures próprias limpas. Revisão completa de jornadas/estados da gestão continua aberta, sem generalizar CRUD aprovado para toda UX. |
 | 4. Treinamento baseado em evidências e rotina | [Ciência e limites](CIENCIA.md), [auditoria científica](AUDITORIA_CIENTIFICA_FINAL.md), [IA educativa](IA_GRATUITA.md); referências primárias, população/hipóteses, divisão educativa segundo disponibilidade informada e ficha revisável pelo instrutor. | **Parcial.** Fonte citada ou rascunho validado em JSON não certifica escolha/dose individual. Não há divisão universal, prescrição clínica nem aplicação automática da proposta. Amostras reais têm limites e reprovações preservados. |
