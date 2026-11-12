@@ -67,7 +67,9 @@ Os lotes concorrentes de recebimentos manuais e checkout local agora aguardam to
 
 Dois testes do helper passaram após reproduzir a rejeição prematura de `Promise.all`; os gates reais `manual-payment-local.integration.cjs` e `checkout-local.integration.cjs` também passaram no banco local gerenciado, removendo somente suas fixtures. Nenhum provedor externo ou cobrança real foi usado. Logs em `server/tmp/settled-batch-behavior-red-20261112.log`, `settled-batch-diagnostics-green-20261112.log`, `manual-fixture-drain-20261112.log` e `checkout-fixture-drain-20261112.log`. A primeira tentativa do teste tinha import sem extensão `.cjs`; esse erro de preparação permanece em `settled-batch-red-20261112.log`, sem ser confundido com a reprodução comportamental.
 
-A revisão identificou ainda premissas a resolver: o gate de autenticação testa primeiro administrador no destino compartilhado, e os gates de quota podem cruzar uma fronteira real de janela. Não executar integrações com bootstrap/admin em paralelo no mesmo banco. Isso não modifica as regras do aplicativo nem aprova pagamentos externos.
+O gate HTTP PostgreSQL agora cria um administrador UUID próprio, sem depender da população de admins existente. A regressão com outro admin presente falhou antes e passou depois, conferindo que essa conta ficou intacta; o gate também passou no Neon isolado. O primeiro-admin foi transferido para o banco temporário da instalação limpa, onde criação/hash e recusa de segundo admin, inclusive após inativação, passaram. As fixtures foram removidas. Logs: `auth-shared-admin-{red,green}-20261112.log`, `auth-independent-neon-20261112.log` e `clean-bootstrap-admin-corrected-green-20261112.log`. Uma primeira asserção incorreta sobre o retorno `{id}` do bootstrap ficou registrada em `clean-bootstrap-admin-green-20261112.log`; a versão corrigida consulta o papel no banco.
+
+Permanece a premissa a resolver nos gates de quota: um lote pode cruzar uma fronteira real de janela. Nenhuma dessas revisões modifica as regras do aplicativo ou aprova pagamentos externos.
 
 ### Primeira instalação PostgreSQL em banco vazio
 
