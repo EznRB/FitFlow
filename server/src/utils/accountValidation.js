@@ -8,13 +8,21 @@ function validatePassword(password) {
   return password;
 }
 
-function validateAccount(data) {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de cadastro inválidos.', 400);
-  const { name, email, password } = data;
+function normalizeName(name) {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) throw new AppError('Nome deve ter entre 1 e 100 caracteres.', 400);
-  if (typeof email !== 'string' || email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) throw new AppError('E-mail inválido (máximo 150 caracteres).', 400);
-  validatePassword(password);
-  return { name: name.trim(), email: email.trim().toLowerCase(), password };
+  return name.trim();
 }
 
-module.exports = { validatePassword, validateAccount };
+function normalizeEmail(email) {
+  if (typeof email !== 'string' || email.length > 150 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) throw new AppError('E-mail inválido (máximo 150 caracteres).', 400);
+  return email.trim().toLowerCase();
+}
+
+function validateAccount(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new AppError('Dados de cadastro inválidos.', 400);
+  const name = normalizeName(data.name), email = normalizeEmail(data.email), password = data.password;
+  validatePassword(password);
+  return { name, email, password };
+}
+
+module.exports = { validatePassword, validateAccount, normalizeName, normalizeEmail };

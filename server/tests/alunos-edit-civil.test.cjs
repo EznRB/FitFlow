@@ -9,7 +9,7 @@ function fixture(instant = '2026-10-10T01:30:00Z') {
   const writes = [];
   const db = {
     user: {
-      findUnique: async () => null,
+      findUnique: async ({ where }) => students.find(s => s.user.email === where.email)?.user || null,
       update: async ({ where, data }) => Object.assign(students.find(s => s.userId === where.id).user, data),
       create: async ({ data }) => { writes.push(data); return { id: 3, ...data, student: data.student.create }; },
     },
@@ -40,6 +40,27 @@ test('editar dois alunos sem CPF mantém NULL e não causa colisão no índice �
   await service.atualizar(2, { cpf: '   ' });
   assert.equal(students[0].cpf, null); assert.equal(students[1].cpf, null);
   assert.equal(students[1].user.name, 'Segundo editado');
+});
+
+test('edição normaliza e-mail como o login PostgreSQL e permite manter o próprio endereço', async () => {
+  const { service, students } = fixture();
+  await service.atualizar(1, { name: '  Nome atualizado  ', email: '  NOVO@Example.Invalid  ' });
+  assert.equal(students[0].user.email, 'novo@example.invalid');
+  assert.equal(students[0].user.name, 'Nome atualizado');
+  await service.atualizar(1, { email: ' NOVO@EXAMPLE.INVALID ' });
+  assert.equal(students[0].user.email, 'novo@example.invalid');
+  await assert.rejects(service.atualizar(2, { email: ' NOVO@Example.Invalid ' }), e => e.statusCode === 400);
+  assert.equal(students[1].user.email, 'student2@example.invalid');
+});
+
+test('edição rejeita identidade inválida sem modificar o cadastro', async () => {
+  for (const body of [{ email: '' }, { email: 'invalido' }, { email: {} }, { email: 'x'.repeat(151) },
+    { name: '  ' }, { name: [] }, { name: 'x'.repeat(101) }]) {
+    const { service, students } = fixture();
+    const before = structuredClone(students);
+    await assert.rejects(service.atualizar(1, body), e => e.statusCode === 400);
+    assert.deepEqual(students, before);
+  }
 });
 
 test('campo omitido preserva CPF/nascimento; vazio ou null explícito limpa nascimento', async () => {
