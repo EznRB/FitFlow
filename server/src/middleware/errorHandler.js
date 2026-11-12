@@ -53,7 +53,7 @@ function errorHandler(err, req, res, next) {
     err.status = 'fail';
   }
 
-  // ---- Erros de validação (express-validator) ----
+  // ---- Erros de validação estruturados ----
   if (err.type === 'validation') {
     err.statusCode = 422;
     err.status = 'fail';
@@ -74,6 +74,11 @@ function errorHandler(err, req, res, next) {
   // Se tiver erros de validação, inclui detalhes
   if (err.errors) {
     response.errors = err.errors;
+  }
+
+  if (err.isOperational && err.statusCode === 429 && Number.isSafeInteger(err.retryAfterSeconds)
+    && err.retryAfterSeconds >= 1 && err.retryAfterSeconds <= 86400) {
+    res.setHeader('Retry-After', String(err.retryAfterSeconds));
   }
 
   res.status(err.statusCode).json(response);
