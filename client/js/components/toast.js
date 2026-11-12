@@ -36,16 +36,31 @@ const Toast = {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
+    toast.setAttribute('role', type === 'error' || type === 'warning' ? 'alert' : 'status');
+    toast.setAttribute('aria-atomic', 'true');
     toast.innerHTML = `
       <i data-lucide="${icons[type]}"></i>
-      <span class="toast-message">${message}</span>
+      <span class="toast-message"></span>
       <button class="toast-close" aria-label="Fechar notificação">
         <i data-lucide="x" style="width:16px;height:16px;"></i>
       </button>
     `;
+    toast.querySelector('.toast-message').textContent = message;
 
     // Renderiza ícones Lucide no toast
-    this.container.appendChild(toast);
+    const overlay = document.getElementById('modal-overlay');
+    const dialog = overlay?.style.display === 'flex' ? overlay.querySelector('[role="dialog"]') : null;
+    let container = this.container;
+    if (dialog) {
+      container = dialog.querySelector('[data-modal-toast-container]');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        container.setAttribute('data-modal-toast-container', '');
+        dialog.appendChild(container);
+      }
+    }
+    container.appendChild(toast);
     if (window.lucide) lucide.createIcons({ nodes: [toast] });
 
     // Botão de fechar

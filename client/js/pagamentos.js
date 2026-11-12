@@ -336,13 +336,14 @@ const PagamentosView = {
 
     const bodyHTML = `
       ${pending ? '<p role="status">Há um envio anterior sem confirmação. Verifique se ele foi registrado ou preencha os mesmos dados para tentar novamente.</p>' : ''}
-      <form id="form-pagamento" class="form-grid">
+      <form id="form-pagamento" class="form-grid" novalidate>
         <div class="form-group" style="grid-column: span 2;">
           <label for="input-pgto-aluno">Aluno *</label>
-          <select id="input-pgto-aluno" required>
+          <select id="input-pgto-aluno" required aria-describedby="pgto-aluno-error">
             <option value="">Selecione o aluno</option>
             ${opcoesAlunos}
           </select>
+          <small id="pgto-aluno-error" class="form-error" role="status"></small>
         </div>
         <div class="form-group">
           <label for="input-pgto-plano">Plano</label>
@@ -353,7 +354,8 @@ const PagamentosView = {
         </div>
         <div class="form-group">
           <label for="input-pgto-valor">Valor (R$) *</label>
-          <input type="number" step="0.01" min="0.01" id="input-pgto-valor" placeholder="Ex: 89.90" required>
+          <input type="number" step="0.01" min="0.01" id="input-pgto-valor" placeholder="Ex: 89.90" required aria-describedby="pgto-valor-error">
+          <small id="pgto-valor-error" class="form-error" role="status"></small>
         </div>
         <div class="form-group">
           <label for="input-pgto-data">Data do Pagamento</label>
@@ -375,6 +377,7 @@ const PagamentosView = {
           <label for="input-pgto-notas">Observações</label>
           <textarea id="input-pgto-notas" rows="2" placeholder="Anotações sobre este pagamento..."></textarea>
         </div>
+        <button type="submit" hidden>Registrar recebimento</button>
       </form>
 
       <div style="background:var(--bg-elevated); border-radius:var(--radius-md); padding:0.75rem 1rem; margin-top:0.5rem;">
@@ -392,6 +395,10 @@ const PagamentosView = {
     ]);
     this.vincularModal(context);
     const form = document.getElementById('form-pagamento');
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      if (this.modalAtual(context)) return this.submeterPagamento();
+    };
 
     // Ao selecionar aluno, preenche o valor com o preço do plano atual
     setTimeout(() => {
@@ -468,12 +475,25 @@ const PagamentosView = {
     const notes = document.getElementById('input-pgto-notas')?.value;
 
     // Validações no frontend
+    for (const suffix of ['aluno', 'valor']) {
+      document.getElementById(`input-pgto-${suffix}`)?.setAttribute?.('aria-invalid', 'false');
+      const error = document.getElementById(`pgto-${suffix}-error`);
+      if (error) error.textContent = '';
+    }
+    const fieldError = (suffix, message) => {
+      const input = document.getElementById(`input-pgto-${suffix}`);
+      input?.setAttribute?.('aria-invalid', 'true');
+      const error = document.getElementById(`pgto-${suffix}-error`);
+      if (error) error.textContent = message;
+      input?.focus?.();
+      Toast.error(message);
+    };
     if (!studentId) {
-      Toast.error('Selecione o aluno.');
+      fieldError('aluno', 'Selecione o aluno.');
       return;
     }
     if (!/^\d{1,8}(?:\.\d{1,2})?$/.test(amount || '') || Number(amount) <= 0) {
-      Toast.error('Informe um valor de pagamento válido.');
+      fieldError('valor', 'Informe um valor de pagamento válido.');
       return;
     }
 

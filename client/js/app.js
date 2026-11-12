@@ -864,16 +864,16 @@ const DashboardView = {
     const screen = document.querySelector('.premium-dashboard');
     const userId = Auth.user?.id, generation = Auth.generation;
     const epoch = typeof Auth.getSessionEpoch === 'function' ? Auth.sessionEpoch : null;
+    const ownsSession = () => Auth.user?.role === 'admin' && Auth.user.id === userId && Auth.generation === generation
+      && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === epoch && Auth.getSessionEpoch() === epoch));
     const current = () => Boolean(screen?.isConnected && document.querySelector('.premium-dashboard') === screen
-      && App.currentPage === 'dashboard' && version === this.requestVersion && Auth.user?.role === 'admin'
-      && Auth.user.id === userId && Auth.generation === generation
-      && (typeof Auth.getSessionEpoch !== 'function' || (Auth.sessionEpoch === epoch && Auth.getSessionEpoch() === epoch)));
+      && App.currentPage === 'dashboard' && version === this.requestVersion && ownsSession());
     if (!current()) return;
     try {
       // Reseta o estado do gráfico
       this.destroyChart();
 
-      const resp = await API.get('/relatorios/dashboard');
+      const resp = await API.get('/relatorios/dashboard', { timeoutMs: 15000 });
       if (!current()) return;
       const stats = resp.data;
       this.currentStats = stats;
@@ -918,7 +918,14 @@ const DashboardView = {
       if (App.currentPage === 'dashboard' && content) {
         content.innerHTML = '<section class="card" role="alert"><h3>Não foi possível carregar o painel</h3><p id="dashboard-error"></p><button class="btn btn-primary" id="dashboard-retry" type="button">Tentar novamente</button></section>';
         content.querySelector('#dashboard-error').textContent = error.message;
-        content.querySelector('#dashboard-retry').onclick = () => App.navigateTo('dashboard');
+        const retry = content.querySelector('#dashboard-retry');
+        retry.onclick = () => {
+          if (version !== this.requestVersion || App.currentPage !== 'dashboard' || !ownsSession()
+              || !content.isConnected || !retry.isConnected || document.getElementById('page-content') !== content
+              || content.querySelector('#dashboard-retry') !== retry) return;
+          ++this.requestVersion;
+          App.navigateTo('dashboard');
+        };
       }
     }
   },

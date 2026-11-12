@@ -22,3 +22,8 @@ Receita mensal e séries de pagamentos/presenças usam as datas civis. Matrícul
 `cd server` e `node --test tests/civil-dates-reports.test.cjs` exercitam mudança de dia/mês entre 00–03 UTC, hosts UTC/Brasil/Tóquio, um período com horário de verão brasileiro, datas inválidas antes de consultas, cancelamentos, ownership e carência.
 
 O teste nativo opcional `node scripts/with-local-env.cjs node tests/checkins-dates-local.integration.cjs` exige o banco local gerenciado. Ele cria apenas uma conta temporária própria, verifica as representações MySQL `DATE`/`TIME`, os limites de dia, duplicidade e cancelamento; remove somente a fixture criada pelo teste. Não executa contra bancos remotos.
+# Validação do calendário em sessões — 12/11/2026
+
+O parser de instantes de sessões/séries agora confere o dia civil declarado antes de converter o fuso para UTC. O JavaScript aceitava, por exemplo, 30 de fevereiro e normalizava para março; a API passa a recusar com 400, sem gravar o registro. Datas válidas que mudam de dia ao converter o fuso e 29 de fevereiro em ano bissexto continuam aceitas. Os limites temporais existentes permanecem.
+
+A regressão falhou antes da correção (`server/tmp/session-calendar-red-20261112.log`). Após o fix, 21 testes de sessões, HTTP e evolução passaram, zero falhas/ignorados; a revisão com o caso bissexto está em `session-calendar-green-leap-20261112.log`. Nenhum histórico ou migration foi alterado. Correção publicada pela PR 6 em 12/11. [CI, implantação e recusa HTTP pública verificadas](PATCH_DATAS_2026_11_12.md).

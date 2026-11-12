@@ -148,6 +148,15 @@
   color: var(--text-muted);
 }
 
+.form-error {
+  color: var(--error);
+  font-size: var(--font-size-sm);
+}
+
+.form-group [aria-invalid="true"] {
+  border-color: var(--error);
+}
+
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -669,7 +678,8 @@ textarea {
   border-bottom: none;
 }
 
-.autocomplete-item:hover {
+.autocomplete-item:hover,
+.autocomplete-item[aria-selected="true"] {
   background: var(--bg-hover);
 }
 

@@ -229,6 +229,9 @@ const SessoesView = {
     const active = state.sessions.find(s => ['active', 'completing'].includes(s.status));
     this.renderedSessionKey = active ? `${active.id}:${active.status}` : null;
     const section = this.container.querySelector('[data-active-session]');
+    const workoutsSlot = this.container.querySelector('[data-workouts]');
+    const focused = typeof document !== 'undefined' ? document.activeElement : null;
+    const restoreFocus = focused && (section.contains?.(focused) || workoutsSlot.contains?.(focused));
     this.container.querySelector('[data-workouts]').innerHTML = active ? '' : `<section class="sessions-panel"><h3>Iniciar uma sessão</h3><div class="sessions-workouts">${this.workouts.length ? this.workouts.map((w, index) => `<button class="sessions-workout" data-start="${index}" type="button"><strong>${this.escape(w.name)}</strong><span>${w.exercises.length} ${w.exercises.length === 1 ? 'exercício' : 'exercícios'} · ficha do instrutor</span><span>Iniciar treino →</span></button>`).join('') : `<p data-workouts-empty>${this.queryEmpty('workouts')}</p>`}</div></section>`;
     if (active) {
       const plan = active.planSnapshot;
@@ -304,6 +307,13 @@ const SessoesView = {
       };
     });
     this.updateIndicators(state);
+    if (restoreFocus) {
+      const target = active?.status === 'active' ? section.querySelector('[name="exerciseId"]')
+        : active ? section.querySelector('[data-session-plan-name]') : workoutsSlot.querySelector('[data-start]');
+      const destination = target || section.querySelector('[data-session-plan-name]') || workoutsSlot;
+      if (!destination.matches?.('input, select, button, textarea, a[href]')) destination.setAttribute?.('tabindex', '-1');
+      destination.focus?.();
+    }
   },
   async afterMutation(context) {
     if (!this.ownsContext(context) || !this.current()) return;
@@ -319,17 +329,49 @@ const SessoesView = {
       return `<li><div><strong>${this.escape(set.exerciseName || exercise?.name || 'Exercício registrado')}</strong><span>${set.kind === 'warmup' ? 'Aquecimento' : 'Trabalho'} · ${this.escape(set.weightKg)} kg × ${this.escape(set.reps)} reps${set.rir !== null && set.rir !== undefined ? ` · RIR ${this.escape(set.rir)}` : ''}</span>${set.notes ? `<p>${this.escape(set.notes)}</p>` : ''}</div><span class="sessions-set-state">${set.synced ? 'Sincronizada' : 'Salva no dispositivo'}</span></li>`;
     }).join('')}</ol>` : '<p>Registre cada série após executá-la.</p>'}`;
   },
+  updateHistory(slot, html) {
+    if (slot.sessionHistoryHTML === html) return;
+    const roots = [...(slot.querySelectorAll?.('[data-history-id]') || [])];
+    const focused = typeof document !== 'undefined' ? document.activeElement : null;
+    const hadFocus = focused && slot.contains?.(focused);
+    let focusKey = null;
+    const expanded = new Map();
+    for (const root of roots) {
+      const details = [root, ...root.querySelectorAll('details')];
+      expanded.set(root.dataset.historyId, details.map(detail => detail.open));
+      if (hadFocus && root.contains(focused)) {
+        focusKey = { id: root.dataset.historyId, summary: details.findIndex(detail => detail.querySelector('summary') === focused),
+          href: focused.getAttribute?.('href') };
+      }
+    }
+    slot.innerHTML = html; slot.sessionHistoryHTML = html;
+    let destination = null;
+    for (const root of slot.querySelectorAll?.('[data-history-id]') || []) {
+      const details = [root, ...root.querySelectorAll('details')], states = expanded.get(root.dataset.historyId);
+      if (states) details.forEach((detail, index) => { detail.open = Boolean(states[index]); });
+      if (focusKey?.id === root.dataset.historyId) {
+        destination = focusKey.href ? [...root.querySelectorAll('a[href]')].find(link => link.getAttribute('href') === focusKey.href)
+          : details[focusKey.summary]?.querySelector('summary');
+        destination ||= root.querySelector('summary');
+      }
+    }
+    if (hadFocus) {
+      if (!destination) { slot.setAttribute('tabindex', '-1'); destination = slot; }
+      destination.focus();
+    }
+  },
   drawHistory(state) {
     if (!this.current()) return;
     const recent = state.sessions.filter(s => s.status === 'completed').slice().sort((a, b) => new Date(b.clientStartedAt) - new Date(a.clientStartedAt));
-    this.container.querySelector('[data-session-history]').innerHTML = `<section class="sessions-panel"><h3>Histórico de sessões</h3>${recent.length ? recent.slice(0, 30).map(s => {
+    let historyHTML = `<section class="sessions-panel"><h3>Histórico de sessões</h3>${recent.length ? recent.slice(0, 30).map(s => {
       const summary = s.summary, sets = s.sets;
       const working = sets.filter(x => x.kind === 'working'), warmup = sets.filter(x => x.kind === 'warmup');
       const volume = rows => rows.reduce((sum, x) => sum + Number(x.weightKg) * Number(x.reps), 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-      return `<details class="sessions-history"><summary><strong>${this.escape(s.planSnapshot.name)}</strong><span>${this.escape(new Date(s.clientStartedAt).toLocaleDateString('pt-BR'))} · ${working.length} ${working.length === 1 ? 'série' : 'séries'} de trabalho · ${volume(working)} kg·reps</span></summary><p>${summary ? `${summary.missingPlannedSets} ${summary.missingPlannedSets === 1 ? 'série planejada ficou' : 'séries planejadas ficaram'} sem registro.` : 'Sessão finalizada; contagem baseada nos registros disponíveis.'} Aquecimentos: ${warmup.length} ${warmup.length === 1 ? 'série' : 'séries'} · ${volume(warmup)} kg·reps.</p>${this.origens(s.planSnapshot)}<ol class="sessions-records">${sets.map(x => `<li><div><strong>${this.escape(x.exerciseName || s.planSnapshot.exercises.find(e => e.id === x.exerciseId)?.name)}</strong><span>${x.kind === 'warmup' ? 'Aquecimento' : 'Trabalho'} · ${this.escape(x.weightKg)} kg × ${x.reps} reps${x.rir !== null && x.rir !== undefined ? ` · RIR ${this.escape(x.rir)}` : ''}</span>${x.notes ? `<p>${this.escape(x.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`;
+      return `<details class="sessions-history" data-history-id="${this.escape(s.id)}"><summary><strong>${this.escape(s.planSnapshot.name)}</strong><span>${this.escape(new Date(s.clientStartedAt).toLocaleDateString('pt-BR'))} · ${working.length} ${working.length === 1 ? 'série' : 'séries'} de trabalho · ${volume(working)} kg·reps</span></summary><p>${summary ? `${summary.missingPlannedSets} ${summary.missingPlannedSets === 1 ? 'série planejada ficou' : 'séries planejadas ficaram'} sem registro.` : 'Sessão finalizada; contagem baseada nos registros disponíveis.'} Aquecimentos: ${warmup.length} ${warmup.length === 1 ? 'série' : 'séries'} · ${volume(warmup)} kg·reps.</p>${this.origens(s.planSnapshot)}<ol class="sessions-records">${sets.map(x => `<li><div><strong>${this.escape(x.exerciseName || s.planSnapshot.exercises.find(e => e.id === x.exerciseId)?.name)}</strong><span>${x.kind === 'warmup' ? 'Aquecimento' : 'Trabalho'} · ${this.escape(x.weightKg)} kg × ${x.reps} reps${x.rir !== null && x.rir !== undefined ? ` · RIR ${this.escape(x.rir)}` : ''}</span>${x.notes ? `<p>${this.escape(x.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`;
     }).join('') : `<p data-history-empty>${this.queryEmpty('history')}</p>`}</section>`;
     const archived = state.sessions.filter(session => session.status === 'abandoned');
-    if (archived.length) this.container.querySelector('[data-session-history]').insertAdjacentHTML('beforeend', `<section class="sessions-panel"><h3>Sessões arquivadas neste dispositivo</h3><p>Estes envios foram interrompidos por sua confirmação. Séries sem confirmação não entram no resumo sincronizado. Este arquivo local é apagado ao sair da conta.</p>${archived.map(session => `<details class="sessions-history"><summary><strong>${this.escape(session.recordedPlanSnapshot?.name || session.planSnapshot.name)}</strong><span>${this.escape(new Date(session.clientStartedAt).toLocaleString('pt-BR'))} · ${session.sets.length} ${session.sets.length === 1 ? 'série registrada' : 'séries registradas'}</span></summary><p>${session.synced ? 'Sessão iniciada no servidor; seu encerramento não foi confirmado por este arquivamento.' : 'Início da sessão sem confirmação do servidor.'}</p><ul>${(session.abandonedOperations || []).filter(op => op.status === 'blocked').map(op => `<li>${this.escape(op.error || 'Envio rejeitado.')}</li>`).join('')}</ul>${this.origens(session.recordedPlanSnapshot || session.planSnapshot)}<ol class="sessions-records">${session.sets.map(set => `<li><div><strong>${this.escape(set.exerciseName || session.recordedPlanSnapshot?.exercises.find(exercise => exercise.id === set.exerciseId)?.name || 'Exercício registrado')}</strong><span>${this.escape(set.weightKg)} kg × ${this.escape(set.reps)} reps · ${set.synced ? 'Confirmada no servidor' : 'Sem confirmação; não será enviada'}</span>${set.notes ? `<p>${this.escape(set.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`).join('')}</section>`);
+    if (archived.length) historyHTML += `<section class="sessions-panel"><h3>Sessões arquivadas neste dispositivo</h3><p>Estes envios foram interrompidos por sua confirmação. Séries sem confirmação não entram no resumo sincronizado. Este arquivo local é apagado ao sair da conta.</p>${archived.map(session => `<details class="sessions-history" data-history-id="${this.escape(session.id)}"><summary><strong>${this.escape(session.recordedPlanSnapshot?.name || session.planSnapshot.name)}</strong><span>${this.escape(new Date(session.clientStartedAt).toLocaleString('pt-BR'))} · ${session.sets.length} ${session.sets.length === 1 ? 'série registrada' : 'séries registradas'}</span></summary><p>${session.synced ? 'Sessão iniciada no servidor; seu encerramento não foi confirmado por este arquivamento.' : 'Início da sessão sem confirmação do servidor.'}</p><ul>${(session.abandonedOperations || []).filter(op => op.status === 'blocked').map(op => `<li>${this.escape(op.error || 'Envio rejeitado.')}</li>`).join('')}</ul>${this.origens(session.recordedPlanSnapshot || session.planSnapshot)}<ol class="sessions-records">${session.sets.map(set => `<li><div><strong>${this.escape(set.exerciseName || session.recordedPlanSnapshot?.exercises.find(exercise => exercise.id === set.exerciseId)?.name || 'Exercício registrado')}</strong><span>${this.escape(set.weightKg)} kg × ${this.escape(set.reps)} reps · ${set.synced ? 'Confirmada no servidor' : 'Sem confirmação; não será enviada'}</span>${set.notes ? `<p>${this.escape(set.notes)}</p>` : ''}</div></li>`).join('')}</ol></details>`).join('')}</section>`;
+    this.updateHistory(this.container.querySelector('[data-session-history]'), historyHTML);
     const week = this.summary;
     this.container.querySelector('[data-week-summary]').innerHTML = week ? `<section class="sessions-panel"><h3>Últimos 7 dias · registros sincronizados</h3><div class="sessions-metrics"><div><strong>${week.workingSets}</strong><span>Séries de trabalho</span></div><div><strong>${Number(week.workingVolumeKg).toLocaleString('pt-BR')} kg·reps</strong><span>Volume de trabalho registrado</span></div><div><strong>${week.warmupSets}</strong><span>Séries de aquecimento</span></div></div><p>Horário de execução informado pelo aluno. Aquecimento: ${Number(week.warmupVolumeKg).toLocaleString('pt-BR')} kg·reps.</p><ul class="sessions-muscles">${Object.entries(week.directSetsByMuscle).map(([muscle, count]) => `<li>${this.escape(muscle)}: ${count} ${count === 1 ? 'série direta' : 'séries diretas'}</li>`).join('')}</ul>${week.unknownMuscleSets ? `<p>${week.unknownMuscleSets} ${week.unknownMuscleSets === 1 ? 'série' : 'séries'} sem grupo muscular conhecido.</p>` : ''}<p>Compare exercícios equivalentes e a mesma técnica. O volume registrado não mede estímulo muscular nem determina uma prescrição individual.</p></section>` : '';
   },

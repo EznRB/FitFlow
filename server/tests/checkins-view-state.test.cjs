@@ -41,6 +41,54 @@ function register(h, value = '11') { h.view.abrirModalRegistro(); h.node('input-
 function cancel(h, id = 10, reason = 'Motivo fictício') { h.view.abrirModalCancelar(id, `Aluno ${id}`); h.node('input-cancel-motivo').value = reason; return h.modals.at(-1); }
 const confirm = modal => modal.buttons.at(-1).action();
 
+test('retry de presenças mantém foco estável enquanto substitui o botão da tabela', async () => {
+  for (const failure of [false, true]) {
+    const h = await ready();
+    h.context.API.get = async () => { throw new Error('Sem conexão'); };
+    await h.view.carregarLista();
+    const tbody = h.node('checkins-table-body'), retry = { disabled: false }, body = {};
+    const document = h.context.document;
+    document.activeElement = retry;
+    Object.defineProperty(retry, 'disabled', { set(value) {
+      if (value && document.activeElement === retry) document.activeElement = body;
+    } });
+    tbody.contains = target => target === retry || target === tbody;
+    tbody.focus = () => { document.activeElement = tbody; };
+    let html = tbody.innerHTML;
+    Object.defineProperty(tbody, 'innerHTML', { get: () => html, set(value) {
+      html = value;
+      if (document.activeElement === retry) document.activeElement = body;
+    } });
+    const pending = deferred();
+    h.context.API.get = endpoint => endpoint.startsWith('/checkins?') ? pending.promise : Promise.resolve({ data: { totalHoje: 0, checkins: [] } });
+    const request = tbody.onclick({ target: { closest: () => retry } });
+    assert.equal(document.activeElement, tbody);
+    assert.equal(tbody.getAttribute('tabindex'), '-1');
+    if (failure) pending.reject(new Error('Ainda indisponível'));
+    else pending.resolve({ data: [] });
+    await request;
+    assert.equal(document.activeElement, tbody);
+    assert.match(tbody.innerHTML, failure ? /Tentar novamente/ : /Nenhuma presença/);
+  }
+});
+
+test('consulta de presenças não retira foco do filtro nem o recupera após o usuário sair da tabela', async () => {
+  const h = await ready(), tbody = h.node('checkins-table-body'), filter = h.node('filtro-data-inicio');
+  const document = h.context.document;
+  tbody.contains = target => target === tbody;
+  let focuses = 0;
+  tbody.focus = () => { focuses++; document.activeElement = tbody; };
+  document.activeElement = filter;
+  await h.view.carregarLista();
+  assert.equal(focuses, 0);
+  const pending = deferred(); h.context.API.get = () => pending.promise;
+  document.activeElement = tbody;
+  const request = h.view.carregarLista();
+  document.activeElement = filter;
+  pending.resolve({ data: [] }); await request;
+  assert.equal(document.activeElement, filter);
+});
+
 test('presença configura ações antes das três consultas e limita todas a 15 segundos', async () => {
   const requests = []; const h = browser({ get: (url, options) => { const pending = deferred(); requests.push({ url, options, pending }); return pending.promise; } });
   const initializing = h.view.inicializar();

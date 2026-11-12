@@ -131,7 +131,7 @@ const EvidenciasView = {
       || !Array.isArray(program.sessions) || !program.sessions.length || program.sessions.length > 6
       || !Array.isArray(program.weeklySummary) || !program.weeklySummary.length || program.weeklySummary.length > 10
       || !Array.isArray(program.sessionEstimates) || program.sessionEstimates.length !== program.sessions.length) return null;
-    const days = new Set(), groups = new Set(), estimates = new Map();
+    const days = new Set(), groups = new Set(), estimates = new Map(), coverageSessions = [];
     for (const estimate of program.sessionEstimates) {
       if (!estimate || !Object.hasOwn(labels.days, estimate.day) || estimates.has(estimate.day)
         || !integer(estimate.estimatedMinutes, 1, context.minutesPerSession)) return null;
@@ -144,7 +144,7 @@ const EvidenciasView = {
         || !Array.isArray(session.exercises) || !session.exercises.length || session.exercises.length > 6) return null;
       days.add(session.day);
       lines.push(`${labels.days[session.day]} — logística estimada: ${estimates.get(session.day)} min`);
-      const names = new Set();
+      const names = new Set(), primaryGroups = new Set();
       for (const exercise of session.exercises) {
         if (!exercise || !plain(exercise.name) || names.has(exercise.name.trim().toLocaleLowerCase('pt-BR'))
           || !Object.hasOwn(labels.groups, exercise.primaryGroup) || !enums(exercise.equipment, labels.equipment)
@@ -152,8 +152,10 @@ const EvidenciasView = {
           || !integer(exercise.repsMin, 1, 30) || !integer(exercise.repsMax, exercise.repsMin, 30)
           || !integer(exercise.rir, 0, 5) || !integer(exercise.restSeconds, 30, 300)) return null;
         names.add(exercise.name.trim().toLocaleLowerCase('pt-BR'));
+        primaryGroups.add(exercise.primaryGroup);
         lines.push(`• ${exercise.name.trim()}: ${exercise.sets} séries × ${exercise.repsMin}–${exercise.repsMax} repetições; RIR ${exercise.rir}; descanso inicial ${exercise.restSeconds} s; grupo principal: ${labels.groups[exercise.primaryGroup]}.`);
       }
+      coverageSessions.push({ day: session.day, primaryGroups: [...primaryGroups] });
     }
     lines.push('Contagem direta planejada, por grupo principal indicado no rascunho (não treino executado):');
     for (const row of program.weeklySummary) {
@@ -166,13 +168,36 @@ const EvidenciasView = {
     const prefix = lines.join('\n\n') + '\n\n';
     if (typeof message !== 'string' || !message.startsWith(prefix)) return null;
     const remaining = message.slice(prefix.length).split('\n\n');
-    if (remaining.length < 4 || !remaining[0].startsWith('Participação indireta em outros músculos não foi quantificada.')
-      || !remaining[1].startsWith('Tempo é uma hipótese logística:')
-      || !remaining[2].startsWith('A razão individual de cada dose não foi documentada.')) return null;
-    return { program, warnings: remaining.slice(0, 3), interpretation: remaining.slice(3).join('\n\n'), introduction: lines[0] };
+    const warnings = [
+      'Participação indireta em outros músculos não foi quantificada. Essas contagens não representam estímulo, tonelagem ou hipertrofia. A classificação de grupo é descritiva; o contexto foi interpretado pela IA. Ambos precisam de revisão.',
+      'Tempo é uma hipótese logística: 5 min de preparação, 45 s por série, os descansos entre séries e 1 min de transição por exercício. Não inclui filas ou toda a preparação específica; não garante duração real.',
+      'A razão individual de cada dose não foi documentada. Tempo disponível não comprova necessidade dessa dose ou segurança; a distribuição é uma escolha prática inicial revisável.',
+    ];
+    if (warnings.some((warning, index) => remaining[index] !== warning)) return null;
+    const represented = new Set(coverageSessions.flatMap(session => session.primaryGroups));
+    const coverageReview = { unrepresentedPrimaryGroups: Object.keys(labels.groups).filter(group => !represented.has(group)), sessions: coverageSessions };
+    const coverageText = `Classificação principal a revisar: ${coverageReview.unrepresentedPrimaryGroups.length ? coverageReview.unrepresentedPrimaryGroups.map(group => labels.groups[group]).join(', ') : 'todas as categorias possuem uma entrada principal'}. Isso não comprova ausência de participação, equilíbrio, cobertura anatômica completa ou dose adequada. Revise a classificação e as escolhas com seu instrutor.`;
+    let guidanceIndex = 3;
+    if (Object.hasOwn(program, 'coverageReview')) {
+      const supplied = program.coverageReview, sameArray = (a, b) => Array.isArray(a) && a.length === b.length && a.every((item, index) => item === b[index]);
+      const keys = (value, expected) => value && typeof value === 'object' && Object.keys(value).length === expected.length && expected.every(key => Object.hasOwn(value, key));
+      if (!keys(supplied, ['unrepresentedPrimaryGroups', 'sessions']) || !sameArray(supplied.unrepresentedPrimaryGroups, coverageReview.unrepresentedPrimaryGroups)
+        || !Array.isArray(supplied.sessions) || supplied.sessions.length !== coverageSessions.length
+        || supplied.sessions.some((session, index) => !keys(session, ['day', 'primaryGroups']) || session.day !== coverageSessions[index].day || !sameArray(session.primaryGroups, coverageSessions[index].primaryGroups))
+        || remaining[3] !== coverageText) return null;
+      guidanceIndex = 4;
+    } else if (remaining[3]?.startsWith('Classificação principal a revisar:')) return null;
+    const guidance = [
+      'Como ler: séries e repetições são propostas de trabalho, não aquecimentos. Os valores são hipóteses práticas iniciais para revisar com seu instrutor; os estudos não prescrevem este arranjo exato. RIR é a estimativa de repetições ainda possíveis com a mesma técnica, com margem de erro.',
+      'Progressão: registre carga, repetições e esforço. Quando completar a faixa proposta com técnica consistente e esforço compatível, discuta um pequeno ajuste de carga ou repetições, conforme equipamento e recuperação. Não há aumento obrigatório por calendário ou percentual fixo; dez séries não são mínimo universal nem meta automática.',
+      'Fundamento: split e full body tiveram resultados semelhantes quando o volume foi igualado. A ACSM apresenta recomendações gerais para adultos saudáveis, sem exigir duas exposições de cada grupo como condição para hipertrofia. Maior volume pode favorecer resultados no agregado, sem determinar uma dose individual ótima.',
+      'Esforço e descanso: a relação entre proximidade da falha e hipertrofia é exploratória; falha absoluta não é obrigatória e não há RIR ótimo universal. A revisão de descanso não estabelece noventa segundos como teto: ajuste para manter execução e desempenho.',
+    ];
+    if (remaining.length !== guidanceIndex + guidance.length || guidance.some((paragraph, index) => remaining[guidanceIndex + index] !== paragraph)) return null;
+    return { program, coverageReview, coverageText, warnings, interpretation: guidance.join('\n\n'), introduction: lines[0] };
   },
   renderRoutine(presentation) {
-    const { program, warnings, interpretation, introduction } = presentation, labels = IARoutineLabels;
+    const { program, coverageReview, coverageText, warnings, interpretation, introduction } = presentation, labels = IARoutineLabels;
     const make = (tag, className, text, parent) => {
       const node = document.createElement(tag); node.className = className;
       if (text !== undefined) node.textContent = text;
@@ -212,6 +237,17 @@ const EvidenciasView = {
     for (const row of program.weeklySummary) datum(totals, labels.groups[row.group], `${row.directPlannedSets} séries diretas · ${row.sessionsPerWeek} ${row.sessionsPerWeek === 1 ? 'sessão' : 'sessões'} / semana`);
     const limits = make('div', 'ia-routine-limits', undefined, doc);
     for (const warning of warnings) make('p', '', warning, limits);
+    const review = make('section', 'ia-routine-coverage', undefined, doc);
+    make('span', 'ia-routine-kicker', 'Leitura da proposta', review);
+    make('h4', '', 'Pontos para revisar na distribuição', review);
+    if (coverageReview.unrepresentedPrimaryGroups.length) {
+      make('p', 'ia-routine-coverage-label', 'Sem classificação principal no rascunho', review);
+      make('p', 'ia-routine-coverage-groups', coverageReview.unrepresentedPrimaryGroups.map(group => labels.groups[group]).join(', '), review);
+    }
+    make('p', 'ia-routine-coverage-note', coverageText, review);
+    make('h5', 'ia-routine-distribution-heading', 'Grupos principais por dia', review);
+    const distribution = make('dl', 'ia-routine-distribution', undefined, review);
+    for (const session of coverageReview.sessions) datum(distribution, labels.days[session.day], session.primaryGroups.map(group => labels.groups[group]).join(', '));
     const details = make('details', 'ia-routine-interpretation', undefined, doc);
     make('summary', '', 'Como interpretar este rascunho', details);
     make('div', 'ia-message-body ia-routine-guidance', interpretation, details);

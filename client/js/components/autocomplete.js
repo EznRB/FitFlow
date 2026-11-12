@@ -19,6 +19,9 @@ const Autocomplete = {
 
     // Desliga autocompletar nativo do navegador
     input.setAttribute('autocomplete', 'off');
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
 
     // Container de posicionamento relativo, se ainda não estiver num
     let wrapper = input.parentElement;
@@ -37,6 +40,47 @@ const Autocomplete = {
       dropdown.style.display = 'none';
       wrapper.appendChild(dropdown);
     }
+    dropdown.id = `${inputId}-options`;
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.setAttribute('aria-label', 'Alunos encontrados');
+    input.setAttribute('aria-controls', dropdown.id);
+    let matches = [], activeIndex = -1;
+    const close = () => {
+      dropdown.style.display = 'none';
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+      [...dropdown.children].forEach(node => node.setAttribute('aria-selected', 'false'));
+    };
+    const select = item => {
+      input.value = item.label;
+      close();
+      onSelect(item);
+    };
+    const activate = index => {
+      activeIndex = index;
+      [...dropdown.children].forEach((node, i) => node.setAttribute('aria-selected', String(i === index)));
+      input.setAttribute('aria-activedescendant', dropdown.children[index].id);
+      dropdown.children[index].scrollIntoView?.({ block: 'nearest' });
+    };
+    input.addEventListener('keydown', event => {
+      // Keep composition keys available to input methods.
+      if (event.isComposing) return;
+      if (event.key === 'Escape') {
+        if (input.getAttribute('aria-expanded') === 'true') { event.preventDefault(); event.stopPropagation(); close(); }
+        return;
+      }
+      if (event.key === 'Tab') { close(); return; }
+      if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && matches.length) {
+        event.preventDefault();
+        dropdown.style.display = 'block'; input.setAttribute('aria-expanded', 'true');
+        activate(activeIndex < 0 ? (event.key === 'ArrowDown' ? 0 : matches.length - 1) :
+          (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length);
+      } else if (event.key === 'Enter' && activeIndex >= 0 && input.getAttribute('aria-expanded') === 'true') {
+        event.preventDefault(); select(matches[activeIndex]);
+      }
+    });
+    input.addEventListener('blur', close);
 
     // Lógica principal
     input.addEventListener('input', (e) => {
@@ -44,6 +88,7 @@ const Autocomplete = {
       
       // Limpa dropdown
       dropdown.innerHTML = '';
+      close(); matches = [];
       
       if (!val) {
         dropdown.style.display = 'none';
@@ -53,31 +98,33 @@ const Autocomplete = {
         return;
       }
 
-      const matches = data.filter(item => item.label.toLowerCase().includes(val));
+      matches = data.filter(item => item.label.toLowerCase().includes(val));
 
       if (matches.length === 0) {
         dropdown.innerHTML = '<li class="autocomplete-empty">Nenhum aluno encontrado</li>';
       } else {
-        matches.forEach(item => {
+        matches.forEach((item, index) => {
           const li = document.createElement('li');
           li.className = 'autocomplete-item';
+          li.id = `${dropdown.id}-${index}`;
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
           li.textContent = item.label;
-          li.addEventListener('click', () => {
-            input.value = item.label;
-            dropdown.style.display = 'none';
-            onSelect(item);
-          });
+          // Retain input focus so mouse/touch selection does not close on blur.
+          li.addEventListener('mousedown', event => event.preventDefault());
+          li.addEventListener('click', () => select(item));
           dropdown.appendChild(li);
         });
       }
 
       dropdown.style.display = 'block';
+      input.setAttribute('aria-expanded', 'true');
     });
 
     // Fechar dropdown ao clicar fora
     document.addEventListener('click', (e) => {
       if (!wrapper.contains(e.target)) {
-        dropdown.style.display = 'none';
+        close();
       }
     });
   }
