@@ -54,3 +54,10 @@ Suíte completa mais recente: 916 testes aprovados, 1 ignorado, 0 falhas. Integr
 ## Publicação verificada
 
 Publicado em https://fit-flow-indol.vercel.app, deployment dpl_2TGRvA8Ue7R4MLrFrATApJk58NNX. Build isolado preservou modificações de outros trabalhos. Cartões, Pix, webhook automático, consulta repetida e renovação única foram verificados. A integração continua somente para testes; ativar cobranças reais exige outra etapa explícita de configuração e validação.
+
+
+## Continuidade de 21/11 — recuperação da interface
+
+O checkout publicado foi preservado no GitHub em `3cb9db8`, na branch de desenvolvimento/PR 2. A [CI dessa revisão](https://github.com/EznRB/FitFlow/actions/runs/44961541500) aprovou testes e validação/geração dos clientes Prisma. Isso não integra automaticamente a branch à main nem muda o artefato da Vercel indicado acima.
+
+Uma revisão estática adicional identificou seleção de plano editável durante a preparação e ausência de nova tentativa após falha de carregamento do SDK. A correção bloqueia o seletor durante a requisição, restaura-o se não há compra criada e permite remontar o formulário da mesma compra sem novo POST de preparação. As duas regressões falharam antes (7 aprovadas/2 falhas) e passaram depois (9/9); logs locais `checkout-ui-recovery-red.log` e `checkout-ui-recovery-green.log`, ambos com exit codes preservados na rodada. Revisão independente do diff sem novos achados. São testes de interface em VM, sem SDK remoto, pagamento ou evidência visual nova. A correção seguinte ainda requer integração e publicação próprias; não atribuí-la ao deployment anterior.

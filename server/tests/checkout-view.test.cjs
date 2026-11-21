@@ -74,3 +74,28 @@ test('callback oficial com paymentType envia somente o contrato esperado pelo ba
  await h.mounts[0].settings.callbacks.onSubmit({paymentType:'bank_transfer',selectedPaymentMethod:'bank_transfer',formData:{payment_method_id:'pix',payer:{email:'a@example.com'}}});
  assert.deepEqual(Object.keys(h.calls[1].body.brick).sort(),['formData','selectedPaymentMethod']);
 });
+
+
+test('preparação bloqueia seleção até resposta e recupera seleção após falha', async () => {
+  const h = harness(); await h.view.render(h.nodes.get('checkout-container'));
+  let reject; h.context.API.post = () => new Promise((_, fail) => { reject = fail; });
+  const preparing = h.view.begin();
+  assert.equal(h.nodes.get('checkout-plan').disabled, true);
+  reject(new Error('Conexão interrompida')); await preparing;
+  assert.equal(h.nodes.get('checkout-plan').disabled, false);
+  assert.equal(h.nodes.get('checkout-begin').disabled, false);
+});
+
+test('falha do SDK permite montar novamente a mesma compra sem novo POST', async () => {
+  const h = harness(); await h.view.render(h.nodes.get('checkout-container'));
+  h.nodes.get('checkout-retry').hidden = true;
+  const loadSdk = h.view.loadSdk; h.view.loadSdk = async () => { throw new Error('SDK indisponível'); };
+  await h.view.begin();
+  assert.equal(h.nodes.get('checkout-retry').hidden, false);
+  assert.equal(h.nodes.get('checkout-plan').disabled, true);
+  h.view.loadSdk = loadSdk;
+  await h.view.mountPayment(h.view.session);
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.mounts[0].settings.initialization.amount, 150);
+  assert.equal(h.nodes.get('checkout-retry').hidden, true);
+});

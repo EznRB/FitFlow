@@ -47,6 +47,7 @@ const CheckoutView = {
     const planId = Number(document.getElementById('checkout-plan').value);
     if (!session.plans?.some(p => Number(p.id) === planId)) return;
     session.preparing = true; document.getElementById('checkout-begin').disabled = true;
+    document.getElementById('checkout-plan').disabled = true;
     this.feedback(session, 'Preparando sua compra…');
     try {
       const response = await API.post('/checkout/purchases', { planId }, { timeoutMs: 15000 });
@@ -64,7 +65,7 @@ const CheckoutView = {
       } else if (session.purchase.paymentId || ['processing', 'uncertain'].includes(session.purchase.attemptState)) await this.result(session);
       else await this.mountPayment(session);
     } catch (error) { this.feedback(session, error.message || 'Não foi possível preparar o pagamento. Tente novamente.'); }
-    finally { if (this.current(session)) { session.preparing = false; if (!session.purchase) document.getElementById('checkout-begin').disabled = false; } }
+    finally { if (this.current(session)) { session.preparing = false; if (!session.purchase) { document.getElementById('checkout-begin').disabled = false; document.getElementById('checkout-plan').disabled = false; } } }
   },
   async loadSdk() {
     if (window.MercadoPago) return;
@@ -90,6 +91,7 @@ const CheckoutView = {
   async mountPayment(session) {
     if (!this.current(session) || session.mounting) return;
     session.mounting = true;
+    document.getElementById('checkout-retry').hidden = true;
     try {
       await this.clearControllers(session); const builder = await this.builder(session);
       if (!this.current(session)) return;
@@ -104,6 +106,9 @@ const CheckoutView = {
       });
       if (!this.current(session)) { await controller.unmount(); return; }
       session.controllers.add(controller);
+    } catch (error) {
+      if (this.current(session)) document.getElementById('checkout-retry').hidden = false;
+      throw error;
     } finally { session.mounting = false; }
   },
   async submit(session, data) {
