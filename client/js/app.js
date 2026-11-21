@@ -205,11 +205,12 @@ const App = {
    */
   navigateTo(page) {
     const menus = { admin: Sidebar.adminMenu, instructor: Sidebar.instructorMenu, student: Sidebar.alunoMenu };
-    if (!(menus[Auth.user?.role] || []).some(item => item.page === page)) return;
+    if (!(menus[Auth.user?.role] || []).some(item => item.page === page) && !(Auth.user?.role === 'student' && page === 'aluno-checkout')) return;
+    if (this.currentPage === 'aluno-checkout' && typeof CheckoutView !== 'undefined') CheckoutView.destroy();
     if (this.currentPage === 'sessoes' && page !== 'sessoes') SessoesView.destroy();
     if (this.currentPage === 'aluno-historico' && page !== 'aluno-historico') ProgressaoView.destroy();
     this.currentPage = page;
-    Sidebar.setActive(page); // Marca o item correspondente na sidebar como "ativo".
+    Sidebar.setActive(page === 'aluno-checkout' ? 'aluno-mensalidade' : page); // Marca o item correspondente na sidebar como "ativo".
 
     // Mapeamento técnico de Nomes Amigáveis para os títulos das páginas.
     const titles = {
@@ -230,6 +231,7 @@ const App = {
       'aluno-treino':       'Meu Treino',
       'aluno-historico':    'Evolução de Cargas',
       'aluno-mensalidade':  'Mensalidade',
+      'aluno-checkout':     'Pagamento do plano',
       'aluno-checkin':      'Check-in',
     };
 
@@ -633,6 +635,7 @@ const App = {
       'aluno-treino': `<div id="aluno-treino-container"></div>`,
       'aluno-historico': `<div id="aluno-historico-container"></div>`,
       'aluno-mensalidade': `<div id="aluno-mensalidade-container"></div>`,
+      'aluno-checkout': `<div id="checkout-container"></div>`,
       'aluno-checkin': `<div id="aluno-checkin-container"></div>`,
 
       // TASK 12 — Área de Relatórios
@@ -816,6 +819,9 @@ const App = {
     }
     if (page === 'aluno-mensalidade' && typeof AlunoMensalidadeView !== 'undefined') {
       AlunoMensalidadeView.inicializar();
+    }
+    if (page === 'aluno-checkout' && typeof CheckoutView !== 'undefined') {
+      CheckoutView.render(document.getElementById('checkout-container'));
     }
     if (page === 'aluno-checkin' && typeof AlunoCheckinView !== 'undefined') {
       AlunoCheckinView.inicializar();
