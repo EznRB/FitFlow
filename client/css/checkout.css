@@ -1,0 +1,15 @@
+.ff-checkout { max-width: 1080px; margin: 0 auto; }
+.ff-checkout-heading { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 24px; }
+.ff-checkout-heading h2 { margin: 4px 0 12px; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.ff-checkout-heading p { max-width: 60ch; }
+.ff-checkout-test { padding: 12px 16px; border: 1px solid #d9b45c; border-radius: 10px; margin-bottom: 24px; }
+.ff-checkout-grid { display: grid; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr); gap: 24px; align-items: start; }
+.ff-checkout-card { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; min-width: 0; }
+.ff-checkout-card h3 { margin: 0 0 20px; }
+.ff-checkout-card label { display: block; margin-bottom: 8px; }
+.ff-checkout-card select { width: 100%; padding: 12px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-elevated); color: inherit; }
+.ff-checkout-card button, .ff-checkout-card a { margin-top: 12px; }
+.ff-checkout-card [hidden] { display: none !important; }
+#checkout-summary { margin: 24px 0; font-weight: 600; line-height: 1.7; }
+#checkout-feedback { line-height: 1.7; }
+@media (max-width: 720px) { .ff-checkout-grid { grid-template-columns: 1fr; } .ff-checkout-heading { flex-direction: column; gap: 12px; } .ff-checkout-card { padding: 18px; } }

@@ -107,3 +107,5 @@ test('HTTP mantém status de configuração, ownership, assinatura e autorizaç�
   w.provider.enabled = true;
   assert.equal((await fetch(`${url}/webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401);
 });
+
+test('assinatura webhook aceita espaco HTTP e ordem dos componentes sem aceitar duplicatas',()=>{const data=signed();const [ts,v1]=data.signature.split(',');assert.equal(verifyWebhook({...data,signature:v1+', '+ts},secret),'999');assert.throws(()=>verifyWebhook({...data,signature:data.signature+','+v1},secret));});

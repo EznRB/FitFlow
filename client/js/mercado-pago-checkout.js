@@ -1,4 +1,4 @@
-/** Checkout hospedado: nenhum número de cartão, CVV ou token privado entra no FitFlow. */
+/** Entrada do checkout interno e conciliação de retornos legados. */
 const MercadoPagoCheckout = {
   attempts: new Map(),
   availabilitySequence: 0,
@@ -30,7 +30,7 @@ const MercadoPagoCheckout = {
       if (!owns()) return;
       const states = {
         loading: ['Consultando disponibilidade do checkout…', 'Consultando checkout…'],
-        available: ['Sandbox disponível · Pix e cartão no checkout de teste. Nenhuma cobrança ou renovação foi confirmada.', 'Abrir checkout de teste'],
+        available: ['Sandbox disponível · Pix e cartão dentro do FitFlow. Nenhuma cobrança ou renovação foi confirmada.', 'Abrir checkout de teste'],
         configuration: ['Aguardando configuração · O pagamento online ainda não está disponível. Consulte a administração da academia. Nenhuma cobrança ou renovação foi confirmada.', 'Ver orientação de pagamento'],
         unknown: ['Disponibilidade não confirmada · Não foi possível confirmar o checkout de teste. Sua mensalidade e os registros financeiros continuam disponíveis.', 'Tentar consultar checkout']
       };
@@ -38,74 +38,17 @@ const MercadoPagoCheckout = {
       button.textContent = states[state][1]; button.disabled = state === 'loading';
     };
     display('loading');
-    try { const response = await API.get('/checkout/status', { timeoutMs: 15000 }); display(this.availability(response.data)); }
+    try { const response = await API.get('/checkout/config', { timeoutMs: 15000 }); display(this.availability(response.data)); }
     catch { display('unknown'); }
   },
   validUrl(value) {
     try { const url = new URL(value); return url.protocol === 'https:' && ['www.mercadopago.com.br', 'www.mercadopago.com', 'sandbox.mercadopago.com'].includes(url.hostname) && !url.username && !url.password && !url.port; } catch { return false; }
   },
   async abrir() {
-    const container = document.getElementById('aluno-mensalidade-container');
-    const scope = this.capture(container);
-    if (!scope.current() || (typeof App !== 'undefined' && App.currentPage !== 'aluno-mensalidade')) return;
-    if (this.opening?.current() || this.dialog?.current()) return;
-    const sequence = ++this.openSequence, revision = Modal.revision;
-    const current = () => scope.current() && sequence === this.openSequence && Modal.revision === revision;
-    const opening = this.opening = { current };
-    this.dialog = null;
-    try {
-      const status = await API.get('/checkout/status', { timeoutMs: 15000 });
-      if (!current()) return;
-      const availability = this.availability(status.data);
-      if (availability === 'configuration') {
-        const dialog = { current: () => scope.current() && this.dialog === dialog && sequence === this.openSequence && Modal.revision === dialog.revision && Modal.isOpen() };
-        Modal.open('Pagamento de teste', '<p>O pagamento online está indisponível neste ambiente de teste. Consulte a administração da academia. Nenhuma cobrança ou renovação foi confirmada.</p>', [{ text: 'Fechar', class: 'btn-secondary', action: () => { if (dialog.current()) Modal.close(); } }]);
-        dialog.revision = Modal.revision; this.dialog = dialog;
-        return;
-      }
-      if (availability !== 'available') throw new Error('Disponibilidade não confirmada. Não foi possível confirmar o ambiente de teste.');
-      const response = await API.get('/checkout/plans', { timeoutMs: 15000 });
-      if (!current()) return;
-      const plans = (Array.isArray(response.data) ? response.data : []).filter(plan => plan.active !== false && Number.isSafeInteger(Number(plan.id)) && Number(plan.id) > 0 && Number.isFinite(Number(plan.price)) && Number(plan.price) > 0);
-      if (!plans.length) throw new Error('Nenhum plano disponível para o checkout de teste. Consulte a administração.');
-      const options = plans.map(plan => `<option value="${Number(plan.id)}">${FitFlowSecurity.escapeHtml(plan.name)} — ${Number(plan.price).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>`).join('');
-      const dialog = { scope, sequence, plans: new Set(plans.map(plan => Number(plan.id))), select: null, current: () => scope.current()
-        && this.dialog === dialog && sequence === this.openSequence && Modal.revision === dialog.revision
-        && Modal.isOpen() && document.getElementById('mp-checkout-plan') === dialog.select && dialog.select?.isConnected };
-      Modal.open('Checkout sandbox — Mercado Pago', `<div class="form-group"><label for="mp-checkout-plan">Plano</label><select id="mp-checkout-plan">${options}</select></div><p class="science-note">Ambiente de teste. Pix e cartão são escolhidos no Mercado Pago usando uma conta e cartões de teste. O retorno à página não confirma pagamento; a vigência depende da conciliação no servidor.</p><p id="mp-checkout-feedback" role="status" aria-live="polite"></p>`, [
-        { text: 'Fechar', class: 'btn-secondary', action: () => { if (dialog.current()) Modal.close(); } },
-        { text: 'Abrir checkout de teste', class: 'btn-primary', action: () => this.iniciar(dialog) }
-      ]);
-      dialog.select = document.getElementById('mp-checkout-plan'); dialog.revision = Modal.revision; this.dialog = dialog;
-    } catch (error) { if (current()) Toast.error(error.message || 'Checkout indisponível.'); }
-    finally { if (this.opening === opening) this.opening = null; }
-  },
-  async iniciar(dialog = this.dialog) {
-    if (!dialog?.scope || !dialog.plans || !dialog.current() || this.pending?.dialog === dialog) return;
-    const userId = dialog.scope.userId;
-    const planId = Number(dialog.select.value);
-    if (!dialog.plans.has(planId)) { Toast.error('Selecione um plano disponível neste checkout.'); return; }
-    const key = `${userId}:${planId}`;
-    if (!this.attempts.has(key)) this.attempts.set(key, crypto.randomUUID());
-    const idempotencyKey = this.attempts.get(key), pending = this.pending = { dialog };
-    const feedback = document.getElementById('mp-checkout-feedback');
-    if (feedback) feedback.textContent = 'Preparando o checkout de teste…';
-    dialog.select.disabled = true;
-    try {
-      const response = await API.post('/checkout/intents', { planId, idempotencyKey }, { timeoutMs: 15000 });
-      if (!dialog.current()) return;
-      if (response.data.state === 'paid' && response.data.settled) {
-        if (this.attempts.get(key) === idempotencyKey) this.attempts.delete(key);
-        Toast.success('Este pagamento de teste já foi conciliado. Uma nova compra exige outra confirmação.');
-        return;
-      }
-      if (!this.validUrl(response.data.checkoutUrl)) throw new Error('URL de checkout inválida.');
-      window.location.assign(response.data.checkoutUrl);
-    } catch (error) { if (dialog.current()) Toast.error(error.message || 'Confirmação pendente.'); }
-    finally {
-      if (this.pending === pending) this.pending = null;
-      if (dialog.current()) { dialog.select.disabled = false; if (feedback && document.getElementById('mp-checkout-feedback') === feedback) feedback.textContent = ''; }
-    }
+    const scope = this.capture(document.getElementById('aluno-mensalidade-container'));
+    if (!scope.current() || typeof App === 'undefined' || App.currentPage !== 'aluno-mensalidade') return;
+    if (typeof CheckoutView === 'undefined') { Toast.error('Pagamento indisponível. Atualize a página e tente novamente.'); return; }
+    App.navigateTo('aluno-checkout');
   },
   async verificarRetorno() {
     const id = new URLSearchParams(window.location.search).get('checkout_intent');

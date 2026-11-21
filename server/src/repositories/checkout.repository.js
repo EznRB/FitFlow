@@ -4,9 +4,11 @@ const AppError = require('../utils/AppError');
 const { moneyCents, brazilDate } = require('../utils/paymentValidation');
 const { lockStudent, renewalDates } = require('../utils/membershipRenewal');
 const { membershipGrant } = require('../utils/membershipSnapshot');
+const { createCheckoutPurchaseRepository } = require('./checkout-purchase.repository');
 
 function createCheckoutRepository(db = prisma) {
   return {
+    ...createCheckoutPurchaseRepository(db),
     get ready() { return Boolean(db.paymentIntent); },
     listPlans: () => db.plan.findMany({ where: { active: true }, select: { id: true, name: true, price: true, durationDays: true }, orderBy: { price: 'asc' } }),
     async createOrGet(userId, { planId, idempotencyKey }) {

@@ -398,6 +398,7 @@ model PaymentIntent {
   durationDays       Int       @map("duration_days")
   currency           String    @default("BRL") @db.VarChar(3)
   state              String    @default("created") @db.VarChar(24)
+  flow               String    @default("legacy") @db.VarChar(16)
   idempotencyKey     String    @map("idempotency_key") @db.VarChar(64)
   preferenceId       String?   @unique @map("preference_id") @db.VarChar(100)
   checkoutUrl        String?   @map("checkout_url") @db.Text
@@ -410,8 +411,25 @@ model PaymentIntent {
   student            Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
   plan               Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
   payment            Payment?  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  attempts           PaymentAttempt[]
 
   @@unique([studentId, idempotencyKey])
   @@index([studentId, state])
   @@map("payment_intents")
+}
+
+model PaymentAttempt {
+  id                String @id @db.VarChar(36)
+  intentId          String @map("intent_id") @db.VarChar(36)
+  requestKey        String @map("request_key") @db.VarChar(64)
+  sequence          Int
+  state             String @default("processing") @db.VarChar(24)
+  providerPaymentId String? @unique @map("provider_payment_id") @db.VarChar(100)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  intent            PaymentIntent @relation(fields: [intentId], references: [id], onDelete: Restrict)
+  @@unique([intentId, requestKey])
+  @@unique([intentId, sequence])
+  @@index([intentId, createdAt])
+  @@map("payment_attempts")
 }
