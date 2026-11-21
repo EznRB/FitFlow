@@ -4,7 +4,7 @@ const { createMercadoPagoAdapter } = require('./mercado-pago.adapter');
 // O contrato separa a comunicação do provedor do livro financeiro do FitFlow.
 // getPayment/findPayment retornam recursos da API, nunca alegações do cliente.
 const CHECKOUT_PROVIDER_METHODS = Object.freeze([
-  'ensureSandbox', 'createPreference', 'getPayment', 'findPayment', 'verifyWebhook'
+  'ensureSandbox', 'createPreference', 'createPayment', 'publicConfig', 'getPayment', 'findPayment', 'findAttemptPayment', 'verifyWebhook'
 ]);
 
 function assertCheckoutProvider(provider) {

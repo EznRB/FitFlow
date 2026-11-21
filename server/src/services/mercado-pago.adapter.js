@@ -1,6 +1,7 @@
 const { createHmac, timingSafeEqual } = require('node:crypto');
 const { performance } = require('node:perf_hooks');
 const AppError = require('../utils/AppError');
+const { validateBrickSubmission, buildPaymentPayload } = require('./mercado-pago-payment');
 
 const CHECKOUT_HOSTS = new Set(['www.mercadopago.com.br', 'www.mercadopago.com', 'sandbox.mercadopago.com']);
 const SANDBOX_CAPABILITIES = Object.freeze({
@@ -12,7 +13,8 @@ function validCheckoutUrl(value) {
 function readSandboxConfig(environment = process.env) {
   const config = { requested: environment.MP_SANDBOX_ENABLED === 'true', token: environment.MP_SANDBOX_ACCESS_TOKEN,
     secret: environment.MP_SANDBOX_WEBHOOK_SECRET, sellerId: environment.MP_SANDBOX_SELLER_ID,
-    buyerEmail: environment.MP_SANDBOX_BUYER_EMAIL, baseUrl: environment.MP_SANDBOX_PUBLIC_URL };
+    buyerEmail: environment.MP_SANDBOX_BUYER_EMAIL, baseUrl: environment.MP_SANDBOX_PUBLIC_URL,
+    publicKey: environment.MP_SANDBOX_PUBLIC_KEY };
   let validUrl = false;
   try {
     const url = new URL(config.baseUrl);
@@ -26,10 +28,27 @@ function readSandboxConfig(environment = process.env) {
     /^test_user_[A-Za-z0-9_]+@testuser\.com$/.test(config.buyerEmail || '') && validUrl;
   return config;
 }
+function readBricksConfig(environment = process.env) {
+  const buyerEmail = environment.MP_BRICKS_TEST_BUYER_EMAIL;
+  const config = readSandboxConfig({ ...environment,
+    MP_SANDBOX_WEBHOOK_SECRET: environment.MP_BRICKS_WEBHOOK_SECRET || environment.MP_SANDBOX_WEBHOOK_SECRET,
+    MP_SANDBOX_ACCESS_TOKEN: environment.MP_BRICKS_TEST_ACCESS_TOKEN,
+    MP_SANDBOX_PUBLIC_KEY: environment.MP_BRICKS_TEST_PUBLIC_KEY,
+    MP_SANDBOX_SELLER_ID: environment.MP_BRICKS_TEST_SELLER_ID,
+    MP_SANDBOX_BUYER_EMAIL: 'test_user_validation@testuser.com' });
+  config.buyerEmail = buyerEmail;
+  config.enabled = Boolean(config.enabled && /^TEST-[A-Za-z0-9-]+$/.test(config.token || '') &&
+    /^TEST-[A-Za-z0-9-]+$/.test(config.publicKey || '') && typeof buyerEmail === 'string' &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail) && buyerEmail.length <= 254 && !/@testuser\.com$/i.test(buyerEmail));
+  return config;
+}
 function verifyWebhook({ signature, requestId, dataId }, secret, now = Date.now()) {
   if (typeof signature !== 'string' || typeof requestId !== 'string' || !/^[A-Za-z0-9-]{1,100}$/.test(requestId) || typeof dataId !== 'string' || !/^[1-9]\d{0,19}$/.test(dataId)) throw new AppError('Notificação inválida.', 401);
-  const match = /^ts=(\d{10}|\d{13}),v1=([a-fA-F0-9]{64})$/.exec(signature);
-  if (!match) throw new AppError('Assinatura da notificação inválida.', 401);
+  const parts = signature.split(',').map(part => part.trim());
+  const ts = parts.find(part => /^ts=(\d{10}|\d{13})$/.test(part));
+  const digest = parts.find(part => /^v1=[a-fA-F0-9]{64}$/.test(part));
+  const match = parts.length === 2 && ts && digest ? [signature, ts.slice(3), digest.slice(3)] : null;
+  if (!match) throw new AppError('Formato da assinatura da notificação inválido.', 401);
   const timestamp = Number(match[1]) * (match[1].length === 10 ? 1000 : 1);
   if (Math.abs(now - timestamp) > 5 * 60 * 1000) throw new AppError('Notificação expirada.', 401);
   const expected = createHmac('sha256', secret).update(`id:${dataId};request-id:${requestId};ts:${match[1]};`).digest();
@@ -61,7 +80,18 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
         const response = await fetchImpl(`https://api.mercadopago.com${path}`, { ...options, signal: controller.signal, redirect: 'error',
           headers: { Authorization: `Bearer ${config.token}`, 'Content-Type': 'application/json', ...options.headers } });
         requireWithinDeadline();
-        if (!response.ok) throw new AppError('Mercado Pago indisponível para este teste. Nenhum plano foi liberado.', 502);
+        if (!response.ok) {
+          if (path === '/v1/payments' && options.method === 'POST' && response.status === 400) {
+            const body = await response.json(); requireWithinDeadline();
+            // Apenas falhas documentadas anteriores à criação; timeout/duplicação/conexão não são rejeição definitiva.
+            const tokenErrors = new Set(['2006', '2062', '3003', '3006', '3008']);
+            if (body.status === 400 && body.error === 'bad_request' && !body.id && Array.isArray(body.cause) && body.cause.length > 0 && body.cause.every(c => tokenErrors.has(String(c.code)))) {
+              const error = new AppError('Os dados do cartão expiraram ou são inválidos. Abra o formulário e tente novamente.', 422);
+              error.paymentNotCreated = true; throw error;
+            }
+          }
+          throw new AppError('Mercado Pago indisponível para este teste. Nenhum plano foi liberado.', 502);
+        }
         const body = await response.json();
         requireWithinDeadline();
         return body;
@@ -88,8 +118,26 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
     enabled: config.enabled,
     sellerId: config.sellerId,
     buyerEmail: config.buyerEmail,
+    publicConfig() {
+      const enabled = Boolean(config.enabled && typeof config.publicKey === 'string' && /^(?:TEST-|APP_USR-)[A-Za-z0-9-]+$/.test(config.publicKey));
+      return { enabled, publicKey: enabled ? config.publicKey : null, buyerEmail: enabled ? config.buyerEmail : null, sandbox: true };
+    },
     ensureSandbox,
     verifyWebhook: data => { requireEnabled(); return verifyWebhook(data, config.secret); },
+    async createPayment(intent, data, attemptId) {
+      const submission = validateBrickSubmission(data);
+      if (typeof attemptId !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(attemptId)) throw new AppError('Chave de pagamento inválida.', 400);
+      await ensureSandbox();
+      const payload = buildPaymentPayload(intent, submission, config);
+      payload.metadata.fitflow_attempt_id = attemptId;
+      const payment = await request('/v1/payments', { method: 'POST', headers: { 'X-Idempotency-Key': attemptId },
+        body: JSON.stringify(payload) });
+      providerId(payment.id);
+      if (payment.live_mode !== false || providerId(payment.collector_id) !== config.sellerId || payment.external_reference !== intent.id) {
+        throw new AppError('Pagamento fora do ambiente de teste ou compra incorreta. Plano não liberado.', 409);
+      }
+      return payment;
+    },
     async createPreference(intent, planName) {
       await ensureSandbox();
       const base = config.baseUrl.replace(/\/$/, '');
@@ -101,9 +149,8 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
         back_urls: { success: `${base}/?checkout_intent=${intent.id}`, pending: `${base}/?checkout_intent=${intent.id}`, failure: `${base}/?checkout_intent=${intent.id}` },
         auto_return: 'approved'
       }) });
-      const checkoutUrl = config.token.startsWith('TEST-') ? preference.sandbox_init_point : preference.init_point;
+      const checkoutUrl = preference.init_point;
       if (typeof preference.id !== 'string' || preference.id.length > 100 || !validCheckoutUrl(checkoutUrl) || providerId(preference.collector_id) !== config.sellerId) throw new AppError('Resposta de checkout inválida. Checkout bloqueado.', 502);
-      if (config.token.startsWith('TEST-') && new URL(checkoutUrl).hostname !== 'sandbox.mercadopago.com') throw new AppError('URL de teste inválida.', 502);
       return { preferenceId: preference.id, checkoutUrl };
     },
     async getPayment(id) {
@@ -118,7 +165,18 @@ function createMercadoPagoAdapter({ config = readSandboxConfig(), fetchImpl = gl
       if (!Array.isArray(data.results)) throw new AppError('Consulta de pagamentos inválida.', 502);
       const result = data.results.find(p => p.external_reference === intentId && p.status === 'approved') || data.results.find(p => p.external_reference === intentId);
       return result ? this.getPayment(result.id) : null;
+    },
+    async findAttemptPayment(intentId, attemptId) {
+      await ensureSandbox();
+      const data = await request(`/v1/payments/search?external_reference=${encodeURIComponent(intentId)}&sort=date_created&criteria=desc&limit=100`);
+      if (!Array.isArray(data.results)) throw new AppError('Consulta de pagamentos inválida.', 502);
+      const matches = data.results.filter(p => p.external_reference === intentId && p.metadata?.fitflow_attempt_id === attemptId);
+      if (matches.length > 1) throw new AppError('Tentativa com múltiplos pagamentos. Conferência necessária.', 409);
+      if (!matches.length) return null;
+      const payment = await this.getPayment(matches[0].id);
+      if (payment.external_reference !== intentId || payment.metadata?.fitflow_attempt_id !== attemptId) throw new AppError('Pagamento não corresponde à tentativa.', 409);
+      return payment;
     }
   };
 }
-module.exports = { createMercadoPagoAdapter, readSandboxConfig, verifyWebhook, validCheckoutUrl, providerId };
+module.exports = { readBricksConfig, createMercadoPagoAdapter, readSandboxConfig, verifyWebhook, validCheckoutUrl, providerId };

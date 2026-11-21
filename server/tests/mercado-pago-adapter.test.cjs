@@ -19,6 +19,17 @@ async function observeDeadline(operation) {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
 
+test('credencial TEST usa init_point da preferência e ignora sandbox_init_point', async () => {
+  const initPoint = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=test';
+  const adapter = createMercadoPagoAdapter({ config: { ...config, token: 'TEST-fixture' }, fetchImpl: async url => {
+    if (url.endsWith('/users/me')) return response(seller);
+    return response({ id: 'test-preference', collector_id: 123, init_point: initPoint,
+      sandbox_init_point: 'https://sandbox.mercadopago.com/obsolete' });
+  } });
+  const result = await adapter.createPreference({ id: 'test-intent', planId: 2, amount: 150 }, 'Plano');
+  assert.equal(result.checkoutUrl, initPoint);
+});
+
 function configuredEnvironment(baseUrl) {
   return { MP_SANDBOX_ENABLED: 'true', MP_SANDBOX_ACCESS_TOKEN: config.token,
     MP_SANDBOX_WEBHOOK_SECRET: config.secret, MP_SANDBOX_SELLER_ID: config.sellerId,

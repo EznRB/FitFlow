@@ -1,6 +1,15 @@
-# Estado da entrega — 11/11/2026
+# Estado da entrega — atualizado em 21/11/2026
 
 O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou melhorias de confirmação/recuperação na nutrição, no registro avulso e na presença do aluno, além da expansão do histórico. A atualização seguinte acrescentou recuperação da consulta de planos na matrícula, com bloqueio até selecionar um plano ativo confirmado. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
+
+
+## Atualização prioritária — 21/11/2026
+
+Entrega em **25/11/2026**. O checkout interno Mercado Pago (Payment Brick, cartão/Pix) foi implementado e publicado em sandbox no outro chat. A revisão de continuidade conferiu os registros de 916 testes aprovados, um ignorado e zero falhas; cartão aprovado/recusado/em processamento, Pix pendente com QR, webhook automático HTTP 200 e conciliação sem renovação duplicada estão documentados em [Pagamentos sandbox](PAGAMENTOS_SANDBOX.md). Não houve cobrança real. A revisão estática adicional de tentativas, concorrência e HMAC não encontrou falha acionável no escopo examinado.
+
+A implantação `dpl_2TGRvA8Ue7R4MLrFrATApJk58NNX` foi consultada novamente em 21/11: **READY**. Foi produzida de uma cópia isolada em `server/tmp/internal-release`; não atribuir esse artefato ao HEAD Git anterior. O código do checkout está sendo reconciliado com GitHub, preservando alterações acadêmicas e as melhorias da PR 2. Os marcos de novembro abaixo permanecem históricos, incluindo suas contagens de migrations; não constituem uma nova consulta ao banco.
+
+Permanecem: integração e revisão visual atual das melhorias de IA/UX, jornadas completas da demonstração, validação em telefone físico M01–M14 e comprovação da rotação da chave Groq. Após estabilizar, preparar apresentação individual de 20–30 minutos, demonstração e contingência. Checkout sandbox aprovado não significa habilitação de pagamentos reais.
 
 ## Rodada em revisão
 
@@ -10,7 +19,7 @@ As rodadas desta revisão incluem catálogo de 26 variantes para a IA, contexto/
 
 Em 12/11, o comparador de divisões passou a remover o resultado anterior ao alterar dias, tempo, objetivo, regularidade ou equipamentos. Os campos, a ficha e o cálculo explícito de séries permanecem; uma nova comparação exige clique. A regressão falhou antes da correção; sete testes do planejador passaram depois, zero falhas/ignorados (`server/tmp/planner-context-{red,green}-20261112.log`). Correção na PR 2, ainda sujeita ao gate visual; não altera equações nem prescreve divisões automaticamente.
 
-A [auditoria de dependências](AUDITORIA_DEPENDENCIAS_2026_11_11.md) registra 15 diretas e 118 transitivas, com os dois avisos corrigidos e limites de avaliação explícitos. A revisão estática de persistência móvel não encontrou defeito concreto no escopo examinado. Inspeção visual integral, aparelho físico, provedor de pagamentos externo e rotação da chave Groq continuam abertos. A apresentação será preparada após a estabilização, conforme combinado.
+A [auditoria de dependências](AUDITORIA_DEPENDENCIAS_2026_11_11.md) registra 15 diretas e 118 transitivas, com os dois avisos corrigidos e limites de avaliação explícitos. A revisão estática de persistência móvel não encontrou defeito concreto no escopo examinado. Inspeção visual integral, aparelho físico, rotação da chave Groq continuam abertos; o gate do provedor sandbox foi atendido em 21/11. A apresentação será preparada após a estabilização, conforme combinado.
 
 ## Revisão estática e limpeza de 11/11
 
@@ -48,7 +57,7 @@ Na PR 2 permanece a tela de nutrição com fontes FAO diretas, 39 testes de inte
 | Treino e catálogo | Sessões/séries idempotentes, carga/reps/RIR, trabalho/aquecimento, progressão, fila por conta, catálogo com créditos persistidos; ficha, caderno e Evolução refinados. Avulso preserva rascunho e exige consulta/revisão após envio incerto; histórico permite expandir todos os registros consultados. Fixture exclusiva limpa após validação. | Catálogo descritivo não valida prescrição; avulso legado não promete idempotência. Emulação não valida aparelho físico. [Ciência](CIENCIA.md), [revisão visual](REVISAO_VISUAL_SISTEMA.md). |
 | Nutrição | Mifflin e Harris revisada, energia/macros determinísticos, hipóteses explícitas; persistência consentida por usuário e restauração. Confirma snapshot salvo, prazo de 15 s e revisão de resultado incerto; callbacks pertencem ao render/sessão original. | Estimativa para adulto saudável, sem prescrição clínica. Bloqueio de repetição é em RAM, não uma garantia de idempotência entre recargas. [Fórmulas e cenário verificável](CIENCIA.md#energia-e-macronutrientes). |
 | Chat de IA | Conversa contextual e rascunho educativo, Groq Free/GPT-OSS, consentimento, referências curadas e cálculos estruturados no servidor; amostras reais inspecionadas. Esclarecimento renderizado por enums, contexto positivo e contradições/correções explícitas conferidos. | A reprovação histórica de 17/10 motivou o catálogo de IDs e a revisão de contagens por sessão, disponíveis na PR 2 e em preview; a integração em produção aguarda revisão visual. Histórico em memória e interpretação conservadora, sem triagem clínica. [Amostra e limites](IA_GRATUITA.md#revisão-de-cobertura-do-rascunho--17102026). |
-| Financeiro | Recebimentos manuais idempotentes, ajustes auditados, recibo protegido e relatórios conciliáveis; checkout/webhook/conciliação testados com provedor simulado. | **Mercado Pago sandbox externo indisponível** sem conta/credenciais/webhook. Nenhuma cobrança ou devolução real executada. [Ajustes](AJUSTES_FINANCEIROS.md), [sandbox](PAGAMENTOS_SANDBOX.md). |
+| Financeiro | Recebimentos manuais idempotentes, ajustes auditados, recibo protegido e relatórios conciliáveis; checkout interno cartão/Pix e webhook automático verificados também no Mercado Pago sandbox em 21/11, com renovação única. | Somente sandbox; Pix pendente não libera plano. Nenhuma cobrança ou devolução real executada. [Ajustes](AJUSTES_FINANCEIROS.md), [sandbox](PAGAMENTOS_SANDBOX.md). |
 | Mobile/PWA | Layout emulado, cache público/fallback e fila privada por conta; offline/reconexão local e isolamento testados. | Instalação, teclado e reconexão publicada em telefone físico **não realizados**. [M01–M14](VALIDACAO_MOBILE.md). |
 | UX/UI e landing | Identidade laranja/navy/Barlow; apresentações distintas para gestão, treino, nutrição e chat; landing com fotografia ilustrativa e captura real identificada como demonstração. | Revisão completa de telas/estados/teclado/contraste ainda aberta; capturas não certificam toda acessibilidade. [Critérios e provas](REVISAO_VISUAL_SISTEMA.md). |
 

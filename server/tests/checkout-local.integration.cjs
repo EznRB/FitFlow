@@ -61,13 +61,14 @@ let user; let student; let plan;
     console.log('PASS local: renovação concorrente, intent único, conciliação 4x/1 ledger, ownership, refund em revisão, conta inativa e valor/status preservados. Provedor controlado, sem estorno financeiro real.');
   } finally {
     // Remove somente registros criados por este teste; nunca altera fixture demo ou histórico existente.
-    if (student) await db.$transaction([
-      db.paymentIntent.deleteMany({ where: { studentId: student.id } }),
-      db.payment.deleteMany({ where: { studentId: student.id } }),
-      db.student.delete({ where: { id: student.id } }),
-    ]);
-    if (user) await db.user.delete({ where: { id: user.id } });
-    if (plan) await db.plan.delete({ where: { id: plan.id } });
-    await db.$disconnect();
+    try {
+      if (student) await db.$transaction([
+        db.paymentIntent.deleteMany({ where: { studentId: student.id } }),
+        db.payment.deleteMany({ where: { studentId: student.id } }),
+        db.student.delete({ where: { id: student.id } }),
+      ]);
+      if (user) await db.user.delete({ where: { id: user.id } });
+      if (plan) await db.plan.delete({ where: { id: plan.id } });
+    } finally { await db.$disconnect(); }
   }
 })().catch(error => { console.error('FAIL checkout local; detalhes não exibidos para preservar credenciais.', JSON.stringify(error.failureCodes || [])); process.exitCode = 1; });

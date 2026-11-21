@@ -1,6 +1,8 @@
 {
   "version": 2,
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "builds": [
     {
       "src": "server/src/app.js",
@@ -15,7 +17,7 @@
     {
       "src": "/(.*)",
       "headers": {
-        "Content-Security-Policy": "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' https://sdk.mercadopago.com https://http2.mlstatic.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.mercadopago.com https://api-static.mercadopago.com https://api.mercadolibre.com https://http2.mlstatic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; frame-src https://secure-fields.mercadopago.com https://api-static.mercadopago.com https://www.mercadopago.com.br https://sdk.mercadopago.com",
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "strict-origin-when-cross-origin"
       },

@@ -45,13 +45,13 @@ O objetivo permanece aberto; o estado da ferramenta de meta foi conferido na se�
 4. Retomar os gates externos quando o proprietário disponibilizar os acessos e aparelho. O pedido para guardar perguntas enquanto ele trabalha continua aplicável; avançar autonomamente no trabalho independente.
 5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. Aplicativo e landing estão integrados à main para apresentação; novas mudanças continuam sujeitas a revisão e validação.
 
-A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. A configuração externa do Mercado Pago permanece pendente e não se torna aprovada por testes simulados ou recebimentos manuais.
+A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. Em 21/11, o checkout interno Mercado Pago passou pelos cenários externos de sandbox e webhook automático, conforme [evidências](PAGAMENTOS_SANDBOX.md). Esse gate foi atendido; pagamentos reais continuam desativados. A prioridade até 25/11 passa a ser reconciliar o código publicado com GitHub, integrar e revisar IA/UX, estabilizar as jornadas e depois preparar a apresentação.
 
 ## Gates obrigatórios ainda abertos
 
 | Gate | Condição concreta para concluir | Referência |
 |---|---|---|
-| Pix/cartão sandbox externo | Proprietário configura conta, vendedor/comprador de teste, token e webhook. Verificar cartão aprovado/rejeitado/pendente, assinatura/replay e Pix QR/pendente sem renovação. Pix aprovado em double não comprova liquidação. | [Roteiro do provedor](PAGAMENTOS_SANDBOX.md) |
+| Pix/cartão sandbox externo | **Atendido em 21/11:** cartão aprovado/recusado/em processamento, Pix QR/pendente sem renovação, webhook automático assinado e replay sem duplicidade. Sem transações reais; reconciliar fonte publicada com GitHub. | [Evidências do provedor](PAGAMENTOS_SANDBOX.md) |
 | Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
 | Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
 | Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |

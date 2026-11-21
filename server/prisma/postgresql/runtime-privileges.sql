@@ -5,7 +5,7 @@ REVOKE ALL ON SCHEMA public FROM fitflow_app;
 GRANT USAGE ON SCHEMA public TO fitflow_app;
 GRANT SELECT, INSERT, UPDATE ON
   users, plans, students, workouts, exercises, payments, checkins, exercicios,
-  workout_sessions, nutrition_scenarios, rate_limit_buckets, payment_intents
+  workout_sessions, nutrition_scenarios, rate_limit_buckets, payment_intents, payment_attempts
   TO fitflow_app;
 GRANT SELECT, INSERT ON workout_logs, workout_sets TO fitflow_app;
 GRANT SELECT, INSERT ON payment_adjustments TO fitflow_app;

@@ -1,8 +1,9 @@
 const AppError = require('../utils/AppError');
 const { paymentId, moneyCents, paymentDate } = require('../utils/paymentValidation');
-const { providerId } = require('./mercado-pago.adapter');
+const { providerId, readBricksConfig } = require('./mercado-pago.adapter');
 const { createCheckoutProvider } = require('./checkout-provider');
 const { createCheckoutRepository } = require('../repositories/checkout.repository');
+const { createCheckoutPurchaseService } = require('./checkout-purchase.service');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const PROVIDER_STATUSES = ['pending', 'approved', 'authorized', 'in_process', 'in_mediation', 'rejected', 'cancelled', 'refunded', 'charged_back'];
 function checkoutId(id) { if (typeof id !== 'string' || !UUID.test(id)) throw new AppError('ID de checkout inválido.', 400); return id; }
@@ -10,13 +11,17 @@ function publicIntent(intent) {
   return { id: intent.id, state: intent.state, planId: intent.planId, amount: Number(intent.amount), currency: intent.currency,
     sandbox: true, checkoutUrl: intent.checkoutUrl || null, settled: Boolean(intent.paymentId), requiresReview: intent.state === 'review' };
 }
-function createCheckoutService({ provider = createCheckoutProvider(), repository = createCheckoutRepository() } = {}) {
-  function requireReady() { if (!provider.enabled || !repository.ready) throw new AppError('Checkout sandbox indisponível. Configure credenciais de teste, webhook e banco.', 503); }
+function createCheckoutService(options = {}) {
+  const provider = options.provider || createCheckoutProvider();
+  const paymentProvider = options.paymentProvider || (options.provider ? provider : createCheckoutProvider({ config: readBricksConfig() }));
+  const repository = options.repository || createCheckoutRepository();
+  function requireReady() { if ((!provider.enabled && !paymentProvider.enabled) || !repository.ready) throw new AppError('Checkout sandbox indisponível. Configure credenciais de teste, webhook e banco.', 503); }
   async function reconcile(payment) {
     if (typeof payment.external_reference !== 'string' || !UUID.test(payment.external_reference)) return { ignored: true };
     const intent = await repository.findById(payment.external_reference);
     if (!intent) return { ignored: true };
-    if (payment.live_mode !== false || providerId(payment.collector_id) !== provider.sellerId || payment.currency_id !== 'BRL' ||
+    const expectedProvider = intent.flow === 'brick' ? paymentProvider : provider;
+    if (payment.live_mode !== false || providerId(payment.collector_id) !== expectedProvider.sellerId || payment.currency_id !== 'BRL' ||
       moneyCents(payment.transaction_amount) !== moneyCents(String(intent.amount)) || payment.metadata?.fitflow_intent_id !== intent.id) {
       throw new AppError('Pagamento não corresponde à compra sandbox. Plano não liberado.', 409);
     }
@@ -34,11 +39,17 @@ function createCheckoutService({ provider = createCheckoutProvider(), repository
     return publicIntent(await repository.settle(intent.id, payment, method));
   }
   return {
+    ...createCheckoutPurchaseService({ provider: paymentProvider, legacyProvider: provider, repository, reconcile }),
+    config: () => {
+      const config = paymentProvider.publicConfig?.() || { enabled: false, publicKey: null, buyerEmail: null, sandbox: true };
+      return { ...config, enabled: Boolean(config.enabled && repository.internalReady) };
+    },
     status: () => ({ enabled: Boolean(provider.enabled && repository.ready), sandbox: true, methods: ['pix', 'card'],
       provider: provider.id || null, capabilities: provider.capabilities || null }),
     plans: () => { requireReady(); return repository.listPlans(); },
     async start(userId, data) {
       requireReady();
+      if (paymentProvider.publicConfig?.().enabled) throw new AppError('Use o pagamento interno do FitFlow para iniciar uma nova compra.', 409);
       if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).some(key => !['planId', 'idempotencyKey'].includes(key))) throw new AppError('Dados de checkout inválidos. Envie somente plano e chave de repetição.', 400);
       const planId = paymentId(data.planId, 'ID do plano');
       if (typeof data.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(data.idempotencyKey)) throw new AppError('Chave de repetição inválida.', 400);
@@ -52,15 +63,30 @@ function createCheckoutService({ provider = createCheckoutProvider(), repository
     async get(userId, id) {
       requireReady();
       const intent = await repository.getOwned(checkoutId(id), userId);
-      const payment = intent.paymentId ? await provider.getPayment(intent.providerPaymentId) : await provider.findPayment(intent.id);
+      const owner = intent.flow === 'brick' ? paymentProvider : provider;
+      const payment = intent.paymentId ? await owner.getPayment(intent.providerPaymentId) : await owner.findPayment(intent.id);
       if (payment) await reconcile(payment);
       return publicIntent(await repository.getOwned(id, userId));
     },
     async webhook({ query, headers, body }) {
       requireReady();
-      const id = provider.verifyWebhook({ signature: headers['x-signature'], requestId: headers['x-request-id'], dataId: query['data.id'] });
+      let id, signatureError;
+      for (const verifier of [...new Set([paymentProvider, provider])]) {
+        if (!verifier.enabled) continue;
+        try { id = verifier.verifyWebhook({ signature: headers['x-signature'], requestId: headers['x-request-id'], dataId: query['data.id'] }); break; }
+        catch (error) { if (error.statusCode !== 401) throw error; signatureError ||= error; }
+      }
+      if (!id) throw signatureError || new AppError('Notificação inválida.', 401);
       if (query.type !== 'payment' || body?.type !== 'payment' || typeof body?.data?.id !== 'string' || body.data.id !== id || body.live_mode !== false) throw new AppError('Notificação sandbox inválida.', 400);
-      return reconcile(await provider.getPayment(id));
+      let payment;
+      let firstError;
+      for (const candidate of [...new Set([paymentProvider, provider])]) {
+        if (!candidate.enabled) continue;
+        try { payment = await candidate.getPayment(id); break; }
+        catch (error) { firstError ||= error; }
+      }
+      if (!payment) throw firstError || new AppError('Pagamento indisponível.', 502);
+      return reconcile(payment);
     }
   };
 }
