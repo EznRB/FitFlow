@@ -1,5 +1,7 @@
 # IA educativa com GPT-OSS e Groq Free
 
+**Atualização publicada em 22/11:** a PR 18 acrescentou quantidade semanal explicitamente solicitada, com citação original, schema e validação; disponibilidade não fixa frequência. [Amostra real, regressões e limites atuais](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md). As amostras reprovadas históricas abaixo continuam reprovadas; a nova prova de contagem/logística não certifica todas as escolhas de exercícios ou doses.
+
 Escolha revisada em 11/10/2026 após o pedido de um modelo aberto ou serviço gratuito. O adaptador está implementado e a geração real foi verificada localmente. O console da organização confirmou plano **Free, US$ 0**. Não habilitar plano pago para concluir a demonstração.
 
 ## Revisão local atual — 11/11/2026

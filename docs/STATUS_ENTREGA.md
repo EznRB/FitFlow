@@ -2,6 +2,8 @@
 
 ## Estado atual — versão integrada em 22/11
 
+**Última atualização funcional:** PR 18 integrada em `ec08647bd31828dd04916fc7340a71963ba2e5ac`, produção `dpl_9CrnrrxhifbW2tccSn7MYxPKgw9j` READY. CI 45080712549: 965 aprovados, zero falhas e um ignorado; PostgreSQL validado. Saúde/banco e oito assets iguais ao Git, incluindo checkout preservado. Chat distingue frequência explícita de disponibilidade; Evolução oferece comparação opcional por IDs, sem unir históricos. [Gates e limites da rodada](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md). A conta fictícia agora tem duas sessões, três séries e 640 kg·reps; o registro original de 440 foi preservado.
+
 Atualização vigente: PRs 14, 15 e 16 integradas; funcional `d62d6e54c78a52cb828ecaa2eba4897aaba2c205`. Produção `dpl_Akh4Z7iyfW9A8Wt13uD9iQ4h6JFY` READY, saúde/banco aprovados e três assets alterados iguais aos blobs Git. Corrigidos motivo longo de cancelamento, singular de exercício, inclusão de vigência vencida na consulta de gestão e leitura das tabelas. CI 45079050871 aprovada. Landing PR 3 integrada em `e09966d`, produção READY, Vite 6.4.5 e Login móvel em Sobre/Contato corrigidos. [Validação técnica e limites](VALIDACAO_GESTAO_LANDING_2026_11_22.md).
 
 O relatório acadêmico será preparado em outro chat, conforme correção explícita do usuário. Aqui continua o desenvolvimento e a validação do aplicativo. A meta está ativa na consulta mais recente; o estado `usageLimited` anterior não representa seu estado atual.
