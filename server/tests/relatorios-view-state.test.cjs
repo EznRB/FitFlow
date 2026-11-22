@@ -126,3 +126,37 @@ test('valores ausentes não viram zero e critérios externos permanecem texto es
   assert.equal(node('aviso-filtro-data').textContent, '<img src=x onerror=alert(1)>');
   assert.doesNotMatch(node('relatorio-resumo').innerHTML, /<img/);
 });
+
+test('vigência vencida aparece separada do status cadastral sem criar dívida', async () => {
+  const { view, node } = harness(async () => ({ data: [{ nome: 'Exemplo', status: 'active', totalAtraso: 0,
+    mensalidadesAtrasadas: 0, reasons: ['membership_expired'] }] }));
+  await view.carregarRelatorio('inadimplencia');
+  assert.match(node('relatorio-thead').innerHTML, /Situação cadastral/);
+  assert.match(node('relatorio-thead').innerHTML, /Motivo da inclusão/);
+  assert.match(node('relatorio-tbody').innerHTML, /Ativo/);
+  assert.match(node('relatorio-tbody').innerHTML, /Vigência vencida há mais de 5 dias/);
+  assert.match(node('relatorio-resumo').innerHTML, /Valores de registros vencidos/);
+  assert.match(node('relatorio-resumo').innerHTML, /0,00/);
+  assert.match(node('aviso-filtro-data').textContent, /não gera dívida/);
+});
+
+test('motivos conhecidos não duplicam e códigos desconhecidos nunca são apresentados como texto', async () => {
+  const { view, node } = harness(async () => ({ data: [{ nome: 'Exemplo', status: 'blocked', totalAtraso: 50,
+    mensalidadesAtrasadas: 1, reasons: ['membership_expired', 'blocked_status', 'membership_expired', '<img src=x>', 'overdue_payments'] }] }));
+  await view.carregarRelatorio('inadimplencia');
+  const body = node('relatorio-tbody').innerHTML;
+  assert.equal((body.match(/Vigência vencida há mais de 5 dias/g) || []).length, 1);
+  assert.match(body, /Bloqueio cadastral/); assert.match(body, /Registros financeiros vencidos/);
+  assert.doesNotMatch(body, /img src/);
+});
+
+test('resposta anterior sem motivos mantém leitura de bloqueio e registros financeiros', async () => {
+  const { view, node } = harness(async () => ({ data: [
+    { nome: 'A', status: 'blocked', totalAtraso: 0, mensalidadesAtrasadas: 0 },
+    { nome: 'B', status: 'inactive', totalAtraso: 40, mensalidadesAtrasadas: 2 },
+  ] }));
+  await view.carregarRelatorio('inadimplencia');
+  assert.match(node('relatorio-tbody').innerHTML, /Bloqueio cadastral/);
+  assert.match(node('relatorio-tbody').innerHTML, /Registros financeiros vencidos/);
+  assert.match(node('relatorio-resumo').innerHTML, /40,00/);
+});
