@@ -101,6 +101,26 @@ test('dias disponíveis e sessões planejadas permanecem distintos, sem criar tr
   assert.equal(all.filter(node => node.className === 'ia-routine-session').length, 2);
 });
 
+test('frequência explicitamente solicitada aparece separada dos dias disponíveis sem mudar texto da conversa', async () => {
+  const result = response();
+  result.data.program.context.desiredSessions = 3;
+  const h = await fixture(result); await h.send(routineUserText);
+  const context = flatten(h.reply()).find(node => node.className === 'ia-routine-context');
+  assert.match(context.textContent, /Sessões solicitadas3 por semana/);
+  assert.match(context.textContent, /Dias disponíveisSegunda, Quarta, Sexta/);
+  assert.equal(h.view.chatState.messages[1].content, result.data.message);
+  const legacy = await fixture(); await legacy.send(routineUserText);
+  assert.doesNotMatch(flatten(legacy.reply()).find(node => node.className === 'ia-routine-context').textContent, /Sessões solicitadas/);
+});
+
+test('frequência estruturada inválida ou divergente da quantidade de sessões não vira documento paralelo', async () => {
+  const h = await fixture();
+  for (const value of [undefined, null, 0, 7, 2, 2.5, '3', true]) {
+    const result = response(); result.data.program.context.desiredSessions = value;
+    assert.equal(h.view.routinePresentation(result.data.program, result.data.message), null, `desiredSessions=${String(value)}`);
+  }
+});
+
 test('revisão da distribuição fica visível antes do details, com classificação e limites explícitos', async () => {
   const result = withCoverage(), h = await fixture(result); await h.send(routineUserText);
   const all = flatten(h.reply()), doc = all.find(node => node.className === 'ia-routine-document');
