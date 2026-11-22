@@ -2,6 +2,10 @@
 
 ## Estado atual — versão integrada em 22/11
 
+Atualização vigente: PRs 14, 15 e 16 integradas; funcional `d62d6e54c78a52cb828ecaa2eba4897aaba2c205`. Produção `dpl_Akh4Z7iyfW9A8Wt13uD9iQ4h6JFY` READY, saúde/banco aprovados e três assets alterados iguais aos blobs Git. Corrigidos motivo longo de cancelamento, singular de exercício, inclusão de vigência vencida na consulta de gestão e leitura das tabelas. CI 45079050871 aprovada. Landing PR 3 integrada em `e09966d`, produção READY, Vite 6.4.5 e Login móvel em Sobre/Contato corrigidos. [Validação técnica e limites](VALIDACAO_GESTAO_LANDING_2026_11_22.md).
+
+O relatório acadêmico será preparado em outro chat, conforme correção explícita do usuário. Aqui continua o desenvolvimento e a validação do aplicativo. A meta está ativa na consulta mais recente; o estado `usageLimited` anterior não representa seu estado atual.
+
 A PR 2 foi integrada em `e9b7f12`, após CI aprovada e inspeção dos fluxos alterados. Produção `dpl_CaXT7zXBzbpSUnrSPkiMezM787v3` READY, saúde/banco e quatro assets conferidos contra a main. O checkout anterior foi preservado. A nova conta de apresentação recebeu matrícula normal e ficha fictícia pelo instrutor; duas séries foram sincronizadas e a sessão restaurada no site público, com 440 kg·reps e sem duplicação observada. [Evidência e limites atuais](VALIDACAO_DEMONSTRACAO_2026_11_22.md).
 
 A meta permanece ativa: ainda faltam estados da revisão geral, telefone físico, confirmação da revogação Groq e lacunas específicas de auditoria. A apresentação individual será elaborada após estabilização. As seções seguintes preservam os marcos anteriores; menções antigas à PR 2 em rascunho descrevem aquele momento, não o estado atual.
