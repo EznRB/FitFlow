@@ -1,4 +1,6 @@
-# Auditoria da entrega por requisitos — revisão consolidada, atualizada em 21/11/2026
+# Auditoria da entrega por requisitos — revisão consolidada, atualizada em 22/11/2026
+
+**Atualização de integração:** PR 2 integrada e produção conferida em 22/11; nova jornada de matrícula, ficha do instrutor, duas séries e sessão restaurada registrada em [validação da demonstração](VALIDACAO_DEMONSTRACAO_2026_11_22.md). Essa evidência atualiza a integração, sem encerrar os gates gerais abaixo.
 
 **Entrega completa ainda não demonstrada.** Esta auditoria confronta o [objetivo e critérios do plano mestre](PLANO_MESTRE_DESENVOLVIMENTO.md) com a evidência disponível. Implantação, CI e contagem vigente da suíte estão exclusivamente em [Estado da entrega](STATUS_ENTREGA.md). Relatos repetidos anteriores foram preservados no [histórico documental](HISTORICO_ENTREGA.md).
 
