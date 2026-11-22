@@ -6,7 +6,7 @@
  * Integrado com check-ins reais (não mais placeholder).
  */
 
-const { sendSuccess } = require('../utils/helpers');
+const { sendSuccess, isOverdue } = require('../utils/helpers');
 const { prisma } = require('../config/prisma');
 const { financialCents, financialSummary, totalsByPeriod } = require('../utils/financialTotals');
 const checkinsRepository = require('../repositories/checkins.repository');
@@ -192,14 +192,18 @@ return {
 
   /**
    * GET /api/relatorios/inadimplencia
-   * Retorna os alunos com status 'blocked' e o valor total de pagamentos em atraso
+   * Inclui bloqueios, registros vencidos e vigências ativas além da carência.
+   * Vigência expirada não cria uma dívida financeira nem altera a matrícula.
    */
   async inadimplencia(req, res, next) {
     try {
+      const instant = now();
+      const membershipCutoff = addDays(brazilDate(instant), -5);
       const inadimplentes = await db.student.findMany({
         where: {
           OR: [
             { status: 'blocked' },
+            { status: 'active', planEndDate: { lt: membershipCutoff } },
             { 
               payments: {
                 some: { status: 'overdue' }
@@ -219,6 +223,11 @@ return {
 
       const resultado = inadimplentes.map(aluno => {
         const totalAtraso = aluno.payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
+        const membershipOverdue = isOverdue(aluno.planEndDate, 5, instant);
+        const reasons = [];
+        if (aluno.status === 'blocked') reasons.push('blocked_status');
+        if (membershipOverdue) reasons.push('membership_expired');
+        if (aluno.payments.length) reasons.push('overdue_payments');
         return {
           id: aluno.id,
           nome: aluno.user?.name,
@@ -226,6 +235,10 @@ return {
           telefone: aluno.phone,
           plano: aluno.plan?.name,
           status: aluno.status,
+          planEndDate: aluno.planEndDate || null,
+          membershipOverdue,
+          trainingAccessBlocked: aluno.status === 'blocked' || aluno.status === 'inactive' || membershipOverdue,
+          reasons,
           totalAtraso,
           mensalidadesAtrasadas: aluno.payments.length,
           vencimentos: aluno.payments.map(p => p.dueDate)

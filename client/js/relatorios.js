@@ -162,6 +162,8 @@ const RelatoriosView = {
     notice.style.display = !dated || type === 'pagamentos' ? 'block' : 'none';
     notice.textContent = type === 'pagamentos'
       ? 'Recebimentos por data de pagamento; ajustes por data efetiva. Líquido registrado, sem confirmação bancária.'
+      : type === 'inadimplencia'
+        ? 'Situação atual, sem filtro de datas. A vigência vencida há mais de 5 dias não gera dívida automaticamente; os valores somam somente registros financeiros vencidos.'
       : 'Inadimplência e situação dos alunos mostram a situação atual, sem filtro de datas.';
     const start = document.getElementById('filtro-data-inicio'), end = document.getElementById('filtro-data-fim');
     start.disabled = end.disabled = !dated;
@@ -184,7 +186,13 @@ const RelatoriosView = {
     if (!Array.isArray(data)) throw new Error('Formato inesperado do relatório.');
     const amounts = data.map(row => this.number(row.totalAtraso));
     const total = amounts.some(value => value === null) ? null : amounts.reduce((sum, value) => sum + value, 0);
-    this.table('Inadimplência atual', [['Aluno', r => r.nome], ['E-mail', r => r.email], ['Plano', r => r.plano || 'Sem plano'], ['Situação', r => r.status, 'badge'], ['Registros vencidos', r => this.count(r.mensalidadesAtrasadas)], ['Total devido', r => this.formatMoney(r.totalAtraso)]], data, [['Alunos com atraso', data.length], ['Total devido', this.formatMoney(total)]]);
+    const reasonText = row => {
+      const codes = Array.isArray(row.reasons) ? row.reasons : [];
+      const known = [['blocked_status', 'Bloqueio cadastral'], ['membership_expired', 'Vigência vencida há mais de 5 dias'], ['overdue_payments', 'Registros financeiros vencidos']];
+      return known.filter(([code]) => codes.includes(code)).map(([, label]) => label).join('; ')
+        || (row.status === 'blocked' ? 'Bloqueio cadastral' : row.mensalidadesAtrasadas > 0 ? 'Registros financeiros vencidos' : 'Motivo não informado');
+    };
+    this.table('Inadimplência atual', [['Aluno', r => r.nome], ['E-mail', r => r.email], ['Plano', r => r.plano || 'Sem plano'], ['Situação cadastral', r => r.status, 'badge'], ['Motivo da inclusão', reasonText], ['Registros vencidos', r => this.count(r.mensalidadesAtrasadas)], ['Valor registrado vencido', r => this.formatMoney(r.totalAtraso)]], data, [['Alunos listados', data.length], ['Valores de registros vencidos', this.formatMoney(total)]]);
   },
   async carregarFrequencia(query = '', version = this.requestVersion, context = this.contexto()) {
     if (!this.atual(context)) return;
