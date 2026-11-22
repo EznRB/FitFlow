@@ -431,6 +431,20 @@ textarea {
   color: var(--text-primary);
 }
 
+/* Keep descriptive workout text from pushing status and actions off desktop. */
+#treinos-view-fichas .table tbody td:first-child:not([colspan]) {
+  min-width: 220px;
+  max-width: 360px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#treinos-view-fichas .table tbody td:first-child p {
+  margin-top: var(--space-1);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .table tbody tr {
   transition: background var(--transition-fast);
 }
