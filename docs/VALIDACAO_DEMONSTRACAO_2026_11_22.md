@@ -23,6 +23,8 @@ Pelo perfil instrutor foi criada a ficha **Registro de séries • demonstraçã
 
 [Entrada restaurada](evidence/20261122-sessao-producao-persistida.jpg) · [Resumo e histórico](evidence/20261122-sessao-producao-resumo.jpg).
 
+6. Evolução consultou uma sessão, duas séries e 440 kg·reps. O exercício veio identificado por ID 11. Filtrar por 10 repetições manteve o resumo semanal em 440, mas apresentou corretamente uma série / 200 kg·reps no filtro e a tabela correspondente. [Evolução filtrada](evidence/20261122-evolucao-producao-filtro.jpg). Isso confirma consulta e filtro, não ganho de força.
+
 ## Limites e próximos gates
 
 O teste usa navegador desktop e consulta publicada, não telefone físico nem dispositivo independente sem cache. Não foi simulada indisponibilidade de rede nesta jornada. A primeira sessão é um artefato de demonstração; não comprova progressão biológica ou adequação da dose.
