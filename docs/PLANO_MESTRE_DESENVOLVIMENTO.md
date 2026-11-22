@@ -1,6 +1,12 @@
 # Desenvolvimento completo do FitFlow
 
-Meta ativa criada em 07/10/2026 a pedido do usuário. A conclusão exige todos os critérios abaixo; a conclusão de uma etapa não encerra a meta.
+Meta criada em 07/10/2026 a pedido do usuário. A conclusão exige todos os critérios abaixo; a conclusão de uma etapa não encerra a meta.
+
+## Prazo e sequência acordada
+
+Entrega em **25/11/2026**, com apresentação individual de aproximadamente **20–30 minutos**. Replanejamento em 22/11: o marco anterior de concluir desenvolvimento até 18/11 não foi atendido. Priorizar integração do checkout já verificado, encerramento de IA/UX e jornadas da demonstração em 22–23/11; usar 24/11 para apresentação e ensaio sobre a versão estabilizada. Esse calendário é condicionado à liberação dos gates de navegador, aparelho físico e rotação da chave; não comprova conclusão nem garante cumprir pendências externas em tempo. Preservar todo o escopo e registrar o que não estiver demonstrado, sem apresentar como concluído. A apresentação será elaborada depois do desenvolvimento, conforme solicitado.
+
+A ferramenta de meta retornou `usageLimited` e depois `paused` anteriormente em 11/11. Na consulta seguinte, confirmou **`active`** para a meta existente; o objetivo permanece em desenvolvimento. A automação `concluir-desenvolvimento-do-fitflow` também permanece ativa, com retomadas a cada 30 minutos sujeitas aos limites do aplicativo. Nenhum desses estados significa conclusão. [Continuidade e evidências](VALIDACAO_CONTINUIDADE_2026_11_11.md). [Eficiência de contexto](EFICIENCIA_CONTEXTO.md) documenta Ponytail, Caveman e o perfil Alethe adaptado, sem reduzir requisitos.
 
 ## Direção e ordem
 
@@ -31,7 +37,7 @@ Manter a identidade laranja/navy e Barlow. O usuário rejeitou o aspecto genéri
 
 ## Estado e prioridade de execução
 
-O objetivo permanece aberto e voltou ao estado ativo em 14/10, após o limite de uso de 13/10. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
+O objetivo permanece aberto; o estado da ferramenta de meta foi conferido na seção de prazo acima. [Estado da entrega](STATUS_ENTREGA.md) é a fonte única de implantação, revisão publicada, contagem da suíte, CI e capacidades atuais; [Auditoria de requisitos](REVISAO_FINAL.md) identifica cobertura e lacunas. Narrativas de marcos anteriores foram arquivadas integralmente em [Histórico do plano](HISTORICO_PLANO.md), sem alterar as reprovações ou conferir aprovação retroativa.
 
 1. Validar e corrigir problemas concretos das jornadas de gestão/aluno, incluindo estados de presença e do chat, preservando identidade, rascunhos e resultados reais. Reproduzir o problema e verificar os casos relevantes antes de publicar.
 2. Continuar a revisão de UX/UI do site inteiro pelo [brief visual](REVISAO_VISUAL_SISTEMA.md): comparar composição por tarefa com referências primárias; conferir carregamento, vazio, falha, formulário, resultado, foco/teclado/contraste e desktop/tablet/mobile. Preservar laranja/navy/Barlow, ciência, licenças e histórico.
@@ -39,13 +45,13 @@ O objetivo permanece aberto e voltou ao estado ativo em 14/10, após o limite de
 4. Retomar os gates externos quando o proprietário disponibilizar os acessos e aparelho. O pedido para guardar perguntas enquanto ele trabalha continua aplicável; avançar autonomamente no trabalho independente.
 5. Publicar mudanças verificadas nas branches autorizadas, conferir o resultado efetivamente servido e atualizar a evidência. Aplicativo e landing estão integrados à main para apresentação; novas mudanças continuam sujeitas a revisão e validação.
 
-A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. A configuração externa do Mercado Pago permanece pendente e não se torna aprovada por testes simulados ou recebimentos manuais.
+A validação técnica do financeiro/chat e os avanços publicados permitem continuar o design, conforme autorizado. Em 21/11, o checkout interno Mercado Pago passou pelos cenários externos de sandbox e webhook automático, conforme [evidências](PAGAMENTOS_SANDBOX.md). Esse gate foi atendido; pagamentos reais continuam desativados. A prioridade até 25/11 passa a ser reconciliar o código publicado com GitHub, integrar e revisar IA/UX, estabilizar as jornadas e depois preparar a apresentação.
 
 ## Gates obrigatórios ainda abertos
 
 | Gate | Condição concreta para concluir | Referência |
 |---|---|---|
-| Pix/cartão sandbox externo | Proprietário configura conta, vendedor/comprador de teste, token e webhook. Verificar cartão aprovado/rejeitado/pendente, assinatura/replay e Pix QR/pendente sem renovação. Pix aprovado em double não comprova liquidação. | [Roteiro do provedor](PAGAMENTOS_SANDBOX.md) |
+| Pix/cartão sandbox externo | **Atendido em 21/11:** cartão aprovado/recusado/em processamento, Pix QR/pendente sem renovação, webhook automático assinado e replay sem duplicidade. Sem transações reais; reconciliar fonte publicada com GitHub. | [Evidências do provedor](PAGAMENTOS_SANDBOX.md) |
 | Aparelho físico | Executar M01–M14, registrando dispositivo/OS/navegador, implantação, aba/PWA, teclado, rotação, UUIDs e reconexão publicados. Emulação não substitui a prova. | [Matriz mobile](VALIDACAO_MOBILE.md) |
 | Chave Groq | Titular revoga a chave exposta, substitui privadamente e permite validar a configuração após publicação. Sem contratação de plano pago ou segredo no chat/Git. | [IA gratuita](IA_GRATUITA.md) |
 | Revisão integral de UX/UI | Encerrar os critérios por tela/estado com evidência de implementação e correções necessárias. Uma captura ou um teste de contraste não certifica o sistema inteiro. | [Plano visual](REVISAO_VISUAL_SISTEMA.md) |

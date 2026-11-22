@@ -22,6 +22,25 @@ class Element {
   focus() { this.focusCount++; }
 }
 const flatten = node => [node, ...node.children.flatMap(flatten)];
+const groupNames = { chest: 'Peito', back: 'Costas', shoulders: 'Ombros', quads: 'Quadríceps', hamstrings: 'Posteriores da coxa', glutes: 'Glúteos', calves: 'Panturrilhas', biceps: 'Bíceps', triceps: 'Tríceps', core: 'Abdômen' };
+const coverageNote = missing => `Classificação principal a revisar: ${missing.length ? missing.map(group => groupNames[group]).join(', ') : 'todas as categorias possuem uma entrada principal'}. Isso não comprova ausência de participação, equilíbrio, cobertura anatômica completa ou dose adequada. Revise a classificação e as escolhas com seu instrutor.`;
+function withCoverage(result = response()) {
+  const program = result.data.program;
+  const sessions = program.sessions.map(session => ({ day: session.day, primaryGroups: [...new Set(session.exercises.map(exercise => exercise.primaryGroup))] }));
+  const represented = new Set(sessions.flatMap(session => session.primaryGroups));
+  const unrepresentedPrimaryGroups = Object.keys(groupNames).filter(group => !represented.has(group));
+  program.coverageReview = { unrepresentedPrimaryGroups, sessions };
+  const paragraphs = result.data.message.split('\n\n').filter(paragraph => !paragraph.startsWith('Classificação principal a revisar:'));
+  paragraphs.splice(paragraphs.findIndex(paragraph => paragraph.startsWith('Como ler:')), 0, coverageNote(unrepresentedPrimaryGroups));
+  result.data.message = paragraphs.join('\n\n');
+  return result;
+}
+function withoutCoverage() {
+  const result = response();
+  delete result.data.program.coverageReview;
+  result.data.message = result.data.message.split('\n\n').filter(paragraph => !paragraph.startsWith('Classificação principal a revisar:')).join('\n\n');
+  return result;
+}
 const settle = async () => { for (let i = 0; i < 5; i++) await Promise.resolve(); };
 function response() {
   const program = validateProgram(rawProgram(), [{ role: 'user', content: routineUserText }]);
@@ -80,6 +99,89 @@ test('dias disponíveis e sessões planejadas permanecem distintos, sem criar tr
   const all = flatten(h.reply()), context = all.find(node => node.className === 'ia-routine-context');
   assert.match(context.textContent, /Dias disponíveisSegunda, Quarta, Sexta/);
   assert.equal(all.filter(node => node.className === 'ia-routine-session').length, 2);
+});
+
+test('revisão da distribuição fica visível antes do details, com classificação e limites explícitos', async () => {
+  const result = withCoverage(), h = await fixture(result); await h.send(routineUserText);
+  const all = flatten(h.reply()), doc = all.find(node => node.className === 'ia-routine-document');
+  const review = all.find(node => node.className === 'ia-routine-coverage');
+  assert.ok(review, 'Revisão da distribuição deve ficar visível');
+  assert.equal(review.parent, doc);
+  assert.ok(doc.children.indexOf(review) < doc.children.findIndex(node => node.tag === 'details'));
+  assert.match(review.textContent, /Pontos para revisar na distribuição/);
+  assert.match(review.textContent, /Sem classificação principal no rascunho/);
+  for (const group of ['Glúteos', 'Panturrilhas', 'Tríceps', 'Abdômen']) assert.ok(review.textContent.includes(group), group);
+  assert.ok(review.textContent.includes(coverageNote(result.data.program.coverageReview.unrepresentedPrimaryGroups)));
+  assert.match(review.textContent, /SegundaPeito, Ombros/);
+  assert.doesNotMatch(review.textContent, /não treinados|treino equilibrado|treino completo|10 séries|duas sessões/);
+  assert.equal(h.view.chatState.messages[1].content, result.data.message);
+});
+
+for (const mutation of ['missing-group', 'unknown-group', 'wrong-order', 'missing-session', 'wrong-session-day', 'wrong-session-groups', 'duplicate-session-group', 'unknown-field', 'null', 'canonical-disagrees', 'legacy-canonical']) {
+  test(`coverage adulterado (${mutation}) volta ao texto original, sem revisão enganosa`, async () => {
+    const result = withCoverage(), review = result.data.program.coverageReview;
+    if (mutation === 'missing-group') review.unrepresentedPrimaryGroups.pop();
+    if (mutation === 'unknown-group') review.unrepresentedPrimaryGroups.push('__proto__');
+    if (mutation === 'wrong-order') review.unrepresentedPrimaryGroups.reverse();
+    if (mutation === 'missing-session') review.sessions.pop();
+    if (mutation === 'wrong-session-day') review.sessions[0].day = 'friday';
+    if (mutation === 'wrong-session-groups') review.sessions[0].primaryGroups = ['back'];
+    if (mutation === 'duplicate-session-group') review.sessions[0].primaryGroups.push('chest');
+    if (mutation === 'unknown-field') review.complete = true;
+    if (mutation === 'null') result.data.program.coverageReview = null;
+    if (mutation === 'canonical-disagrees') result.data.message = result.data.message.replace('Classificação principal a revisar: Glúteos, Panturrilhas, Tríceps, Abdômen.', 'Classificação principal a revisar: todas as categorias possuem uma entrada principal.');
+    if (mutation === 'legacy-canonical') result.data.message = result.data.message.split('\n\n').filter(paragraph => !paragraph.startsWith('Classificação principal a revisar:')).join('\n\n');
+    const h = await fixture(result); await h.send(routineUserText);
+    assert.ok(!flatten(h.reply()).some(node => node.className === 'ia-routine-document'));
+    assert.equal(h.reply().children[1].textContent, result.data.message);
+  });
+}
+
+test('canônico novo sem metadados não é confundido com programa legado', async () => {
+  const result = withCoverage(); delete result.data.program.coverageReview;
+  const h = await fixture(result); await h.send(routineUserText);
+  assert.ok(!flatten(h.reply()).some(node => node.className === 'ia-routine-document'));
+  assert.equal(h.reply().children[1].textContent, result.data.message);
+});
+
+test('programa legado válido mantém apresentação e explicita classificação reconstruída', async () => {
+  const h = await fixture(withoutCoverage()); await h.send(routineUserText);
+  const review = flatten(h.reply()).find(node => node.className === 'ia-routine-coverage');
+  assert.ok(review); assert.match(review.textContent, /Glúteos, Panturrilhas, Tríceps, Abdômen/);
+});
+
+for (const mutation of ['warning', 'guidance', 'extra-paragraph']) {
+  test(`legado com canônico adulterado em ${mutation} permanece somente como texto`, async () => {
+    const result = withoutCoverage();
+    if (mutation === 'warning') result.data.message = result.data.message.replace('Essas contagens não representam estímulo, tonelagem ou hipertrofia.', 'Essas contagens garantem hipertrofia.');
+    if (mutation === 'guidance') result.data.message = result.data.message.replace('Não há aumento obrigatório por calendário ou percentual fixo;', 'Aumente a carga todos os dias;');
+    if (mutation === 'extra-paragraph') result.data.message += '\n\nTreino completo e equilibrado.';
+    const h = await fixture(result); await h.send(routineUserText);
+    assert.ok(!flatten(h.reply()).some(node => node.className === 'ia-routine-document'));
+    assert.equal(h.reply().children[1].textContent, result.data.message);
+  });
+}
+
+test('uma única sessão com classificação parcial continua revisável, sem impor número de dias', async () => {
+  const raw = rawProgram(); raw.sessions = [raw.sessions[0]];
+  const program = validateProgram(raw, [{ role: 'user', content: routineUserText }]);
+  const result = withCoverage({ data: { message: renderProgram(program), program, generatedByAI: true, kind: 'routine_draft' } });
+  const h = await fixture(result); await h.send(routineUserText);
+  const all = flatten(h.reply());
+  assert.equal(all.filter(node => node.className === 'ia-routine-session').length, 1);
+  assert.match(all.find(node => node.className === 'ia-routine-coverage').textContent, /Costas/);
+});
+
+test('todas as classificações principais presentes não são apresentadas como equilíbrio ou completude', async () => {
+  const raw = rawProgram();
+  for (const [index, [group, name]] of [['glutes', 'Elevação pélvica na máquina'], ['calves', 'Elevação de panturrilhas na máquina'], ['triceps', 'Extensão de cotovelo na máquina'], ['core', 'Flexão de tronco na máquina']].entries()) raw.sessions[index % 3].exercises.push({ name, primaryGroup: group, equipment: ['machines'], sets: 1, repsMin: 8, repsMax: 12, rir: 2, restSeconds: 60 });
+  const program = validateProgram(raw, [{ role: 'user', content: routineUserText }]);
+  const result = withCoverage({ data: { message: renderProgram(program), program, generatedByAI: true, kind: 'routine_draft' } });
+  const h = await fixture(result); await h.send(routineUserText);
+  const review = flatten(h.reply()).find(node => node.className === 'ia-routine-coverage');
+  assert.ok(review); assert.match(review.textContent, /todas as categorias possuem uma entrada principal/);
+  assert.match(review.textContent, /Isso não comprova ausência de participação, equilíbrio, cobertura anatômica completa ou dose adequada/);
+  assert.doesNotMatch(review.textContent, /treino equilibrado|treino completo|100%|10 de 10/);
 });
 
 for (const invalid of ['missing-summary', 'missing-estimate', 'unknown-day', 'unknown-group', 'invalid-dose', 'markup', 'answer']) {

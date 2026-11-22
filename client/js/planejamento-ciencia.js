@@ -119,6 +119,16 @@
         <p class="planning-scope">Soma de séries planejadas; não comprova execução, esforço ou uma dose adequada para o aluno.</p>
       </details></details>`;
     const find = id => container.querySelector(`#${id}`);
+    const invalidateComparison = () => {
+      find('planning-result').textContent = 'Contexto alterado. Clique em Comparar sequências para gerar uma comparação com os dados atuais.';
+    };
+    for (const id of ['planning-days', 'planning-minutes', 'planning-goal', 'planning-consistency']) {
+      find(id).addEventListener('input', invalidateComparison);
+      find(id).addEventListener('change', invalidateComparison);
+    }
+    for (const checkbox of container.querySelectorAll('input[name="planning-equipment"]')) {
+      checkbox.addEventListener('change', invalidateComparison);
+    }
     find('planning-compare').addEventListener('click', () => {
       try {
         const context = { days: find('planning-days').value, minutes: find('planning-minutes').value,

@@ -12,24 +12,30 @@ const { createAuthenticate } = require('../src/middleware/auth');
 const { createCsrfProtection } = require('../src/middleware/csrf');
 const { hashIdentity } = require('../src/middleware/quota');
 const { program, routineUserText } = require('./fixtures/ia-routine.cjs');
+const { selection } = require('./fixtures/ia-routine-selection.cjs');
 const { validateProgram, renderProgram } = require('../src/services/ia-routine');
 
-const valid = { message: 'Full body e divisões podem funcionar: escolha a distribuição conforme dias disponíveis e adesão.',
-  sourceIds: ['split-2024'], kind: 'answer' };
-const routineTurn = { message: 'Vou organizar um rascunho revisável para sua rotina.', sourceIds: [], kind: 'routine_draft' };
+const valid = { turn: { sourceIds: ['split-2024'], kind: 'answer' } };
+const routineTurn = { turn: { kind: 'routine_draft', context: { ...program().context,
+  availabilityQuote: 'Segunda, quarta e sexta por 50 minutos.', durationQuote: 'Segunda, quarta e sexta por 50 minutos.',
+  equipmentQuote: 'Sou iniciante em academia completa, objetivo hipertrofia, adulto saudável sem limitações.',
+  experienceQuote: 'Sou iniciante em academia completa, objetivo hipertrofia, adulto saudável sem limitações.',
+  goalQuote: 'Sou iniciante em academia completa, objetivo hipertrofia, adulto saudável sem limitações.',
+  healthyAdultQuote: 'Sou iniciante em academia completa, objetivo hipertrofia, adulto saudável sem limitações.',
+} } };
 const input = (content = 'Como escolher a divisão?') => ({ consent: true, messages: [{ role: 'user', content }] });
 const upstream = (result = valid, reason = 'stop', message = {}) => new Response(JSON.stringify({
   choices: [{ finish_reason: reason, message: { content: JSON.stringify(result), ...message } }],
 }));
 const block = (kind, options = {}) => ({ kind, ...options });
-const groundedResult = (result = valid) => ({ blocks: [result.sourceIds?.length
-  ? block('evidence', { sourceIds: [...new Set(result.sourceIds)] }) : block('limits')],
-  kind: result.kind, program: null });
+const groundedResult = (result = valid) => ({ blocks: [result.turn.sourceIds?.length
+  ? block('evidence', { sourceIds: [...new Set(result.turn.sourceIds)] }) : block('limits')],
+  kind: result.turn.kind, program: null });
 const stageUpstream = (options, result = valid) => {
   const request = JSON.parse(options.body);
   if (request.response_format.json_schema?.name === 'fitflow_routine') {
     assert.equal(request.model, 'openai/gpt-oss-120b');
-    return upstream(program());
+    return upstream(selection());
   }
   const name = request.response_format.json_schema.name;
   if (name === 'fitflow_grounded_answer') return upstream(groundedResult(result));
@@ -47,6 +53,27 @@ test('chat requer Groq Free confirmado e modelo permitido sem fallback', async (
     assert.equal(current.enabled, false);
     await assert.rejects(current.chat(input()), error => error.statusCode === 503);
     assert.equal(calls, 0);
+  }
+});
+
+test('padrão do classificador usa 120B desde a primeira chamada sem fallback', async () => {
+  const previousModel = process.env.GROQ_CHAT_MODEL;
+  delete process.env.GROQ_CHAT_MODEL;
+  let calls = 0;
+  try {
+    const current = createIaChatService({ provider: 'groq', groqApiKey: 'fixture-only', freeTierConfirmed: true,
+      fetchImpl: async (_, options) => {
+        const request = JSON.parse(options.body);
+        calls++;
+        assert.equal(request.model, 'openai/gpt-oss-120b');
+        return upstream(calls === 1 ? valid : groundedResult());
+      } });
+    const result = await current.chat(input());
+    assert.equal(result.kind, 'answer');
+    assert.equal(calls, 2);
+  } finally {
+    if (previousModel === undefined) delete process.env.GROQ_CHAT_MODEL;
+    else process.env.GROQ_CHAT_MODEL = previousModel;
   }
 });
 
@@ -92,13 +119,15 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
       assert.equal(body.response_format.type, 'json_schema');
       assert.equal(body.response_format.json_schema.strict, true);
       assert.equal(body.response_format.json_schema.name, 'fitflow_chat_turn');
-      assert.deepEqual(providerSchema.required, ['message', 'sourceIds', 'kind']);
+      assert.deepEqual(providerSchema.required, ['turn']);
+      assert.equal(providerSchema.properties.turn.anyOf.length, 3);
       assert.equal(providerSchema.properties.sessions, undefined); assert.equal(providerSchema.properties.program, undefined);
       assert.equal(body.max_completion_tokens, 4000);
     } else {
       assert.equal(body.response_format.json_schema.name, 'fitflow_routine');
       assert.equal(body.response_format.json_schema.strict, true);
-      assert.deepEqual(providerSchema.required, ['context', 'sessions']);
+      assert.deepEqual(providerSchema.required, ['sessions']);
+      assert.equal(providerSchema.properties.context, undefined);
       assert.equal(providerSchema.properties.program, undefined); assert.equal(providerSchema.properties.message, undefined);
       assert.equal(providerSchema.properties.sessions.items.type, 'object');
       assert.equal(providerSchema.anyOf, undefined); assert.equal(body.max_completion_tokens, 6000);
@@ -114,15 +143,18 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
     };
     assertClosed(providerSchema);
     assert.equal(schema.additionalProperties, false);
-    assert.deepEqual(schema.required, calls === 1 ? ['message', 'sourceIds', 'kind'] : ['context', 'sessions']);
+    assert.deepEqual(schema.required, calls === 1 ? ['turn'] : ['sessions']);
     if (calls === 2) {
-      assert.equal(schema.properties.sessions.maxItems, 6);
+      assert.equal(schema.properties.sessions.maxItems, routineTurn.turn.context.availableDays.length);
       assert.equal(schema.properties.sessions.items.properties.exercises.items.properties.sets.maximum, 6);
+      const exercise = schema.properties.sessions.items.properties.exercises.items;
+      assert.ok(exercise.properties.exerciseId.enum.includes('db-flat-press'));
+      for (const field of ['name', 'primaryGroup', 'equipment']) assert.equal(exercise.properties[field], undefined);
     }
     assert.ok(!options.body.includes('fixture-private-key'));
     assert.ok(!options.body.includes('access_token'));
     assert.equal(body.profile, undefined); assert.equal(body.user, undefined);
-    return upstream(calls === 1 ? routineTurn : program(), 'stop', { reasoning: 'fixture-private-reasoning' });
+    return upstream(calls === 1 ? routineTurn : selection(), 'stop', { reasoning: 'fixture-private-reasoning' });
   } });
   const result = await current.chat({ consent: true, messages });
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão por semana/); assert.equal(result.kind, 'routine_draft');
@@ -132,55 +164,50 @@ test('histórico real mantém autores e contexto, sem enviar conta/cookies ou ch
   assert.deepEqual(result.sources.find(source => source.id === 'split-2024'), { id: 'split-2024', title: references['split-2024'].title, url: references['split-2024'].url });
 });
 
-test('classificador plano sem program despacha resposta ou esclarecimento, nunca aceita plano na raiz', async () => {
+test('classificador fechado despacha resposta ou esclarecimento, nunca aceita plano ou prosa na raiz', async () => {
   for (const kind of ['answer', 'clarification']) {
     let calls = 0;
-    const current = service({ fetchImpl: async (_, options) => {
-      calls++;
-      const request = JSON.parse(options.body);
-      assert.equal(request.response_format.type, 'json_schema');
-      return stageUpstream(options, { message: kind === 'clarification' ? { reason: 'missing_context', fields: ['availability'] }
-        : 'Podemos revisar a distribuição conforme sua rotina e esclarecer os limites da evidência.',
-        sourceIds: kind === 'clarification' ? [] : ['split-2024'], kind });
-    } });
-    const result = await current.chat(input());
-    assert.equal(result.kind, kind);
-    assert.equal(result.program, undefined);
+    const selected = { turn: kind === 'answer' ? { kind, sourceIds: ['split-2024'] }
+      : { kind, reason: 'missing_context', fields: ['availability'] } };
+    const result = await service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, selected); } }).chat(input());
+    assert.equal(result.kind, kind); assert.equal(result.program, undefined);
     assert.equal(calls, kind === 'clarification' ? 1 : 2);
   }
   for (const extra of [{ program: null }, { program: program() }, { sessions: program().sessions },
-    { context: program().context }, { program: { context: program().context }, sessions: program().sessions }]) {
+    { context: program().context }, { message: 'Prosa que não pertence ao classificador.' }]) {
     let calls = 0;
-    const malformed = service({ fetchImpl: async () => { calls++; return upstream({ ...routineTurn, ...extra }); } });
-    await assert.rejects(malformed.chat(input(routineUserText)), error => error.statusCode === 502);
+    await assert.rejects(service({ fetchImpl: async () => { calls++; return upstream({ ...routineTurn, ...extra }); } })
+      .chat(input()), error => error.statusCode === 502);
     assert.equal(calls, 1);
   }
 });
 
-test('esclarecimento admite fontes vazias e resposta longa continua no histórico sem truncamento', async () => {
+test('esclarecimento estruturado e histórico longo permanecem intactos', async () => {
   let forwarded;
   const current = service({ fetchImpl: async (_, options) => {
     forwarded = JSON.parse(options.body).messages;
-    return upstream({ message: { reason: 'missing_context', fields: ['equipment', 'duration'] },
-      kind: 'clarification', sourceIds: [] });
+    return upstream({ turn: { kind: 'clarification', reason: 'missing_context', fields: ['equipment', 'duration'] } });
   } });
-  const previousAnswer = 'Rascunho educativo. '.repeat(200);
-  const result = await current.chat({ consent: true, messages: [{ role: 'user', content: 'Rascunho anterior' },
-    { role: 'assistant', content: previousAnswer }, { role: 'user', content: 'Adapte para quatro dias.' }] });
-  assert.equal(forwarded[2].content, previousAnswer.trim());
+  const messages = [{ role: 'user', content: 'Monte treino.' }, { role: 'assistant', content: 'R'.repeat(5500) },
+    { role: 'user', content: 'Quais dados faltam?' }];
+  const result = await current.chat({ consent: true, messages });
+  assert.deepEqual(forwarded.slice(1), messages);
   assert.equal(result.kind, 'clarification'); assert.deepEqual(result.sources, []);
 });
 
-test('fontes inventadas, links/HTML, extra keys e resposta inconsistente são rejeitados', async () => {
-  for (const result of [{ ...valid, sourceIds: ['inventada'] }, { ...valid, sourceIds: ['mifflin-1990'] },
-    { ...valid, kind: 'prescription' }, { ...valid, message: '' },
-    { ...valid, message: 'Texto com <script>execução</script>' }, { ...valid, message: 'Visite https://untrusted.invalid' },
-    { ...valid, message: 'Veja [link](javascript:alert(1))' }, { ...valid, message: 'x'.repeat(6001) },
-    { ...valid, program: program() },
-    { ...valid, message: 'texto\u0000oculto' }, { ...valid, userId: 1 }, { ...valid, sourceIds: ['split-2024', {}] }]) {
-    await assert.rejects(service({ fetchImpl: async () => upstream(result) }).chat(input()), error => error.statusCode === 502);
+test('fontes inventadas e campos livres são rejeitados dentro da variante e na raiz', async () => {
+  const invalidTurns = [{ ...valid.turn, sourceIds: ['inventada'] }, { ...valid.turn, sourceIds: ['mifflin-1990'] },
+    { ...valid.turn, kind: 'prescription' }, { ...valid.turn, sourceIds: ['split-2024', {}] },
+    { ...valid.turn, message: 'Texto com <script>execução</script>' }, { ...valid.turn, message: 'Visite https://untrusted.invalid' },
+    { ...valid.turn, message: 'Veja [link](javascript:alert(1))' }, { ...valid.turn, message: 'x'.repeat(6001) },
+    { ...valid.turn, program: program() }, { ...valid.turn, userId: 1 }];
+  for (const result of [...invalidTurns.map(turn => ({ turn })), { ...valid, userId: 1 }, valid.turn]) {
+    let calls = 0;
+    await assert.rejects(service({ fetchImpl: async () => { calls++; return upstream(result); } }).chat(input()), error => error.statusCode === 502);
+    assert.equal(calls, 1);
   }
-  const result = await service({ fetchImpl: async (_, options) => stageUpstream(options, { ...valid, sourceIds: ['split-2024', 'split-2024'] }) }).chat(input());
+  const result = await service({ fetchImpl: async (_, options) => stageUpstream(options,
+    { turn: { ...valid.turn, sourceIds: ['split-2024', 'split-2024'] } }) }).chat(input());
   assert.equal(result.sources.length, 1);
 });
 
@@ -216,7 +243,7 @@ test('histórico fora do formato reconhecido permanece intacto em ambas as etapa
       const context = JSON.parse(body.messages[1].content);
       assert.match(context.conversation[1].content, /Peito: 9 séries diretas em 3 sessões/);
     }
-    return stageUpstream(options, { ...valid, message: 'São hipóteses iniciais do rascunho, não doses ideais comprovadas. Podemos revisar a distribuição conforme sua prioridade e o tempo disponível.' });
+    return stageUpstream(options, valid);
   } });
   const result = await current.chat({ consent: true, messages: [{ role: 'user', content: routineUserText },
     { role: 'assistant', content: 'Peito: 9 séries diretas em 3 sessões; posteriores: 3 séries diretas em 3 sessões.' },
@@ -254,18 +281,18 @@ test('primeira etapa compacta só rascunho reconhecido, preserva doses e falas u
       assert.equal(body.response_format.json_schema.strict, true);
       assert.equal(body.max_completion_tokens, 6000);
     }
-    assert.ok(options.body.length < 18000);
-    return upstream(calls === 1 ? routineTurn : program());
+    assert.ok(options.body.length < 24000);
+    return upstream(calls === 1 ? routineTurn : selection());
   } });
   const result = await current.chat({ consent: true, messages });
   assert.equal(calls, 2); assert.equal(result.kind, 'routine_draft');
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão/);
 });
 
-test('seleção obrigatória usa corpus integral e descarta prosa candidata sem enviar dados implícitos', async () => {
+test('seleção obrigatória usa corpus integral sem aceitar prosa na classificação ou dados implícitos', async () => {
   let calls = 0;
-  const candidate = { ...valid, message: 'RIR dois garante segurança e carga maior compensa qualquer redução de séries.' };
-  const revised = { ...valid, message: 'RIR não garante segurança. Não há equivalência demonstrada entre maior carga e menor volume; a dose do rascunho é uma hipótese prática revisável.' };
+  const candidate = valid;
+  const revised = valid;
   const current = service({ fetchImpl: async (url, options) => {
     calls++;
     assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions');
@@ -295,8 +322,8 @@ test('seleção obrigatória usa corpus integral e descarta prosa candidata sem 
     assert.deepEqual(Object.keys(context).sort(), ['conversation', 'draftContext', 'intent', 'sources']);
     assert.equal(context.draftContext, null);
     assert.deepEqual(context.conversation, input().messages);
-    assert.deepEqual(context.intent, { kind: 'answer', sourceIds: candidate.sourceIds });
-    assert.equal(options.body.includes(candidate.message), false);
+    assert.deepEqual(context.intent, { kind: 'answer', sourceIds: candidate.turn.sourceIds });
+    assert.equal(Object.hasOwn(candidate.turn, 'message'), false);
     assert.equal(JSON.stringify(context).includes('private-reasoning'), false);
     assert.equal(options.body.includes('fixture-private-key'), false);
     assert.equal(context.sources[0].url, undefined);
@@ -328,7 +355,7 @@ test('falha, quota ou seleção inválida não devolvem candidata nem tentam out
     [() => upstream({ ...groundedResult(), blocks: [block('draft_counts', { groups: ['unknown'] })] }), 502]]) {
     let calls = 0;
     const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(valid) : reviewResponse() });
-    await assert.rejects(current.chat(input()), error => error.statusCode === expected && !error.message.includes(valid.message));
+    await assert.rejects(current.chat(input()), error => error.statusCode === expected && !error.message.includes('private-candidate'));
     assert.equal(calls, 2);
   }
 });
@@ -364,7 +391,7 @@ test('revisão recebe contribuições explícitas do rascunho e não certifica a
 
 test('lacuna no corpus permite conversa útil sem fontes decorativas nem claims fabricadas', async () => {
   let calls = 0;
-  const answer = { ...valid, sourceIds: [], message: 'O corpus disponível não descreve a técnica específica desse exercício. Podemos esclarecer o equipamento e discutir opções práticas com seu instrutor, sem afirmar que uma execução seja mais segura ou superior.' };
+  const answer = { turn: { kind: 'answer', sourceIds: [] } };
   const current = service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, answer); } });
   const result = await current.chat(input('Qual é a técnica mais segura de uma variação de exercício pouco estudada?'));
   assert.equal(calls, 2); assert.deepEqual(result.sources, []);
@@ -396,7 +423,7 @@ test('seleção tipada rejeita quantidade excessiva e prosa livre mesmo com font
     let calls = 0;
     const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(valid)
       : upstream({ blocks, kind: 'answer', program: null }) });
-    await assert.rejects(current.chat(input()), error => error.statusCode === 502 && !error.message.includes(valid.message));
+    await assert.rejects(current.chat(input()), error => error.statusCode === 502 && !error.message.includes('private-candidate'));
     assert.equal(calls, 2);
   }
 });
@@ -431,37 +458,34 @@ test('classificação atrasada após o prazo não inicia seleção nem geração
   }
 });
 
-test('gerador de rascunho rejeita sessions string, raiz incorreta e contexto que não veio do usuário', async () => {
-  const stringSession = program(); stringSession.sessions[1] = JSON.stringify(stringSession.sessions[1]);
-  const stringSessions = program(); stringSessions.sessions = JSON.stringify(stringSessions.sessions);
-  const assistantQuote = program(); assistantQuote.context.availabilityQuote = 'Dias disponíveis: sábado e domingo apenas.';
-  const excessiveDose = program(); excessiveDose.sessions[0].exercises[0].sets = 99;
-  const wrongRoot = { context: program().context, sessions: program().sessions, message: 'provider-private-message' };
-  for (const result of [null, {}, [program()], JSON.stringify(program()), stringSession, stringSessions, { program: program() },
-    assistantQuote, excessiveDose, wrongRoot]) {
+test('gerador de sessões rejeita string, raiz incorreta, novo contexto e doses fora dos limites', async () => {
+  const stringSession = selection().sessions; stringSession[1] = JSON.stringify(stringSession[1]);
+  const excessiveDose = selection().sessions; excessiveDose[0].exercises[0].sets = 99;
+  const metadata = selection(); metadata.sessions[0].exercises[0].primaryGroup = 'chest';
+  const unknown = selection(); unknown.sessions[0].exercises[0].exerciseId = 'invented-by-provider';
+  for (const result of [null, {}, [selection()], JSON.stringify(selection()), { sessions: stringSession },
+    { sessions: JSON.stringify(selection().sessions) }, { program: selection() }, { sessions: excessiveDose }, metadata, unknown,
+    { sessions: selection().sessions, context: program().context }, { sessions: selection().sessions, message: 'provider-private-message' }]) {
     let calls = 0;
     const current = service({ fetchImpl: async (_, options) => {
-      calls++;
-      if (calls === 1) return upstream(routineTurn);
+      calls++; if (calls === 1) return upstream(routineTurn);
       assert.equal(JSON.parse(options.body).response_format.json_schema.name, 'fitflow_routine');
       return upstream(result);
     } });
-    await assert.rejects(current.chat({ consent: true, messages: [{ role: 'user', content: routineUserText },
-      { role: 'assistant', content: assistantQuote.context.availabilityQuote }, { role: 'user', content: 'Organize a rotina.' }] }),
-    error => error.statusCode === 502 && !/provider-private|Vou organizar/.test(error.message));
+    await assert.rejects(current.chat(input(routineUserText)), error => error.statusCode === 502 && !/provider-private|Vou organizar/.test(error.message));
     assert.equal(calls, 2);
   }
 });
 
 test('falha upstream, truncamento e recusa do gerador não liberam introdução nem tentam outra geração', async () => {
   const rejectedJson = () => new Response(JSON.stringify({ error: { code: 'json_validate_failed',
-    failed_generation: JSON.stringify(program()), message: 'provider-private-message' } }), { status: 400 });
+    failed_generation: JSON.stringify(selection()), message: 'provider-private-message' } }), { status: 400 });
   for (const [respond, expected] of [
     ...[[401, 503], [403, 503], [429, 429], [413, 413], [500, 502], [400, 502]]
       .map(([status, expected]) => [() => new Response('provider-private-message', { status }), expected]),
-    [rejectedJson, 502], [() => upstream(program(), 'length'), 502],
-    [() => upstream(program(), 'stop', { refusal: 'provider-private-refusal' }), 502],
-    [() => upstream(program(), 'stop', { content: '{' }), 502],
+    [rejectedJson, 502], [() => upstream(selection(), 'length'), 502],
+    [() => upstream(selection(), 'stop', { refusal: 'provider-private-refusal' }), 502],
+    [() => upstream(selection(), 'stop', { content: '{' }), 502],
   ]) {
     let calls = 0;
     const current = service({ fetchImpl: async () => ++calls === 1 ? upstream(routineTurn) : respond() });
@@ -471,11 +495,9 @@ test('falha upstream, truncamento e recusa do gerador não liberam introdução 
   }
 });
 
-test('rascunho usa aritmética/orientação revisada, não as métricas livres inventadas pelo modelo', async () => {
+test('rascunho usa aritmética e orientação do servidor após seleção fechada de contexto', async () => {
   let calls = 0;
-  const current = service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, {
-    message: 'A ficha garante doze séries para peito e duas exposições mínimas por grupo.',
-    sourceIds: ['acsm-2026'], kind: 'routine_draft' }); } });
+  const current = service({ fetchImpl: async (_, options) => { calls++; return stageUpstream(options, routineTurn); } });
   const result = await current.chat(input(routineUserText));
   assert.match(result.message, /Peito: 5 séries diretas em 1 sessão por semana/);
   assert.doesNotMatch(result.message, /garante doze séries|duas exposições mínimas/);

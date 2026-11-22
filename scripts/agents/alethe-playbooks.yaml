@@ -1,0 +1,253 @@
+version: 1
+goal: economizar-sem-reduzir-verificacao
+setup:
+  date: '2026-11-11'
+  notes:
+  - Perfil local adaptado do Casa Limpa por autorização do usuário.
+  - Modelos presentes no cache local do Codex; disponibilidade real depende da conta.
+  - Sem DSH, hub, proxy, hooks, credenciais copiadas ou alteração global.
+providers:
+- codex
+models:
+  codex:
+  - gpt-6-luna
+  - gpt-6.1-sol
+  - gpt-6-astra
+principles:
+- Economizar desperdício de contexto sem reduzir escopo, raciocínio necessário, testes, segurança ou acessibilidade.
+- Ponytail full e Caveman aplicados com português claro; documentos e código mantêm explicações completas.
+- O perfil escolhe workers quando houver delegação útil; não altera o modelo desta conversa.
+- Trabalho pequeno ou acoplado permanece com o agente principal; no máximo dois workers independentes por frente.
+- Luna somente para leitura delimitada. Código comum usa Sol medium; decisões complexas usam Sol high ou superior.
+- Autenticação, pagamentos, migrações, isolamento, sincronização e conteúdo científico exigem Sol high e revisão independente forte.
+- Não enviar segredos ou dados pessoais reais nos prompts; usar fixtures sintéticas e arquivos exclusivos.
+- Não reduzir o nível necessário para contornar quota, nem instalar fallback pago.
+- Quota desatualizada não comprova saldo disponível; não prometer economia sem medir resultado útil e retrabalho.
+- Não impor teto artificial de tokens à entrega. Preservar diagnósticos, exit codes e gates relevantes.
+- Buscar caminhos e símbolos antes de ler; reaproveitar evidências aprovadas enquanto o código e o risco não mudarem.
+tiers:
+  cheap:
+    codex:
+      model: gpt-6-luna
+      effort: medium
+  standard:
+    codex:
+      model: gpt-6.1-sol
+      effort: medium
+  strong:
+    codex:
+      model: gpt-6.1-sol
+      effort: high
+quota:
+  criticalThreshold: 80
+  stopAt: 95
+  whenLow: keep
+  onBothCritical: ask
+  whenSpare: ignore
+budget:
+  warnAt: 80
+  whenLow: finish-and-report
+profile: savings
+profiles:
+  base:
+    name: Base
+    summary: Luna medium para leitura, Sol medium para codigo, Sol high para decisoes.
+  savings:
+    name: Economia com seguranca
+    summary: Leitura delimitada em Luna low; implementacao Sol medium; piso high para risco preservado.
+    quota:
+      criticalThreshold: 70
+      stopAt: 90
+    tiers:
+      cheap:
+        codex:
+          model: gpt-6-luna
+          effort: low
+    order:
+    - codex
+  aggressive:
+    name: Reforcado
+    summary: 'Uso excepcional: Sol medium na leitura, Sol high na implementacao, Astra high nas decisoes.'
+    quota:
+      criticalThreshold: 80
+      stopAt: 95
+    tiers:
+      cheap:
+        codex:
+          model: gpt-6.1-sol
+          effort: medium
+      standard:
+        codex:
+          model: gpt-6.1-sol
+          effort: high
+      strong:
+        codex:
+          model: gpt-6-astra
+          effort: high
+pickOrder:
+- when: Autenticação, pagamentos, migração, isolamento, offline, criptografia ou recomendações científicas.
+  playbook: critical
+- when: Tarefa pequena, acoplada, ate tres arquivos
+  playbook: direct
+- when: Pesquisa independente em muitos arquivos
+  playbook: scout
+- when: Uma funcionalidade com passos sequenciais
+  playbook: plan-execute
+- when: Dois modulos independentes com arquivos exclusivos
+  playbook: parallel
+- when: Diff pronto precisa de revisao
+  playbook: review-gate
+playbooks:
+  direct:
+    name: Direto
+    pickWhen: Alteracao pequena sem independencia util.
+    phases:
+    - id: execute
+      role: implementer
+      who: lead
+      tier: strong
+      does: Implementar e executar apenas as verificacoes relevantes.
+      gate: Aceite e verificacoes pertinentes aprovados.
+  scout:
+    name: Localizar antes de ler
+    pickWhen: Duas perguntas independentes em varios caminhos.
+    phases:
+    - id: scope
+      role: planner
+      who: lead
+      tier: strong
+      does: Definir perguntas e caminhos; nao reenviar historico.
+    - id: read
+      role: scout
+      tier: cheap
+      readOnly: true
+      workers: 2
+      runner: research
+      does: Buscar simbolos e responder somente a pergunta delimitada.
+      returns: Caminhos, linhas, resposta curta e incertezas; sem transcricoes.
+      provider: codex
+    - id: synthesize
+      role: planner
+      who: lead
+      tier: strong
+      does: Conferir evidencias relevantes e decidir o proximo passo.
+  plan-execute:
+    name: Planejar alto e executar por tarefa
+    pickWhen: Funcionalidade comum com criterios claros.
+    next: review-gate
+    phases:
+    - id: plan
+      role: planner
+      who: lead
+      tier: strong
+      does: Escrever passos, interfaces, arquivos e criterio de aceite uma vez.
+    - id: build
+      role: builder
+      tier: standard
+      runner: economy
+      readOnly: false
+      isolate: true
+      does: Implementar uma unidade com os testes relevantes; sem delegacao recursiva.
+      returns: Arquivos, verificacoes, falhas e riscos.
+      gate: Aceite e testes aprovados.
+      rules:
+      - if: risky
+        use:
+          provider: codex
+          tier: strong
+      provider: codex
+    - id: integrate
+      role: integrator
+      who: lead
+      tier: strong
+      does: Conferir diff e integrar sem repetir verificacoes inalteradas.
+  parallel:
+    name: Duas frentes independentes
+    pickWhen: Modulos realmente independentes.
+    next: review-gate
+    phases:
+    - id: plan
+      role: planner
+      who: lead
+      tier: strong
+      does: Combinar contratos e arquivos exclusivos.
+    - id: build
+      role: builder
+      tier: standard
+      workers: 2
+      runner: parallel
+      readOnly: false
+      isolate: true
+      does: Implementar somente a unidade e os caminhos atribuidos.
+      returns: Diff, checks e riscos.
+      rules:
+      - if: risky
+        use:
+          provider: codex
+          tier: strong
+      provider: codex
+    - id: integrate
+      role: integrator
+      who: lead
+      tier: strong
+      does: Integrar e verificar contratos compartilhados.
+  critical:
+    name: Dinheiro e seguranca
+    pickWhen: Calculo financeiro, autorizacao, offline, migracao ou criptografia.
+    phases:
+    - id: plan
+      role: planner
+      who: lead
+      tier: strong
+      does: Explicitar invariantes, autorizacao, transacoes, falhas e regressao.
+    - id: build
+      role: builder
+      model: gpt-6.1-sol
+      effort: high
+      runner: economy
+      readOnly: false
+      isolate: true
+      does: Implementar uma unidade critica com prova relevante.
+      returns: Diff, evidencia e riscos.
+      gate: Regressao e testes pertinentes aprovados.
+      provider: codex
+    - id: review
+      role: reviewer
+      model: gpt-6-astra
+      effort: high
+      runner: economy
+      readOnly: true
+      does: Revisar o diff concluido, buscar falhas demonstraveis e conferir invariantes.
+      returns: Finding com arquivo, linha e reproducao ou limites da revisao.
+      gate: Nenhum finding confirmado permanece e verificacoes aprovadas.
+      provider: codex
+    - id: fix
+      role: fixer
+      model: gpt-6.1-sol
+      effort: high
+      runner: economy
+      readOnly: false
+      isolate: true
+      after: review
+      if: findings-left
+      then: recheck
+      does: Corrigir somente o finding confirmado e executar regressao focada.
+      provider: codex
+  review-gate:
+    name: Revisao proporcional ao risco
+    pickWhen: Diff pronto nao trivial.
+    phases:
+    - id: review
+      role: reviewer
+      tier: standard
+      runner: economy
+      readOnly: true
+      does: Conferir o diff final e os criterios de aceite; sem repetir auditoria ampla.
+      returns: Findings demonstraveis e limites.
+      gate: Sem findings confirmados pendentes.
+      rules:
+      - if: risky
+        use:
+          model: gpt-6-astra
+          effort: high
+      provider: codex

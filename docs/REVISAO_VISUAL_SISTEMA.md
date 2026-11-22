@@ -8,6 +8,10 @@ Em 15/10, [chat e planos](RODADA_UX_CHAT_PLANOS_2026_10_14.md) receberam composi
 
 Em 17/10, nutrição, histórico avulso e presença do aluno receberam recuperação de erros e confirmação mais clara dos dados enviados. [Verificação desta rodada](#17102026--nutrição-e-área-do-aluno). A revisão completa das demais jornadas continua aberta.
 
+## Retomada atual — 22/11/2026
+
+[Capturas e resultados atuais](RODADA_VISUAL_2026_11_22.md): acesso oficial ao navegador integrado, revisão parcial de login/aluno/chat/nutrição/caderno em desktop e 375/768 px. Foram encontrados e corrigidos o descarte do prazo de quota e a confusão entre consulta restrita e zero fichas. A matriz abaixo permanece parcial; não usar capturas antigas ou esses fluxos para certificar as jornadas ainda não revistas.
+
 ## Ordem e direção
 
 Concluir os gates técnicos disponíveis do financeiro e chat antes de publicar os próximos refinamentos visuais. Conta/credenciais de pagamento e telefone físico dependem do proprietário; perguntas ficam guardadas enquanto ele trabalha. Testes simulados não transformam esses gates em aprovação externa.

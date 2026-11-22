@@ -76,6 +76,11 @@ function errorHandler(err, req, res, next) {
     response.errors = err.errors;
   }
 
+  if (err.isOperational && err.statusCode === 429 && Number.isSafeInteger(err.retryAfterSeconds)
+    && err.retryAfterSeconds >= 1 && err.retryAfterSeconds <= 86400) {
+    res.setHeader('Retry-After', String(err.retryAfterSeconds));
+  }
+
   res.status(err.statusCode).json(response);
 }
 

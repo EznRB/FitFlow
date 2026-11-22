@@ -1,0 +1,786 @@
+{
+  "source": "fe7a4509552a19e8657e0d1f399d7cd1f3664581",
+  "method": "Leitura estática integral dos caminhos em files; parser separado para lockfile. Blobs são da referência source; não incluem alterações locais posteriores.",
+  "originalScan": "38767c67-ab80-40a7-9b66-e35d8b1ec5ee",
+  "originalDeferred": 139,
+  "reviewedOriginalDeferred": [
+    "server/.gitignore",
+    "server/prisma.config.ts",
+    "server/prisma/migrations/20260401235958_init/migration.sql",
+    "server/prisma/migrations/20261008_optional_integrations/migration.sql",
+    "server/prisma/migrations/20261008_science_foundation/migration.sql",
+    "server/prisma/migrations/20261008_shared_quota/migration.sql",
+    "server/prisma/migrations/20261009_manual_payment_idempotency/migration.sql",
+    "server/prisma/migrations/20261011_exercise_catalog_origin/migration.sql",
+    "server/prisma/migrations/20261011_payment_adjustments/migration.sql",
+    "server/prisma/migrations/20261012_credential_version/migration.sql",
+    "server/prisma/migrations/migration_lock.toml",
+    "server/prisma/postgresql/migrations/20261009_manual_payment_idempotency/migration.sql",
+    "server/prisma/postgresql/migrations/20261011_exercise_catalog_origin/migration.sql",
+    "server/prisma/postgresql/migrations/20261011_payment_adjustments/migration.sql",
+    "server/prisma/postgresql/migrations/20261012_credential_version/migration.sql",
+    "server/prisma/postgresql/migrations/baseline/migration.sql",
+    "server/prisma/postgresql/migrations/migration_lock.toml",
+    "server/prisma/postgresql/schema.prisma",
+    "server/tests/aluno-painel-origin.test.cjs",
+    "server/tests/alunos-edit-civil.test.cjs",
+    "server/tests/alunos-view-identity.test.cjs",
+    "server/tests/api-client.test.cjs",
+    "server/tests/api-delete-deadline.test.cjs",
+    "server/tests/api-session-reads.test.cjs",
+    "server/tests/auth-cross-tab.test.cjs",
+    "server/tests/auth-postgresql-local.integration.cjs",
+    "server/tests/auth-session-timeout.test.cjs",
+    "server/tests/body-parser-compression.test.cjs",
+    "server/tests/bootstrap-admin.test.cjs",
+    "server/tests/catalog-pagination-focus.test.cjs",
+    "server/tests/catalog-service.test.cjs",
+    "server/tests/catalog-ui.test.cjs",
+    "server/tests/catalog-view-identity.test.cjs",
+    "server/tests/catalog-wger.test.cjs",
+    "server/tests/checkins-dates-local.integration.cjs",
+    "server/tests/checkins-view-state.test.cjs",
+    "server/tests/checkout-client.test.cjs",
+    "server/tests/checkout-local.integration.cjs",
+    "server/tests/checkout-provider.test.cjs",
+    "server/tests/checkout.test.cjs",
+    "server/tests/civil-dates-reports.test.cjs",
+    "server/tests/components-accessibility.test.cjs",
+    "server/tests/content-security-policy.test.cjs",
+    "server/tests/dashboard-view-race.test.cjs",
+    "server/tests/database-errors.test.cjs",
+    "server/tests/database-provider.test.cjs",
+    "server/tests/delegated-management-actions.test.cjs",
+    "server/tests/exercise-origin-db.integration.cjs",
+    "server/tests/exercise-origin-ui.test.cjs",
+    "server/tests/exercise-origin.test.cjs",
+    "server/tests/finance-reports-view-race.test.cjs",
+    "server/tests/financial-adjustment-reports.test.cjs",
+    "server/tests/fixtures/body-parser-compression-server.cjs",
+    "server/tests/fixtures/ia-routine-selection.cjs",
+    "server/tests/fixtures/ia-routine.cjs",
+    "server/tests/helpers/browser-auth-locks.cjs",
+    "server/tests/helpers/postgresql-target.cjs",
+    "server/tests/hosted-exercise-origin.integration.cjs",
+    "server/tests/hosted-management.integration.cjs",
+    "server/tests/hosted-password-change.integration.cjs",
+    "server/tests/hosted-payment-adjustments.integration.cjs",
+    "server/tests/ia-answer.test.cjs",
+    "server/tests/ia-chat-ui.test.cjs",
+    "server/tests/ia-chat.test.cjs",
+    "server/tests/ia-context-stages.test.cjs",
+    "server/tests/ia-contract-hardening.test.cjs",
+    "server/tests/ia-equipment-proof.test.cjs",
+    "server/tests/ia-exercise-catalog.test.cjs",
+    "server/tests/ia-groq.test.cjs",
+    "server/tests/ia-provider-ui.test.cjs",
+    "server/tests/ia-retry-after.test.cjs",
+    "server/tests/ia-routes.test.cjs",
+    "server/tests/ia-routine-coverage.test.cjs",
+    "server/tests/ia-routine-presentation.test.cjs",
+    "server/tests/ia-routine-quotes.test.cjs",
+    "server/tests/ia-routine.test.cjs",
+    "server/tests/ia.test.cjs",
+    "server/tests/login-modal-cleanup.test.cjs",
+    "server/tests/logout-account-race.test.cjs",
+    "server/tests/management-backend-races.test.cjs",
+    "server/tests/management-form-enter.test.cjs",
+    "server/tests/management-ui.test.cjs",
+    "server/tests/manual-payment-client.test.cjs",
+    "server/tests/manual-payment-form-a11y.test.cjs",
+    "server/tests/manual-payment-idempotency.test.cjs",
+    "server/tests/manual-payment-local.integration.cjs",
+    "server/tests/mercado-pago-adapter.test.cjs",
+    "server/tests/nutricao-client.test.cjs",
+    "server/tests/nutricao-http.test.cjs",
+    "server/tests/nutricao-operation-state.test.cjs",
+    "server/tests/nutricao.test.cjs",
+    "server/tests/origins.test.cjs",
+    "server/tests/password-change-db.integration.cjs",
+    "server/tests/password-change-ui.test.cjs",
+    "server/tests/password-change.test.cjs",
+    "server/tests/password-cookie-coordination.test.cjs",
+    "server/tests/payment-adjustments-db.integration.cjs",
+    "server/tests/payment-adjustments-ui.test.cjs",
+    "server/tests/payment-adjustments.test.cjs",
+    "server/tests/payment-ledger-route.test.cjs",
+    "server/tests/payments-civil-dates.test.cjs",
+    "server/tests/payments.test.cjs",
+    "server/tests/pending-logout.test.cjs",
+    "server/tests/planos-submit-state.test.cjs",
+    "server/tests/plans-view-identity.test.cjs",
+    "server/tests/plans.test.cjs",
+    "server/tests/postgresql-core-local.integration.cjs",
+    "server/tests/postgresql-target.test.cjs",
+    "server/tests/progressao-client.test.cjs",
+    "server/tests/progressao-view-state.test.cjs",
+    "server/tests/progressao.test.cjs",
+    "server/tests/pwa.test.cjs",
+    "server/tests/qs-serialization-security.test.cjs",
+    "server/tests/quota-csrf.test.cjs",
+    "server/tests/quota-local.integration.cjs",
+    "server/tests/quota-postgresql-local.integration.cjs",
+    "server/tests/quota-postgresql.test.cjs",
+    "server/tests/relatorios-view-state.test.cjs",
+    "server/tests/science.test.cjs",
+    "server/tests/security.test.cjs",
+    "server/tests/session-recovery-ui.test.cjs",
+    "server/tests/session-transaction-retries.test.cjs",
+    "server/tests/sessions-focus-disclosure.test.cjs",
+    "server/tests/sessions-query-state.test.cjs",
+    "server/tests/sessions-view-identity.test.cjs",
+    "server/tests/sessoes-concurrency.test.cjs",
+    "server/tests/sessoes.test.cjs",
+    "server/tests/sidebar-account-transition.test.cjs",
+    "server/tests/sidebar-mobile-focus.test.cjs",
+    "server/tests/startup-auth.test.cjs",
+    "server/tests/student-ui.test.cjs",
+    "server/tests/training-access.test.cjs",
+    "server/tests/training-http-deadline.test.cjs",
+    "server/tests/training-planner.test.cjs",
+    "server/tests/training-selection-race.test.cjs",
+    "server/tests/training-store.test.cjs",
+    "server/tests/training-ui.test.cjs",
+    "server/tests/treinos-submit-state.test.cjs"
+  ],
+  "originalDeferredStillNotRead": [
+    "server/package-lock.json"
+  ],
+  "files": [
+    {
+      "path": ".github/workflows/main.yml",
+      "blob": "fd17d06aaf4b29ce991f92915d1aeb2ac799c273"
+    },
+    {
+      "path": "server/.env.example",
+      "blob": "081c17c7e528bac1c9d8a790da1c3a0ee153a552"
+    },
+    {
+      "path": "server/.gitignore",
+      "blob": "126419ded645fad0cf1f736681aaa56f021af51e"
+    },
+    {
+      "path": "server/package.json",
+      "blob": "649350ac145c0821038d7b7c421ecf8a2a5d1a54"
+    },
+    {
+      "path": "server/prisma.config.ts",
+      "blob": "3bef071f653d791a016a7e1a93c61de465fc3d08"
+    },
+    {
+      "path": "server/prisma/migrations/20260401235958_init/migration.sql",
+      "blob": "f157c45c2866a0a6147750d730072aa847261822"
+    },
+    {
+      "path": "server/prisma/migrations/20261008_optional_integrations/migration.sql",
+      "blob": "f3018bc99c9a0313cb3f68d8bdb1706220867a1e"
+    },
+    {
+      "path": "server/prisma/migrations/20261008_science_foundation/migration.sql",
+      "blob": "a86a9baf38936063a80ff4d06c23d342a443ea83"
+    },
+    {
+      "path": "server/prisma/migrations/20261008_shared_quota/migration.sql",
+      "blob": "68c0757dae1717251ea731f031b139b70d32af71"
+    },
+    {
+      "path": "server/prisma/migrations/20261009_manual_payment_idempotency/migration.sql",
+      "blob": "41eb31ac90e9e4bc2ac49d9c0c116165437d4c9d"
+    },
+    {
+      "path": "server/prisma/migrations/20261011_exercise_catalog_origin/migration.sql",
+      "blob": "1d68d5ed70c5ad0bfca02d1053655f39cd01a531"
+    },
+    {
+      "path": "server/prisma/migrations/20261011_payment_adjustments/migration.sql",
+      "blob": "fa8eff6e77abbf29ac1e4c2ca5778cc533644f12"
+    },
+    {
+      "path": "server/prisma/migrations/20261012_credential_version/migration.sql",
+      "blob": "28e16d9f157179051b762cf40b546dfe8f0e2142"
+    },
+    {
+      "path": "server/prisma/migrations/migration_lock.toml",
+      "blob": "592fc0b32f5c9d130b27678fd51ace369cc67b4d"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/20261009_manual_payment_idempotency/migration.sql",
+      "blob": "dde34b23096d94debd002898a4d62266ab5eabce"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/20261011_exercise_catalog_origin/migration.sql",
+      "blob": "c60744273f4c329f751f71788940ade2e86a84ef"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/20261011_payment_adjustments/migration.sql",
+      "blob": "7fc9e69594d2e1b5a40aa59756654d7031ca2c47"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/20261012_credential_version/migration.sql",
+      "blob": "990c04da3044d037b13db17d7f67fe3f6ee24d5a"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/20261111_catalog_identity_restrict/migration.sql",
+      "blob": "6a85e1a32151993fe992d5c24b53aba2285cb865"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/baseline/migration.sql",
+      "blob": "48d66cbcef95ca3e577a0fbbb0c5820b17bc2336"
+    },
+    {
+      "path": "server/prisma/postgresql/migrations/migration_lock.toml",
+      "blob": "d9c394c519da65a859506614ac0b7a33ae9a49bb"
+    },
+    {
+      "path": "server/prisma/postgresql/runtime-privileges.sql",
+      "blob": "098369a075ce1333523d6584235b71a83c4d0b05"
+    },
+    {
+      "path": "server/prisma/postgresql/schema.prisma",
+      "blob": "09afe7d15c562365fdc16337f0d3203ede27b014"
+    },
+    {
+      "path": "server/prisma/schema.prisma",
+      "blob": "078fabe1eb7e5f8232afc0888cfc1517dd9cf716"
+    },
+    {
+      "path": "server/prisma/seed.js",
+      "blob": "3cdc5d55f895f9b7c268f6d5e5c7675ffce35dff"
+    },
+    {
+      "path": "server/tests/aluno-painel-origin.test.cjs",
+      "blob": "92b0275404b3d6f0bf870cdc459b44845c6807f7"
+    },
+    {
+      "path": "server/tests/alunos-edit-civil.test.cjs",
+      "blob": "f98cf39bb729891a57453011f61b389357f93015"
+    },
+    {
+      "path": "server/tests/alunos-view-identity.test.cjs",
+      "blob": "0b74dd792c6a71defc7455ff182215325125aa8c"
+    },
+    {
+      "path": "server/tests/api-client.test.cjs",
+      "blob": "a03036a1dfea00dd61b1688b90122d677dafa864"
+    },
+    {
+      "path": "server/tests/api-delete-deadline.test.cjs",
+      "blob": "32df34129f1661b558a0862fac58844cace20c7b"
+    },
+    {
+      "path": "server/tests/api-session-reads.test.cjs",
+      "blob": "0858a8beeda05f7ccf17bb4f3dd86b45575b750e"
+    },
+    {
+      "path": "server/tests/auth-cross-tab.test.cjs",
+      "blob": "cb90a175d8a0bb20c1fced4bff2411f1829bd1c3"
+    },
+    {
+      "path": "server/tests/auth-postgresql-local.integration.cjs",
+      "blob": "6461effb6ceed7ddc27fb5110bf1553592f736aa"
+    },
+    {
+      "path": "server/tests/auth-session-timeout.test.cjs",
+      "blob": "0e923aa158daf354c338bbe4e2f69580089ba025"
+    },
+    {
+      "path": "server/tests/body-parser-compression.test.cjs",
+      "blob": "ccddad998a1b90ebb5d4e3ea2f15c1f40ca82bc7"
+    },
+    {
+      "path": "server/tests/bootstrap-admin.test.cjs",
+      "blob": "839e3a4a568b49aa3438b1fa946a74da608b1d0e"
+    },
+    {
+      "path": "server/tests/catalog-identity-postgresql.integration.cjs",
+      "blob": "f0973541989bb8da50f075f35fa191a29af59b2d"
+    },
+    {
+      "path": "server/tests/catalog-pagination-focus.test.cjs",
+      "blob": "2a17619ce6af002f3bfaa5f46b4e9c8ccc9fc024"
+    },
+    {
+      "path": "server/tests/catalog-service.test.cjs",
+      "blob": "16cfce688831aca9c4c24e82f9bcb72f61877528"
+    },
+    {
+      "path": "server/tests/catalog-ui.test.cjs",
+      "blob": "62f8d27974ac9388995b29f38d2d6cc3d007fc4a"
+    },
+    {
+      "path": "server/tests/catalog-view-identity.test.cjs",
+      "blob": "d2c8a2b0ea1cfec73cdcaf0d1be8c34306e0a4d0"
+    },
+    {
+      "path": "server/tests/catalog-wger.test.cjs",
+      "blob": "8ddd9dc78170885fedcd8982285a01771ee1c3b1"
+    },
+    {
+      "path": "server/tests/checkins-dates-local.integration.cjs",
+      "blob": "f7bf799349f83927d68bad793993274525efa18f"
+    },
+    {
+      "path": "server/tests/checkins-view-state.test.cjs",
+      "blob": "86c0e5f9e76251c1a311f69b6b98be03c3e5a3ff"
+    },
+    {
+      "path": "server/tests/checkout-client.test.cjs",
+      "blob": "fc4ba8634ca40dd0bfd2e9b011e528a7eea5832c"
+    },
+    {
+      "path": "server/tests/checkout-local.integration.cjs",
+      "blob": "bfd92b0a89dcad3ff34d1bc6f43791aa751b8184"
+    },
+    {
+      "path": "server/tests/checkout-provider.test.cjs",
+      "blob": "938846db06ca17d9b4b088206dfaa2e4f8ef3c74"
+    },
+    {
+      "path": "server/tests/checkout.test.cjs",
+      "blob": "46ff3198544d440d32ff2fd31fc03d0018f789cc"
+    },
+    {
+      "path": "server/tests/civil-dates-reports.test.cjs",
+      "blob": "0314ba9a737e329403f6156cdb37ebf19443f734"
+    },
+    {
+      "path": "server/tests/components-accessibility.test.cjs",
+      "blob": "320bff67b4ae19fc613af89d7082243ee3ce1bf3"
+    },
+    {
+      "path": "server/tests/content-security-policy.test.cjs",
+      "blob": "c38b02233d91627801d5bb5cdc6c115da60b9f30"
+    },
+    {
+      "path": "server/tests/dashboard-view-race.test.cjs",
+      "blob": "b050ffc2e56220db8bf11808a29b12ea710fb1ab"
+    },
+    {
+      "path": "server/tests/database-errors.test.cjs",
+      "blob": "8229ce837081668db81e5d20c447ec90d185f547"
+    },
+    {
+      "path": "server/tests/database-provider.test.cjs",
+      "blob": "112347fb4b886d8ad15712f40f3096dbd33b4362"
+    },
+    {
+      "path": "server/tests/delegated-management-actions.test.cjs",
+      "blob": "39f2321656f734554d5c4b2536daf14b6fd8d3ab"
+    },
+    {
+      "path": "server/tests/exercise-origin-db.integration.cjs",
+      "blob": "c130771b0953c1e9dee5c8be4339443ec41337fd"
+    },
+    {
+      "path": "server/tests/exercise-origin-ui.test.cjs",
+      "blob": "8077a79baded617c74caf09935010959985f7208"
+    },
+    {
+      "path": "server/tests/exercise-origin.test.cjs",
+      "blob": "1a58eebb76b03943bffa63041baaece518d887fe"
+    },
+    {
+      "path": "server/tests/finance-reports-view-race.test.cjs",
+      "blob": "43f29b1821e42e2f28af9f26921607f33e27045f"
+    },
+    {
+      "path": "server/tests/financial-adjustment-reports.test.cjs",
+      "blob": "92f4e847909a2edc061c953ecd1c73dfe3588293"
+    },
+    {
+      "path": "server/tests/fixtures/body-parser-compression-server.cjs",
+      "blob": "723001e336119a11cded3d52a77132317c9187c0"
+    },
+    {
+      "path": "server/tests/fixtures/ia-routine-selection.cjs",
+      "blob": "be040eea8773ba56ade3ec7e53e9f7d58d99ce7e"
+    },
+    {
+      "path": "server/tests/fixtures/ia-routine.cjs",
+      "blob": "cfc83dbe43a8e2c0334aed5ee36ff1e3c997c176"
+    },
+    {
+      "path": "server/tests/helpers/browser-auth-locks.cjs",
+      "blob": "362f0047e2a91da847b38e09dffb4e6d15a8a085"
+    },
+    {
+      "path": "server/tests/helpers/postgresql-target.cjs",
+      "blob": "c65d924c1740928f0f11a50e8f9c5c8fd479ed64"
+    },
+    {
+      "path": "server/tests/helpers/quota-window.cjs",
+      "blob": "2c2226065bcd6757fc353c845eed9ae0e4c95cc2"
+    },
+    {
+      "path": "server/tests/helpers/settled-batch.cjs",
+      "blob": "539429a2b21229053280d1e74371fcde5c2d987d"
+    },
+    {
+      "path": "server/tests/hosted-exercise-origin.integration.cjs",
+      "blob": "4f3fb71c4a6823e06ab17222c7f2b844cdd15597"
+    },
+    {
+      "path": "server/tests/hosted-management.integration.cjs",
+      "blob": "a102d94a371736a2d53ff2f92afe6a48a2077a60"
+    },
+    {
+      "path": "server/tests/hosted-password-change.integration.cjs",
+      "blob": "c44151880820aa53e86c90743b7e04a2205c311a"
+    },
+    {
+      "path": "server/tests/hosted-payment-adjustments.integration.cjs",
+      "blob": "4cef47b9a1bed2153b46bf2e66283b7906d419b8"
+    },
+    {
+      "path": "server/tests/ia-answer.test.cjs",
+      "blob": "35fa19d137be41accd7a5f4ce66c0c42975e1f8b"
+    },
+    {
+      "path": "server/tests/ia-chat-ui.test.cjs",
+      "blob": "0cf02e9912c9a6482d0e0dcf42e8fc7273117275"
+    },
+    {
+      "path": "server/tests/ia-chat.test.cjs",
+      "blob": "cbe25d717ccbaeec9879b93cde46f08fad673bf0"
+    },
+    {
+      "path": "server/tests/ia-context-stages.test.cjs",
+      "blob": "5fb6a5c3719f7a540e140ffbbb8cb8a20b9731b9"
+    },
+    {
+      "path": "server/tests/ia-contract-hardening.test.cjs",
+      "blob": "21e4dff141bb24210a0e501cd7dc29048aebd643"
+    },
+    {
+      "path": "server/tests/ia-equipment-proof.test.cjs",
+      "blob": "44c08ca1b45d839110f1d4e128822baa5980583d"
+    },
+    {
+      "path": "server/tests/ia-exercise-catalog.test.cjs",
+      "blob": "0e6ec1e6c824ea0cbaa25f22dffbac49fb22c358"
+    },
+    {
+      "path": "server/tests/ia-groq.test.cjs",
+      "blob": "fb16d6773dd4b375d30d4f4edabfd7714004741e"
+    },
+    {
+      "path": "server/tests/ia-provider-ui.test.cjs",
+      "blob": "5ca2a2d53d7a56fd4abfd1add92f76eabaf1df37"
+    },
+    {
+      "path": "server/tests/ia-retry-after.test.cjs",
+      "blob": "05d717147505d1e9ebc0490c09f552b8538ef947"
+    },
+    {
+      "path": "server/tests/ia-routes.test.cjs",
+      "blob": "907ba23de74e545186a75041e935d71806afdbd9"
+    },
+    {
+      "path": "server/tests/ia-routine-coverage.test.cjs",
+      "blob": "02af702536e5d365a96743e51bfa18200ad31552"
+    },
+    {
+      "path": "server/tests/ia-routine-presentation.test.cjs",
+      "blob": "478640cfadfe9247cb61d0aef82f5a5541a369e8"
+    },
+    {
+      "path": "server/tests/ia-routine-quotes.test.cjs",
+      "blob": "38e521a349c42bdac81f73ec8c8f1a66dee8dd18"
+    },
+    {
+      "path": "server/tests/ia-routine.test.cjs",
+      "blob": "ff2a20c0bb146572564333bdd9ccb58444fec9e7"
+    },
+    {
+      "path": "server/tests/ia.test.cjs",
+      "blob": "5a0d41e0892c94c6f56b0aa5f8549ef390166119"
+    },
+    {
+      "path": "server/tests/login-modal-cleanup.test.cjs",
+      "blob": "9729377a864295cdb67153385fb1890de780208a"
+    },
+    {
+      "path": "server/tests/logout-account-race.test.cjs",
+      "blob": "a23cec3d9c22e1e83c33f6a402bbfda651ae7bf3"
+    },
+    {
+      "path": "server/tests/management-backend-races.test.cjs",
+      "blob": "a263f17bbfa954d60df42f14a8dd5ccb78e06c27"
+    },
+    {
+      "path": "server/tests/management-form-enter.test.cjs",
+      "blob": "7b7b170cb94ebb48b514df593dce3128ed51293e"
+    },
+    {
+      "path": "server/tests/management-ui.test.cjs",
+      "blob": "a10aae86a2f573a23b3d64c680fbfdfca7c5021c"
+    },
+    {
+      "path": "server/tests/manual-payment-client.test.cjs",
+      "blob": "29c365d8e133bebdaef42a33d3601cd1ba42f8d0"
+    },
+    {
+      "path": "server/tests/manual-payment-form-a11y.test.cjs",
+      "blob": "1a2833d88139de7e4638665763cd5b28bfe0d663"
+    },
+    {
+      "path": "server/tests/manual-payment-idempotency.test.cjs",
+      "blob": "37e33ba503ae4872f28627ccb57bcde07335b426"
+    },
+    {
+      "path": "server/tests/manual-payment-local.integration.cjs",
+      "blob": "35e52786590b0a0c5f93fdc87e3b5cfe210c4d76"
+    },
+    {
+      "path": "server/tests/mercado-pago-adapter.test.cjs",
+      "blob": "6ab0e1da44e000638f1c499f24f4b2194c61163b"
+    },
+    {
+      "path": "server/tests/neon-demo-seed.test.cjs",
+      "blob": "0032d49abee852b6807627593dbb249387884352"
+    },
+    {
+      "path": "server/tests/nutricao-client.test.cjs",
+      "blob": "f3f2119c90a5a7d4b5d455172fe31537afb80d3f"
+    },
+    {
+      "path": "server/tests/nutricao-http.test.cjs",
+      "blob": "672e5e99efe7fc0c6d7c0f48c785faf4412cdc63"
+    },
+    {
+      "path": "server/tests/nutricao-operation-state.test.cjs",
+      "blob": "b66e11652ca94e61cfb5e8714a5fd514d8588f99"
+    },
+    {
+      "path": "server/tests/nutricao.test.cjs",
+      "blob": "a973d2e4eb0ef84cf8a94b96c4dd2f65b43be2dc"
+    },
+    {
+      "path": "server/tests/origins.test.cjs",
+      "blob": "f99dcac8c4f7ec5c216752b778fe93326f647988"
+    },
+    {
+      "path": "server/tests/password-change-db.integration.cjs",
+      "blob": "1c93f96ddb6f5f3e60ece0a589c3baded5566e15"
+    },
+    {
+      "path": "server/tests/password-change-ui.test.cjs",
+      "blob": "0c4eb2e2f65beeac2b1e3098d5c947dc95e51fb9"
+    },
+    {
+      "path": "server/tests/password-change.test.cjs",
+      "blob": "5b140f177dc2062889fb037791d3d3fe4cda7806"
+    },
+    {
+      "path": "server/tests/password-cookie-coordination.test.cjs",
+      "blob": "248e43fce6b457bab6f70d080bb912bab8b5e62c"
+    },
+    {
+      "path": "server/tests/payment-adjustments-db.integration.cjs",
+      "blob": "29aba57b13c9c00d6f08e89bf7f23c6c315bd181"
+    },
+    {
+      "path": "server/tests/payment-adjustments-ui.test.cjs",
+      "blob": "8bb2022bd75cc1c061e078b48171504924218a1e"
+    },
+    {
+      "path": "server/tests/payment-adjustments.test.cjs",
+      "blob": "3a8c1b7771e7289a2c34e39ebe891ad29b3f2095"
+    },
+    {
+      "path": "server/tests/payment-ledger-route.test.cjs",
+      "blob": "f347b115d65b6315fa6fb47844ce5a61301405b0"
+    },
+    {
+      "path": "server/tests/payments-civil-dates.test.cjs",
+      "blob": "001ad029e7f8d20e112e6ceb59ed63a339a5cc1a"
+    },
+    {
+      "path": "server/tests/payments.test.cjs",
+      "blob": "b4ce1c68db679d337fa9f7162383a86bde40b4ba"
+    },
+    {
+      "path": "server/tests/pending-logout.test.cjs",
+      "blob": "c9641d909e6635cc9b960d37122952f403c18610"
+    },
+    {
+      "path": "server/tests/planos-submit-state.test.cjs",
+      "blob": "9b7b7cfdcf18327d98c5e4ddf99b68f3a7ba98b2"
+    },
+    {
+      "path": "server/tests/plans-view-identity.test.cjs",
+      "blob": "405a8afce452541dec52715f1235e004153cce41"
+    },
+    {
+      "path": "server/tests/plans.test.cjs",
+      "blob": "457ec7ba390d558e6980fbb6c117bac465ccf1e7"
+    },
+    {
+      "path": "server/tests/postgresql-clean-migrations.integration.cjs",
+      "blob": "211105f37995223a224da474855ff59c4d5ad0a3"
+    },
+    {
+      "path": "server/tests/postgresql-core-local.integration.cjs",
+      "blob": "57b02e982a343cf686b5c297bad96e42ff8d5948"
+    },
+    {
+      "path": "server/tests/postgresql-target.test.cjs",
+      "blob": "f0b41d985c5709fb6ac5f1ca80d7f5729fcf7181"
+    },
+    {
+      "path": "server/tests/progressao-client.test.cjs",
+      "blob": "aa93fd46254d950e4ef5a36acc3e60275009a285"
+    },
+    {
+      "path": "server/tests/progressao-view-state.test.cjs",
+      "blob": "880e867bfeba62ca9db27e69dc943a861b2cf89c"
+    },
+    {
+      "path": "server/tests/progressao.test.cjs",
+      "blob": "cfe734a2108bf708dadebe66b33069fdfe57e815"
+    },
+    {
+      "path": "server/tests/pwa.test.cjs",
+      "blob": "f0ea620081b7281306d0b1ccbfeced4dce7b14b6"
+    },
+    {
+      "path": "server/tests/qs-serialization-security.test.cjs",
+      "blob": "6c35cbc9fbc8f75d83a2a44e8f9812c26d06dbcd"
+    },
+    {
+      "path": "server/tests/quota-csrf.test.cjs",
+      "blob": "12532eb18f4636f1435bee81645d605bb16c5b72"
+    },
+    {
+      "path": "server/tests/quota-local.integration.cjs",
+      "blob": "3713d29e30a4496d02d554376c1684e8a4fcdc0c"
+    },
+    {
+      "path": "server/tests/quota-postgresql-local.integration.cjs",
+      "blob": "19dc374787b5f36191422e2cb558aef477b411e1"
+    },
+    {
+      "path": "server/tests/quota-postgresql.test.cjs",
+      "blob": "4de845493fe0d9fe5b1e23f2e2cb45552fdc2021"
+    },
+    {
+      "path": "server/tests/quota-window.test.cjs",
+      "blob": "d9ef5018fd12b4ce2b12d2df7e4bf9014e529576"
+    },
+    {
+      "path": "server/tests/relatorios-view-state.test.cjs",
+      "blob": "f0faecb1fbd73430d7b04f20ba05ce8fcff0811c"
+    },
+    {
+      "path": "server/tests/science.test.cjs",
+      "blob": "97eefad1ee6bc6023a7643a1e3700a0ebfb21839"
+    },
+    {
+      "path": "server/tests/security.test.cjs",
+      "blob": "962cdaf9d96bd766fefd6cce871d9d50ecc98039"
+    },
+    {
+      "path": "server/tests/session-recovery-ui.test.cjs",
+      "blob": "348fd96efd5d9e6173227212fc8723e404d041a4"
+    },
+    {
+      "path": "server/tests/session-transaction-retries.test.cjs",
+      "blob": "3cadb137d090706aff676e2301435cbe815b04cf"
+    },
+    {
+      "path": "server/tests/sessions-focus-disclosure.test.cjs",
+      "blob": "e41610772f108e51e0ff3dc7ce5a7ef06233a207"
+    },
+    {
+      "path": "server/tests/sessions-query-state.test.cjs",
+      "blob": "e9ea57dbfd9bf2ffd9cd39d034accfc74aaa3c19"
+    },
+    {
+      "path": "server/tests/sessions-view-identity.test.cjs",
+      "blob": "83f30ef75e329d954bf00c0d13812c9aded4e6cb"
+    },
+    {
+      "path": "server/tests/sessoes-concurrency.test.cjs",
+      "blob": "ae4bc20eb2709aae258aede2bb89142945b3f441"
+    },
+    {
+      "path": "server/tests/sessoes.test.cjs",
+      "blob": "40273b998c2b5560299f2763596ba2d09d240536"
+    },
+    {
+      "path": "server/tests/settled-batch.test.cjs",
+      "blob": "9d7c5cf16fe1bce74230bf174a475eafda4724e1"
+    },
+    {
+      "path": "server/tests/sidebar-account-transition.test.cjs",
+      "blob": "27c97368b27426b013f44f7da9ada9966d7cfde0"
+    },
+    {
+      "path": "server/tests/sidebar-mobile-focus.test.cjs",
+      "blob": "afefded14f8b33f0b01cc5279787e39d34642f6a"
+    },
+    {
+      "path": "server/tests/startup-auth.test.cjs",
+      "blob": "a07ef6c2d980efc4a14758de0badb2d3b98d6c22"
+    },
+    {
+      "path": "server/tests/student-email-postgresql.integration.cjs",
+      "blob": "633d66976569ce653e2b99a0908779abbccf37f9"
+    },
+    {
+      "path": "server/tests/student-ui.test.cjs",
+      "blob": "50d5172e9aa2efd2d37763ae3693bbbf7dcb1e14"
+    },
+    {
+      "path": "server/tests/training-access.test.cjs",
+      "blob": "09842f56e505ea7ad30c75ca31caf310699d298b"
+    },
+    {
+      "path": "server/tests/training-http-deadline.test.cjs",
+      "blob": "0d4e678ec22ba0d5798a447edae172ac723a2cd6"
+    },
+    {
+      "path": "server/tests/training-planner-context.test.cjs",
+      "blob": "e5a9cfa83e6522c886f8a648e4c6d2837c91ee2b"
+    },
+    {
+      "path": "server/tests/training-planner.test.cjs",
+      "blob": "b9d2330e3e814050a4f28c41f172dbf3ff83db73"
+    },
+    {
+      "path": "server/tests/training-selection-race.test.cjs",
+      "blob": "b64fc1d03f44810810bc24dee43116ca594cc383"
+    },
+    {
+      "path": "server/tests/training-store.test.cjs",
+      "blob": "403ddf89c22e090074236f6f2222065a10eb2e39"
+    },
+    {
+      "path": "server/tests/training-ui.test.cjs",
+      "blob": "2e5c69f61700e9d45bf4a4627820426e133bda44"
+    },
+    {
+      "path": "server/tests/treinos-submit-state.test.cjs",
+      "blob": "9b6bdbc0860ea79cfdfb8cefb52c35840fed84de"
+    },
+    {
+      "path": "vercel.json",
+      "blob": "61cd33a5986de837fed3cc6b771d873ba8ccbe67"
+    }
+  ],
+  "parserReviewed": [
+    {
+      "path": "server/package-lock.json",
+      "blob": "26309ac8417a93ac2347aa7a27800437fb07086f",
+      "entries": 132,
+      "propertyOccurrences": 1223,
+      "scalarValues": 919,
+      "resolvedHttpsNpm": 131,
+      "sha512Shape": 131,
+      "installScriptFlags": 3,
+      "finding": 0,
+      "limits": "Full JSON traversal plus targeted original entries; not manual full-line reading or package-content/advisory verification."
+    }
+  ],
+  "limitations": "Separate supplemental review, not a revised managed scan. No SQL/code/network execution or effective-role/endpoint ownership validation. New files outside original inventory require separate coverage."
+}

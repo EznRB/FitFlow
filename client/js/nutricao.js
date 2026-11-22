@@ -48,7 +48,7 @@ const NutricaoView = {
           <div class="nutrition-review science-advanced" id="nutrition-review" hidden><h4>Confira antes de continuar</h4><p class="science-note" id="nutrition-review-summary"></p><label class="science-check"><input id="nutrition-review-ack" type="checkbox"><span>Conferi os dados salvos e quero continuar, ciente de que o envio anterior ainda pode terminar e alterar a simulação.</span></label><button class="btn btn-secondary" type="button" id="nutrition-review-confirm" disabled>Continuar após conferir</button></div>
         </section>` : ''}
         <section class="science-method"><div class="science-section-header"><span class="science-section-index">${accountUser ? '03' : '02'}</span><div><h3>Entenda o método</h3><p>O que essas contas mostram — e quais são seus limites.</p></div></div>
-          <p>Gasto em repouso × fator de atividade aproxima o gasto total. A FAO descreve PAL em relação ao gasto basal; o uso com uma equação de repouso é uma aproximação. Acompanhe tendências e calibre com um profissional.</p>
+          <p>Gasto em repouso × fator de atividade aproxima o gasto total. A <a href="https://www.fao.org/4/y5686e/y5686e07.htm" target="_blank" rel="noopener noreferrer">FAO descreve PAL em relação ao gasto basal</a>; o uso com uma equação de repouso é uma aproximação. Acompanhe tendências e calibre com um profissional.</p>
           <p>Proteína: 1,6 g/kg/dia é uma referência de meta-análise em adultos saudáveis que fazem treino resistido, com incerteza e variação individual. Não é uma dose ideal universal. Gordura: a faixa populacional adulta de referência é 20–35% da energia. Carboidrato ocupa a energia restante.</p>
           <div id="nutrition-sources" class="science-sources"></div>
           <div id="nutrition-ai"></div>
@@ -297,7 +297,7 @@ const NutricaoView = {
       <div class="science-macros"><div><strong>${format(result.proteinG)} g</strong><span>Proteína</span></div><div><strong>${format(result.carbsG)} g</strong><span>Carboidrato</span></div><div><strong>${format(result.fatG)} g</strong><span>Gordura</span></div></div>
       <ol class="science-steps"><li>Repouso: ${format(result.restingKcal)} kcal/dia.</li><li>Gasto total aproximado: ${format(result.estimatedTotalKcal)} kcal/dia.</li><li>Cenário após ajuste selecionado: ${format(result.targetKcal)} kcal/dia.</li><li>Proteína e carboidrato: 4 kcal/g. Gordura: 9 kcal/g.</li></ol>
       <details class="science-calculation"><summary>Ver fórmula e hipóteses</summary><p class="science-formula">${formula}</p><ul id="nutrition-assumptions"></ul></details>
-      <p class="science-note">Método v${result.version}. A soma exibida pode variar ligeiramente devido ao arredondamento dos gramas.</p>`;
+      <p class="science-note">Método v${result.version}. Usamos os <a href="https://www.fao.org/4/y5022e/y5022e04.htm" target="_blank" rel="noopener noreferrer">fatores gerais de energia de 4/4/9 kcal/g</a>; alimentos e componentes específicos podem exigir outros fatores. A soma exibida pode variar ligeiramente devido ao arredondamento dos gramas.</p>`;
     // Hipóteses entram como texto, sem transformar valores ou mensagens em HTML.
     for (const assumption of result.assumptions) {
       const li = document.createElement('li');

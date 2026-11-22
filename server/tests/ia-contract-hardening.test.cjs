@@ -120,11 +120,10 @@ test('contexto reconfirmado depois da mudança pode formar rascunho; pergunta ge
 
 test('gerador inconsistente retorna esclarecimento controlado sem liberar o rascunho ou chamada extra', async () => {
   let calls = 0; const raw = program(); raw.context.healthyAdultQuote = 'sim';
-  const current = service(async () => { calls++; return upstream(calls === 1
-    ? { kind: 'routine_draft', message: 'Vou organizar um rascunho revisável para sua rotina.', sourceIds: [] } : raw); });
+  const current = service(async () => { calls++; return upstream({ turn: { kind: 'routine_draft', context: raw.context } }); });
   const result = await current.chat({ consent: true, messages: messages(routineUserText + ' sim') });
   assert.equal(result.kind, 'clarification'); assert.match(result.message, /Confirme explicitamente/);
-  assert.equal(result.program, undefined); assert.deepEqual(result.sources, []); assert.equal(calls, 2);
+  assert.equal(result.program, undefined); assert.deepEqual(result.sources, []); assert.equal(calls, 1);
 });
 
 test('esclarecimento antigo livre não devolve ciência inventada nem fonte decorativa', async () => {
@@ -137,8 +136,7 @@ test('esclarecimento antigo livre não devolve ciência inventada nem fonte deco
 
 test('esclarecimento estruturado faz perguntas úteis sem prosa do provedor ou atribuição científica', async () => {
   let calls = 0;
-  const current = service(async () => { calls++; return upstream({ kind: 'clarification', sourceIds: [],
-    message: { reason: 'missing_context', fields: ['duration', 'equipment'] } }); });
+  const current = service(async () => { calls++; return upstream({ turn: { kind: 'clarification', reason: 'missing_context', fields: ['duration', 'equipment'] } }); });
   const result = await current.chat({ consent: true, messages: messages('Pode montar uma divisão?') });
   assert.equal(result.kind, 'clarification'); assert.equal(result.generatedByAI, true);
   assert.deepEqual(result.sources, []); assert.match(result.message, /tempo|minutos/); assert.match(result.message, /equipamentos/);
@@ -147,29 +145,24 @@ test('esclarecimento estruturado faz perguntas úteis sem prosa do provedor ou a
 
 test('esclarecimento ambíguo de escopo não vira diagnóstico nem rotina', async () => {
   let calls = 0;
-  const current = service(async () => { calls++; return upstream({ kind: 'clarification', sourceIds: [],
-    message: { reason: 'scope_confirmation', fields: ['scope'] } }); });
+  const current = service(async () => { calls++; return upstream({ turn: { kind: 'clarification', reason: 'scope_confirmation', fields: ['scope'] } }); });
   const result = await current.chat({ consent: true, messages: messages('Precisa de algum contexto?') });
   assert.match(result.message, /confirme|confirma/i); assert.match(result.message, /adulto saudável/);
   assert.equal(result.program, undefined); assert.equal(calls, 1);
 });
 
-test('objeto de esclarecimento não aceita instruções, texto adicional, fontes ou campos fora da seleção', async () => {
-  const valid = { kind: 'clarification', sourceIds: [], message: { reason: 'missing_context', fields: ['duration'] } };
-  for (const result of [{ ...valid, sourceIds: ['acsm-2026'] },
-    { ...valid, message: { ...valid.message, text: 'RIR dois garante segurança.' } },
-    { ...valid, message: { reason: 'free_diagnosis', fields: ['scope'] } },
-    { ...valid, message: { reason: 'scope_confirmation', fields: ['equipment'] } },
-    { ...valid, message: { reason: 'missing_context', fields: ['diagnosis'] } },
-    { ...valid, message: { reason: 'missing_context', fields: ['duration', 'duration'] } },
-    { ...valid, message: { reason: 'missing_context', fields: [] } },
-    { ...valid, message: { reason: 'outside_scope', fields: ['scope'] } }]) {
+test('objeto de esclarecimento não aceita instruções, fontes, campos indevidos ou seleção inconsistente', async () => {
+  const valid = { kind: 'clarification', reason: 'missing_context', fields: ['duration'] };
+  for (const turn of [{ ...valid, sourceIds: ['acsm-2026'] }, { ...valid, text: 'RIR dois garante segurança.' },
+    { ...valid, reason: 'free_diagnosis', fields: ['scope'] }, { ...valid, reason: 'scope_confirmation', fields: ['equipment'] },
+    { ...valid, fields: ['diagnosis'] }, { ...valid, fields: ['duration', 'duration'] }, { ...valid, fields: [] },
+    { ...valid, reason: 'outside_scope', fields: ['scope'] }]) {
     let calls = 0;
-    await assert.rejects(service(async () => { calls++; return upstream(result); })
+    await assert.rejects(service(async () => { calls++; return upstream({ turn }); })
       .chat({ consent: true, messages: messages('Pode montar uma rotina?') }), error => error.statusCode === 502);
     assert.equal(calls, 1);
   }
-  const result = await service(async () => upstream({ ...valid, message: { reason: 'outside_scope', fields: [] } }))
+  const result = await service(async () => upstream({ turn: { ...valid, reason: 'outside_scope', fields: [] } }))
     .chat({ consent: true, messages: messages('Quero uma rotina clínica individual.') });
   assert.match(result.message, /avaliação profissional/); assert.doesNotMatch(result.message, /você tem|diagnóstico:/i);
   assert.deepEqual(Object.keys(result).sort(), ['generatedByAI', 'kind', 'message', 'sources']);

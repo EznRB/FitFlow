@@ -88,6 +88,16 @@
 .ia-routine-counts dd { margin:0; font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
 .ia-routine-limits { display:grid; gap:12px; padding:20px 0; }
 .ia-routine-limits p { font-size:12px; color:var(--text-secondary); line-height:1.7; margin:0; }
+.ia-routine-coverage { margin:4px 0 24px; padding:24px 0 0; border-top:1px solid var(--border-color); min-width:0; }
+.ia-routine-coverage h4 { font:500 27px/1.2 var(--font-heading); text-transform:none; letter-spacing:-.01em; color:var(--text-primary); margin:0 0 20px; overflow-wrap:anywhere; }
+.ia-routine-coverage .ia-routine-coverage-label { margin:0 0 6px; font-size:12px; color:var(--text-secondary); }
+.ia-routine-coverage .ia-routine-coverage-groups { margin:0 0 18px; font-size:16px; font-weight:500; line-height:1.55; color:var(--text-primary); overflow-wrap:anywhere; }
+.ia-routine-coverage .ia-routine-coverage-note { margin:0 0 22px; font-size:14px; line-height:1.75; color:var(--text-secondary); overflow-wrap:anywhere; }
+.ia-routine-coverage .ia-routine-distribution-heading { margin:0 0 8px; font:500 14px/1.5 var(--font-family); text-transform:none; color:var(--text-primary); }
+.ia-routine-distribution { margin:0; }
+.ia-routine-distribution > div { display:grid; grid-template-columns:minmax(80px,.3fr) minmax(0,1fr); gap:10px 18px; padding:12px 0; border-top:1px solid var(--border-subtle); }
+.ia-routine-distribution dt { font-size:13px; font-weight:500; color:var(--text-primary); }
+.ia-routine-distribution dd { margin:0; font-size:13px; line-height:1.65; color:var(--text-secondary); overflow-wrap:anywhere; }
 .ia-routine-interpretation { border-top:1px solid var(--border-color); padding-top:16px; }
 .ia-routine-interpretation summary { font-size:13px; color:var(--text-primary); cursor:pointer; min-height:32px; }
 .ia-routine-interpretation summary:focus-visible { outline:2px solid var(--primary-400); outline-offset:4px; }
@@ -118,4 +128,6 @@
   .ia-routine-context > div:last-child { grid-column:1 / -1; }
   .ia-routine-session-heading { align-items:start; flex-direction:column; }
   .ia-routine-weekly { padding:20px 16px; }
+  .ia-routine-coverage h4 { font-size:25px; }
+  .ia-routine-distribution > div { grid-template-columns:minmax(0,1fr); gap:4px; }
 }

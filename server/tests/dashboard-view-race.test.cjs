@@ -66,3 +66,31 @@ test('marcador compartilhado já alterado impede consulta antes do evento entre 
   await f.view.inicializar();
   assert.equal(calls, 0); assert.equal(f.view.currentStats, null);
 });
+
+test('painel limita consulta a 15 segundos para permitir recuperação de rede', async () => {
+  let options;
+  const f = fixture(async (endpoint, settings) => { options = settings; return response(10); });
+  await f.view.inicializar();
+  assert.equal(options?.timeoutMs, 15000);
+});
+
+test('retry do painel pertence à sessão e à instância do botão, consumindo apenas um clique', async () => {
+  for (const change of ['page', 'account', 'role', 'generation', 'epoch', 'button', 'detached', 'content', 'version', 'none']) {
+    const f = fixture(async () => { throw new Error('Unavailable'); });
+    await f.view.inicializar();
+    const retry = f.node('#dashboard-retry'), old = retry.onclick;
+    let navigations = 0;
+    f.context.App.navigateTo = () => { navigations++; };
+    if (change === 'page') f.context.App.currentPage = 'alunos';
+    if (change === 'account') f.context.Auth.user = { id: 2, role: 'admin' };
+    if (change === 'role') f.context.Auth.user.role = 'student';
+    if (change === 'generation') f.context.Auth.generation++;
+    if (change === 'epoch') f.changeEpoch();
+    if (change === 'button') f.node('page-content').querySelector = () => ({});
+    if (change === 'detached') retry.isConnected = false;
+    if (change === 'content') f.context.document.getElementById = () => ({});
+    if (change === 'version') f.view.requestVersion++;
+    old(); old();
+    assert.equal(navigations, change === 'none' ? 1 : 0, change);
+  }
+});

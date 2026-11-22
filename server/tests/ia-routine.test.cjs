@@ -6,7 +6,7 @@ const messages = [{ role: 'user', content: routineUserText }];
 const rejected = plan => assert.throws(() => validateProgram(plan, messages), error => error.statusCode === 502);
 
 test('supino com pesos livres exige banco declarado; chão e máquina com apoio próprio não inferem banco', () => {
-  for (const [name, equipment] of [['Supino inclinado com halteres', ['dumbbells']],
+  for (const [name, equipment] of [['Supino reto com halteres', ['dumbbells']],
     ['Supino reto com barra', ['barbell']], ['Supino no Smith', ['machines']]]) {
     const raw = program();
     raw.sessions[0].exercises = [exercise(name, 'chest', 3, equipment)];
@@ -24,6 +24,28 @@ test('supino com pesos livres exige banco declarado; chão e máquina com apoio 
     raw.sessions[0].exercises = [exercise(name, 'chest', 3, equipment)];
     assert.equal(validateProgram(raw, messages).weeklySummary[0].directPlannedSets, 3);
   }
+});
+
+test('banco genérico não confirma regulagem de inclinação e peso corporal não confirma fixação', () => {
+  for (const [name, equipment] of [
+    ['Flexão nórdica assistida na polia', ['cables']],
+    ['Nordic curl', ['bodyweight']],
+    ['Elevação de pernas suspensas', ['bodyweight']],
+    ['Barra fixa', ['bodyweight']],
+    ['Crucifixo inclinado com halteres', ['dumbbells', 'bench']],
+  ]) {
+    const raw = program();
+    raw.sessions = [{ day: 'monday', exercises: [exercise(name, 'hamstrings', 2, equipment)] }];
+    assert.throws(() => validateProgram(raw, messages), error => error.statusCode === 502);
+  }
+  const raw = program();
+  raw.context.equipmentQuote = 'Tenho halteres e banco ajustável'; raw.context.equipment = ['dumbbells', 'bench'];
+  raw.sessions = [{ day: 'monday', exercises: [exercise('Supino inclinado com halteres', 'chest', 2, ['dumbbells', 'bench'])] }];
+  assert.ok(validateProgram(raw, [{ role: 'user', content: routineUserText + ' Tenho halteres e banco ajustável' }]));
+  raw.sessions[0].exercises[0].name = 'Remada com halteres com tronco inclinado';
+  raw.sessions[0].exercises[0].equipment = ['dumbbells']; raw.context.equipment = ['dumbbells'];
+  raw.context.equipmentQuote = 'Tenho halteres';
+  assert.ok(validateProgram(raw, [{ role: 'user', content: routineUserText + ' Tenho halteres' }]));
 });
 
 test('menção genérica à academia não inventa banco fora da lista explícita de equipamentos', () => {

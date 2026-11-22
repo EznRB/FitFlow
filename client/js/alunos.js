@@ -211,6 +211,7 @@ const AlunosView = {
           <p id="aluno-planos-status" class="management-help" role="status" aria-live="polite">Consultando planos ativos. Os outros campos podem ser preenchidos enquanto isso.</p>
           <button id="aluno-planos-retry" class="btn btn-secondary" type="button" hidden>Consultar planos novamente</button>
         </div></fieldset>
+        <button type="submit" hidden>Criar matrícula</button>
       </form>
     `;
 
@@ -326,6 +327,7 @@ const AlunosView = {
           <label for="input-aluno-telefone">Telefone</label>
           <input type="tel" id="input-aluno-telefone" autocomplete="tel" value="${FitFlowSecurity.escapeHtml(aluno.phone || '')}">
         </div></div></fieldset>
+        <button type="submit" hidden>Salvar alterações</button>
       </form>
     `;
 

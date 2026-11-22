@@ -109,6 +109,15 @@ const API = {
           const error = new Error(data?.message || `O servidor não conseguiu atender a solicitação (HTTP ${response.status}). Tente novamente.`);
           error.status = response.status;
           error.data = data;
+          if (response.status === 429) {
+            const retryAfter = response.headers?.get?.('Retry-After');
+            if (typeof retryAfter === 'string' && /^[0-9]+$/.test(retryAfter)) {
+              const seconds = Number(retryAfter);
+              if (Number.isInteger(seconds) && seconds >= 1 && seconds <= 86400) {
+                error.retryAfterSeconds = seconds;
+              }
+            }
+          }
           throw error;
         }
 

@@ -69,17 +69,19 @@ const AlunoPainelView = {
     const d = this.dados;
     const dias = d.mensalidade.diasRestantes;
     const restante = dias == null ? '—' : dias < 0 ? 'Vencida' : dias === 0 ? 'Vence hoje' : `${AlunoUI.number(dias)} dias`;
-    const stats = [ ['aluno-mensalidade', 'Vigência do plano', restante, 'Ver mensalidade'], ['aluno-checkin', 'Presenças neste mês', AlunoUI.number(d.checkins.totalMes), 'Ver presenças'], ['aluno-treino', 'Fichas ativas', AlunoUI.number(d.treinos.length), 'Ver fichas'] ];
+    const trainingRestricted = d.trainingAccess?.allowed === false;
+    const stats = [ ['aluno-mensalidade', 'Vigência do plano', restante, 'Ver mensalidade'], ['aluno-checkin', 'Presenças neste mês', AlunoUI.number(d.checkins.totalMes), 'Ver presenças'], ['aluno-treino', trainingRestricted ? 'Acesso às fichas' : 'Fichas ativas', trainingRestricted ? 'Restrito' : AlunoUI.number(d.treinos.length), trainingRestricted ? 'Ver orientação' : 'Ver fichas'] ];
     const cards = stats.map(([page, label, value, action]) => `<button type="button" class="ff-student-stat" data-action="navigate" data-page="${page}"><span class="ff-student-stat-label">${label}</span><strong>${value}</strong><span class="ff-student-stat-link">${action}<i data-lucide="arrow-up-right" aria-hidden="true"></i></span></button>`).join('');
     container.innerHTML = AlunoUI.heading('Sua rotina', `Olá, ${String(d.perfil.nome).split(' ')[0]}`, 'Sua ficha, seus registros e a situação da matrícula em um só lugar.') + this._renderAlertas(d.alertas) + `<div class="ff-student-stats">${cards}</div>
       <section class="ff-student-start"><div><span class="ff-student-eyebrow">Registro do treino</span><h3>Uma sessão, série por série</h3><p>Registre carga, repetições e esforço percebido durante o treino. Os registros confirmados compõem sua evolução.</p></div><button type="button" class="btn btn-primary" data-action="sessions"><i data-lucide="play" aria-hidden="true"></i>Abrir sessões</button></section>
-      <div class="ff-student-columns">${this._renderTreinoResumo(d.treinos)}${this._renderCheckinsRecentes(d.checkins.recentes)}</div>`;
+      <div class="ff-student-columns">${this._renderTreinoResumo(d.treinos, d.trainingAccess)}${this._renderCheckinsRecentes(d.checkins.recentes)}</div>`;
     AlunoUI.bind(container, { navigate: button => App.navigateTo(button.dataset.page), sessions: () => App.navigateTo('sessoes'), workout: () => App.navigateTo('aluno-treino') });
   },
   _renderAlertas(alertas) {
     return (alertas || []).map(a => `<div class="ff-student-notice ${a.severidade === 'critico' ? 'ff-student-notice-error' : ''}" role="status"><i data-lucide="info" aria-hidden="true"></i><span>${AlunoUI.escape(a.mensagem)}</span></div>`).join('');
   },
-  _renderTreinoResumo(treinos) {
+  _renderTreinoResumo(treinos, access) {
+    if (access?.allowed === false) return `<section class="ff-student-section"><h3>Ficha atual</h3>${AlunoUI.empty('Consulta de fichas indisponível', access.reason || 'Consulte a administração para verificar o acesso à sua ficha.')}<button type="button" class="btn btn-secondary" data-action="navigate" data-page="aluno-mensalidade">Ver mensalidade</button></section>`;
     return `<section class="ff-student-section"><h3>Ficha atual</h3>${treinos.length ? `<h4>${AlunoUI.escape(treinos[0].nome)}</h4><p>${AlunoUI.escape(treinos[0].descricao || 'Exercícios e orientações cadastrados pelo seu instrutor.')}</p><div class="ff-student-detail">${AlunoUI.number(treinos[0].qtdExercicios)} exercícios · ${AlunoUI.escape(treinos[0].instrutor)}</div><button type="button" class="btn btn-secondary" data-action="workout">Consultar ficha</button>` : AlunoUI.empty('Nenhuma ficha ativa', 'Peça ao seu instrutor uma ficha adequada ao seu contexto.')}</section>`;
   },
   _renderCheckinsRecentes(checkins) {
@@ -100,12 +102,14 @@ const AlunoTreinoView = {
       draft: { weight: '', reps: '', notes: '' }, pending: null, reviewRequired: false, reviewed: false, notice: '' });
     return this.loadDrafts.get(exerciseId);
   },
-  inicializar() { return AlunoUI.load(this, 'aluno-treino-container', 'Carregando suas fichas…', async () => (await API.get('/aluno/painel', { timeoutMs: 15000 })).data, (container, data) => { this.dados = data; this.bloqueado = data.perfil.status !== 'active'; this.renderizar(container); }); },
+  inicializar() { return AlunoUI.load(this, 'aluno-treino-container', 'Carregando suas fichas…', async () => (await API.get('/aluno/painel', { timeoutMs: 15000 })).data, (container, data) => { this.dados = data; this.bloqueado = data.perfil.status !== 'active' || data.trainingAccess?.allowed === false; this.renderizar(container); }); },
   renderizar(container) {
     const d = this.dados;
+    const trainingRestricted = d.trainingAccess?.allowed === false;
+    const treinos = trainingRestricted ? [] : d.treinos;
     container.innerHTML = AlunoUI.heading('Orientação do instrutor', 'Suas fichas de treino', 'Consulte a prescrição. Para acompanhar cada série e seu volume, use Sessões e séries.') +
-      (this.bloqueado ? AlunoUI.blocked('Matrícula indisponível para novos registros. Consulte a administração.') : '') +
-      (d.treinos.length ? `<div class="ff-student-toolbar"><button type="button" class="btn btn-primary" data-action="sessions">Abrir sessões e séries</button></div>` + d.treinos.map(t => `<section class="aluno-treino-card"><header class="aluno-treino-header"><div><h3>${AlunoUI.escape(t.nome)}</h3>${t.descricao ? `<p>${AlunoUI.escape(t.descricao)}</p>` : ''}</div><div class="treino-meta">${AlunoUI.escape(t.instrutor)}<br>Ficha de ${AlunoUI.date(t.criadoEm)}</div></header><div class="aluno-treino-body">${t.exercicios.map((ex, i) => this._renderExercicio(ex, i)).join('')}</div></section>`).join('') : AlunoUI.empty('Nenhuma ficha disponível', 'Se sua matrícula estiver ativa, peça ao instrutor para cadastrar uma ficha.'));
+      (this.bloqueado || trainingRestricted ? AlunoUI.blocked(d.trainingAccess?.reason || 'Matrícula indisponível para novos registros. Consulte a administração.') : '') +
+      (treinos.length ? `<div class="ff-student-toolbar"><button type="button" class="btn btn-primary" data-action="sessions">Abrir sessões e séries</button></div>` + treinos.map(t => `<section class="aluno-treino-card"><header class="aluno-treino-header"><div><h3>${AlunoUI.escape(t.nome)}</h3>${t.descricao ? `<p>${AlunoUI.escape(t.descricao)}</p>` : ''}</div><div class="treino-meta">${AlunoUI.escape(t.instrutor)}<br>Ficha de ${AlunoUI.date(t.criadoEm)}</div></header><div class="aluno-treino-body">${t.exercicios.map((ex, i) => this._renderExercicio(ex, i)).join('')}</div></section>`).join('') : trainingRestricted ? AlunoUI.empty('Consulta de fichas indisponível', 'Os registros foram preservados. Consulte a administração para verificar seu acesso.') : AlunoUI.empty('Nenhuma ficha disponível', 'Se sua matrícula estiver ativa, peça ao instrutor para cadastrar uma ficha.'));
     AlunoUI.bind(container, { sessions: () => App.navigateTo('sessoes'), load: button => this.abrirRegistroCarga(Number(button.dataset.exerciseId), button.dataset.exerciseName) });
   },
   _renderExercicio(ex, idx) {

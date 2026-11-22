@@ -71,13 +71,18 @@ class AlunoPainelService {
     // 1. Busca o perfil do aluno
     const aluno = await this._getStudentByUserId(userId);
 
+    let trainingAccess = { allowed: true, reason: null };
+    try {
+      businessRules.validateWorkoutView(aluno);
+    } catch (error) {
+      if (!(error instanceof AppError) || !error.isOperational || error.statusCode !== 403) throw error;
+      trainingAccess = { allowed: false, reason: error.message };
+    }
+
     // 2. Executa todas as consultas em paralelo para máxima performance
     const [treinos, checkinsRecentes, ultimoPagamento, statsCheckins] = await Promise.all([
       // Treinos ativos com exercícios e última carga (só busca se não estiver bloqueado)
-      (async () => {
-        try {
-          businessRules.validateWorkoutView(aluno);
-          return this.db.workout.findMany({
+      trainingAccess.allowed ? this.db.workout.findMany({
             where: { studentId: aluno.id, active: true },
             select: {
               id: true, name: true, description: true, createdAt: true,
@@ -98,12 +103,7 @@ class AlunoPainelService {
               instructor: { select: { name: true } },
             },
             orderBy: { createdAt: 'desc' },
-          });
-        } catch (e) {
-          // Se falhou na validação da regra de negócio, retorna array vazio (treino bloqueado)
-          return [];
-        }
-      })(),
+          }) : [],
 
       // Últimos 10 check-ins
       this.db.checkin.findMany({
@@ -138,7 +138,7 @@ class AlunoPainelService {
     const mensalidade = this._calcularMensalidade(aluno, ultimoPagamento);
 
     // 4. Monta alertas dinâmicos
-    const alertas = this._gerarAlertas(aluno, mensalidade, treinos);
+    const alertas = this._gerarAlertas(aluno, mensalidade, treinos, trainingAccess);
 
     // 5. Retorna objeto consolidado
     return {
@@ -156,6 +156,7 @@ class AlunoPainelService {
         } : null,
       },
       mensalidade,
+      trainingAccess,
       treinos: treinos.map(t => ({
         id: t.id,
         nome: t.name,
@@ -394,7 +395,7 @@ class AlunoPainelService {
    * @param {Array} treinos - Treinos ativos do aluno
    * @returns {Array} Lista de alertas com tipo e mensagem
    */
-  _gerarAlertas(aluno, mensalidade, treinos) {
+  _gerarAlertas(aluno, mensalidade, treinos, trainingAccess = { allowed: true, reason: null }) {
     const alertas = [];
 
     // Alerta crítico: bloqueio por inadimplência
@@ -403,6 +404,15 @@ class AlunoPainelService {
         tipo: 'bloqueio',
         severidade: 'critico',
         mensagem: 'Sua matrícula está bloqueada por inadimplência. Procure a recepção para regularizar.',
+        icone: 'alert-triangle',
+      });
+    }
+
+    if (!trainingAccess.allowed && aluno.status !== 'blocked') {
+      alertas.push({
+        tipo: 'bloqueio',
+        severidade: 'critico',
+        mensagem: trainingAccess.reason,
         icone: 'alert-triangle',
       });
     }
@@ -418,7 +428,7 @@ class AlunoPainelService {
     }
 
     // Alerta de mensalidade vencida (mas ainda não bloqueado)
-    if (mensalidade.statusVisual === 'vencido' && aluno.status !== 'blocked') {
+    if (mensalidade.statusVisual === 'vencido' && aluno.status !== 'blocked' && trainingAccess.allowed) {
       alertas.push({
         tipo: 'vencimento',
         severidade: 'alerta',
@@ -428,7 +438,7 @@ class AlunoPainelService {
     }
 
     // Alerta: nenhum treino ativo
-    if (treinos.length === 0) {
+    if (trainingAccess.allowed && treinos.length === 0) {
       alertas.push({
         tipo: 'treino',
         severidade: 'info',

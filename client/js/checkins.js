@@ -94,6 +94,13 @@ const CheckinsView = {
       tbody.innerHTML = '<tr><td colspan="5"><div class="management-list-state" role="alert"><h3>Período inválido</h3><p>A data inicial deve preceder a data final. Corrija as datas acima para consultar presenças.</p></div></td></tr>';
       return;
     }
+    // Keep keyboard focus on a stable node before replacing a retry/action
+    // control. Do not reclaim it after the request: the user may move away.
+    const focused = document.activeElement;
+    if (focused && tbody.contains(focused)) {
+      tbody.setAttribute('tabindex', '-1');
+      tbody.focus();
+    }
     tbody.innerHTML = '<tr><td colspan="5" role="status">Carregando presenças…</td></tr>';
     try {
       const params = new URLSearchParams({ incluirCancelados: 'true' });
@@ -125,7 +132,9 @@ const CheckinsView = {
       tbody.onclick = event => {
         if (!this.atual(context) || request !== this.listaRequest || document.getElementById('checkins-table-body') !== tbody) return;
         const button = event.target?.closest?.('[data-checkin-retry]'); if (!button || !tbody.contains(button)) return;
-        button.disabled = true; this.carregarKPIs(); return this.carregarLista();
+        // carregarLista replaces the control and invalidates this request's
+        // handler synchronously, retaining duplicate-click protection.
+        this.carregarKPIs(); return this.carregarLista();
       };
     }
   },
