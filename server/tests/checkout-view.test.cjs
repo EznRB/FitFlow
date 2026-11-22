@@ -99,3 +99,21 @@ test('falha do SDK permite montar novamente a mesma compra sem novo POST', async
   assert.equal(h.mounts[0].settings.initialization.amount, 150);
   assert.equal(h.nodes.get('checkout-retry').hidden, true);
 });
+
+
+test('erro assíncrono do Brick oferece recuperação antes de qualquer envio', async () => {
+  const h = harness(); await h.view.render(h.nodes.get('checkout-container')); await h.view.begin();
+  h.mounts[0].settings.callbacks.onError({ type: 'render_error' });
+  assert.equal(h.nodes.get('checkout-retry').hidden, false);
+  assert.equal(h.calls.length, 1);
+});
+
+test('erro do Brick após resultado incerto preserva consulta e não oferece nova cobrança', async () => {
+  const h = harness(); await h.view.render(h.nodes.get('checkout-container')); await h.view.begin();
+  h.context.API.post = async () => { throw new Error('Resposta perdida'); };
+  await assert.rejects(h.mounts[0].settings.callbacks.onSubmit({ formData: {} }));
+  h.mounts[0].settings.callbacks.onError({ type: 'network_error' });
+  assert.equal(h.nodes.get('checkout-retry').hidden, true);
+  assert.equal(h.nodes.get('checkout-refresh').hidden, false);
+  assert.match(h.nodes.get('checkout-feedback').textContent, /consulte/i);
+});
