@@ -88,6 +88,18 @@ const CheckoutView = {
     for (const controller of session.controllers) { session.controllers.delete(controller); try { await controller.unmount(); } catch {} }
     session.statusPaymentId = null;
   },
+  paymentFormError(session) {
+    if (!this.current(session) || session.submitting || session.purchase?.settled || session.purchase?.requiresReview) return;
+    const purchase = session.purchase;
+    const rejected = ['rejected', 'cancelled'].includes(purchase?.attemptState);
+    const retrySafe = rejected || (!session.attemptKey && !purchase?.paymentId && !purchase?.attemptState);
+    document.getElementById('checkout-retry').hidden = !retrySafe;
+    if (retrySafe) this.feedback(session, 'Não foi possível carregar o formulário. Verifique sua conexão ou bloqueadores e tente novamente.');
+    else {
+      document.getElementById('checkout-refresh').hidden = false;
+      this.feedback(session, 'O resultado ainda não foi confirmado. Consulte a situação antes de tentar outro pagamento.');
+    }
+  },
   async mountPayment(session) {
     if (!this.current(session) || session.mounting) return;
     session.mounting = true;
@@ -101,13 +113,13 @@ const CheckoutView = {
         initialization: { amount: Number(session.purchase.amount), payer: { email: session.config.buyerEmail } },
         customization: { paymentMethods: { creditCard: 'all', debitCard: 'all', bankTransfer: ['pix'], maxInstallments: 1 } },
         callbacks: { onReady: () => this.feedback(session, 'Escolha cartão ou Pix para pagar.'),
-          onError: () => this.feedback(session, 'Não foi possível carregar o formulário. Verifique sua conexão ou bloqueadores e tente novamente.'),
+          onError: () => this.paymentFormError(session),
           onSubmit: ({ selectedPaymentMethod, formData }) => this.submit(session, { selectedPaymentMethod, formData }) }
       });
       if (!this.current(session)) { await controller.unmount(); return; }
       session.controllers.add(controller);
     } catch (error) {
-      if (this.current(session)) document.getElementById('checkout-retry').hidden = false;
+      this.paymentFormError(session);
       throw error;
     } finally { session.mounting = false; }
   },
