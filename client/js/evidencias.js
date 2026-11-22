@@ -354,7 +354,11 @@ const EvidenciasView = {
     } catch (error) {
       if (!this.ownsChat(context)) return;
       state.pending = false; state.failed = true;
-      context.status.textContent = `${error.status === 429 ? 'Limite temporário do assistente. Aguarde antes de tentar novamente.' : error.message || 'Não foi possível obter a resposta.'} Sua mensagem foi preservada.`;
+      const retryDelay = error.retryAfterSeconds;
+      const quotaMessage = Number.isSafeInteger(retryDelay) && retryDelay >= 1 && retryDelay <= 86400
+        ? `Limite temporário do assistente. Aguarde pelo menos ${retryDelay} ${retryDelay === 1 ? 'segundo' : 'segundos'} antes de tentar novamente. A quota pode continuar indisponível.`
+        : 'Limite temporário do assistente. Aguarde antes de tentar novamente.';
+      context.status.textContent = `${error.status === 429 ? quotaMessage : error.message || 'Não foi possível obter a resposta.'} Sua mensagem foi preservada.`;
     } finally { if (this.ownsChat(context)) this.chatControls(context); }
   },
 

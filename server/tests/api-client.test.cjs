@@ -22,6 +22,32 @@ test('HTML 502 mantém status HTTP e não acusa falta de internet', async () => 
   const c = client(async () => new Response('<html>Gateway error</html>', { status: 502 }));
   await assert.rejects(c.api.get('/teste'), e => e.status === 502 && !e.message.includes('internet'));
 });
+
+test('429 propaga Retry-After inteiro em segundos nos limites permitidos', async () => {
+  for (const value of ['1', '60', '86400']) {
+    const c = client(async () => new Response('{"message":"Aguarde"}', { status: 429, headers: { 'Retry-After': value } }));
+    await assert.rejects(c.api.get('/teste'), error => error.status === 429 && error.message === 'Aguarde' && error.retryAfterSeconds === Number(value));
+    assert.equal(c.events.length, 0);
+  }
+});
+
+test('Retry-After inválido ou ausente não produz prazo de espera', async () => {
+  const invalid = ['', '0', '-1', '+1', '1.5', '1e2', '86401', '999999999999999999999999', 'Wed, 21 Oct 2015 07:28:00 GMT', ' 60 ', '60s', null];
+  for (const value of invalid) {
+    const c = client(async () => ({ ok: false, status: 429, text: async () => '{}', headers: { get: () => value } }));
+    await assert.rejects(c.api.get('/teste'), error => error.status === 429 && !Object.hasOwn(error, 'retryAfterSeconds'));
+  }
+  const c = client(async () => ({ ok: false, status: 429, text: async () => '{}' }));
+  await assert.rejects(c.api.get('/teste'), error => error.status === 429 && !Object.hasOwn(error, 'retryAfterSeconds'));
+});
+
+test('Retry-After em outros erros não altera autenticação nem propaga prazo', async () => {
+  for (const status of [401, 403, 503]) {
+    const c = client(async () => new Response('{}', { status, headers: { 'Retry-After': '60' } }));
+    await assert.rejects(c.api.get('/teste'), error => error.status === status && !Object.hasOwn(error, 'retryAfterSeconds'));
+    assert.equal(c.events.length, status === 401 ? 1 : 0);
+  }
+});
 test('204 é válido; erro de rede tem status zero', async () => {
   assert.equal(await client(async () => new Response(null, { status: 204 })).api.get('/teste'), null);
   await assert.rejects(client(async () => { throw new TypeError('fetch failed'); }).api.get('/teste'), e => e.status === 0);

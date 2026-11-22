@@ -59,6 +59,21 @@ test('quota failure retains typed message and retry does not duplicate a user tu
   ui.submit(); await settle(); assert.equal(h.calls[1].messages.length, 1); assert.equal(h.view.chatState.messages.length, 2);
 });
 
+test('quota feedback uses only a validated numeric retry delay and preserves manual retry state', async () => {
+  for (const delay of [1, 60, 86400, undefined, null, '60', 0, -1, 1.5, 86401, NaN, Infinity]) {
+    const h = fixture(), ui = await h.mount();
+    h.context.API.post = async (url, body) => { h.calls.push(JSON.parse(JSON.stringify(body))); throw Object.assign(new Error('Quota'), { status: 429, retryAfterSeconds: delay }); };
+    ui.set('Como progredir?'); ui.submit(); await settle();
+    const expected = Number.isSafeInteger(delay) && delay >= 1 && delay <= 86400
+      ? `Limite temporário do assistente. Aguarde pelo menos ${delay} ${delay === 1 ? 'segundo' : 'segundos'} antes de tentar novamente. A quota pode continuar indisponível. Sua mensagem foi preservada.`
+      : 'Limite temporário do assistente. Aguarde antes de tentar novamente. Sua mensagem foi preservada.';
+    assert.equal(ui.status.textContent, expected, `retry delay: ${String(delay)}`);
+    assert.equal(h.calls.length, 1); assert.equal(ui.input.value, 'Como progredir?'); assert.equal(ui.consent.checked, true);
+    assert.equal(ui.send.disabled, false); assert.equal(ui.input.readOnly, false); assert.equal(h.view.chatState.messages.length, 1);
+    ui.submit(); await settle(); assert.equal(h.calls.length, 2); assert.equal(h.calls[1].messages.length, 1); assert.equal(h.view.chatState.messages.length, 1);
+  }
+});
+
 test('rendered plain text rejects model markup and arbitrary source URLs; routine drafts are explicitly marked', async () => {
   const h = fixture(), ui = await h.mount(); const markup = '<img src=x onerror=alert(1)>\nSegunda: treino A';
   h.context.API.post = async () => ({ data: { message: markup, generatedByAI: true, kind: 'routine_draft', sources: [{ id: 'valid', url: 'javascript:alert(1)' }, { id: '__proto__', url: 'https://evil.test' }] } });
