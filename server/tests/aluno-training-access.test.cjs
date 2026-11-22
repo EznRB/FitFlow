@@ -73,3 +73,18 @@ test('somente AppError operacional 403 de validação se transforma em bloqueio'
 test('geração de alertas sem argumento de acesso preserva contrato anterior', () => {
   assert.equal(fixture().service._gerarAlertas({ status: 'active' }, { statusVisual: 'em_dia' }, []).some(a => a.tipo === 'treino'), true);
 });
+
+test('bloqueio por vencimento não recomenda evitar um bloqueio já vigente', async () => {
+  const result = await fixture({ expired: true }).service.getPainelCompleto(7);
+  assert.equal(result.trainingAccess.allowed, false);
+  assert.equal(result.alertas.filter(a => a.tipo === 'bloqueio').length, 1);
+  assert.equal(result.alertas.some(a => a.mensagem.includes('evitar bloqueio')), false);
+});
+
+test('vencimento até cinco dias com acesso permitido mantém aviso preventivo', async () => {
+  const { service, aluno } = fixture();
+  aluno.planEndDate = new Date(Date.now() - 2 * 86400000);
+  const result = await service.getPainelCompleto(7);
+  assert.deepEqual(result.trainingAccess, { allowed: true, reason: null });
+  assert.equal(result.alertas.some(a => a.mensagem.includes('evitar bloqueio')), true);
+});

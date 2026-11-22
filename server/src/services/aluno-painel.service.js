@@ -428,7 +428,7 @@ class AlunoPainelService {
     }
 
     // Alerta de mensalidade vencida (mas ainda não bloqueado)
-    if (mensalidade.statusVisual === 'vencido' && aluno.status !== 'blocked') {
+    if (mensalidade.statusVisual === 'vencido' && aluno.status !== 'blocked' && trainingAccess.allowed) {
       alertas.push({
         tipo: 'vencimento',
         severidade: 'alerta',
