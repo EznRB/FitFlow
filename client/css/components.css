@@ -458,6 +458,10 @@ textarea {
 }
 
 /* Text reports should fit the workspace before requiring horizontal scrolling. */
+#app-screen #relatorios-container .reports-table {
+  min-width: 760px;
+}
+
 #app-screen #relatorios-container .reports-table th,
 #app-screen #relatorios-container .reports-table td {
   white-space: normal;
@@ -469,6 +473,7 @@ textarea {
 @media print {
   #app-screen #relatorios-container .reports-table {
     width: 100%;
+    min-width: 0;
     table-layout: fixed;
   }
   #app-screen #relatorios-container .reports-table th,
