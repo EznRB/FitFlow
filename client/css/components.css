@@ -457,6 +457,27 @@ textarea {
   line-height: 1.5;
 }
 
+/* Text reports should fit the workspace before requiring horizontal scrolling. */
+#app-screen #relatorios-container .reports-table th,
+#app-screen #relatorios-container .reports-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 7ch;
+  max-width: 26ch;
+}
+
+@media print {
+  #app-screen #relatorios-container .reports-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+  #app-screen #relatorios-container .reports-table th,
+  #app-screen #relatorios-container .reports-table td {
+    min-width: 0;
+    max-width: none;
+  }
+}
+
 .table tbody tr {
   transition: background var(--transition-fast);
 }
