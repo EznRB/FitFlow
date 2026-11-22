@@ -14,6 +14,8 @@ As fontes abaixo registram gates já executados; esta consolidação documental 
 
 ## Complementos verificados em novembro
 
+- Treinamento em 22/11: [preferência semanal validada e comparação explícita](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md), com nova amostra real de três sessões entre seis dias disponíveis. CI 965 aprovados/um ignorado; produção/saúde/assets conferidos. Não certifica dose ótima nem resolve os gates de aparelho, rotação ou auditoria abaixo.
+
 - Banco/login: [edição de e-mail normalizada e publicada](PATCH_EMAIL_2026_11_12.md), com login real PostgreSQL e gates HTTPS. Consulta agregada não encontrou contas existentes precisando de reparo.
 - Integridade/persistência: [FK do catálogo alinhada e migration aplicada](PATCH_CATALOGO_2026_11_12.md); [datas impossíveis recusadas pelo serviço e HTTP público](PATCH_DATAS_2026_11_12.md). Históricos e migrations anteriores preservados.
 - Instalação reproduzível: [bootstrap PostgreSQL para banco vazio](DESENVOLVIMENTO.md#primeira-instalação-postgresql-em-banco-vazio), integrado pela PR 7, com gate real de seis migrations/15 tabelas, recusa de banco ocupado e remoção da fixture.

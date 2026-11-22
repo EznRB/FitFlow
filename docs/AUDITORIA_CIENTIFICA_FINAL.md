@@ -58,6 +58,8 @@ Verificação do código atual: suíte local 309/309, zero falhas/ignorados, rev
 
 ### 4. Evoluir comparabilidade entre revisões de ficha
 
+**Atualização de 22/11:** a PR 18 acrescentou [comparação opcional de registros escolhidos](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md), com confirmação de contexto, curvas/tabelas separadas e filtro comum de repetições. Não une grupos, volumes ou históricos por nome/catálogo. A limitação de identidade estável abaixo permanece; a nova função compara os registros explicitamente escolhidos, sem certificar equivalência técnica.
+
 **Melhoria funcional.** `client/js/progressao.js:22` agrupa somente pelo mesmo `exerciseId`. `server/src/repositories/treinos.repository.js:41` cria uma nova ficha/exercícios após edição. O histórico é preservado, mas a curva fica separada mesmo quando o movimento continua equivalente; a UI informa a separação (`progressao.js:73`). Uma identidade estável de movimento/variante, com equipamento e contexto, permitiria comparar revisões mediante confirmação profissional. Unir somente pelo nome seria inadequado.
 
 Técnica, amplitude, assistência e descanso real ainda dependem de notas/observação; não há controle estruturado completo desses fatores. Aumento de carga isolado não comprova evolução comparável.
