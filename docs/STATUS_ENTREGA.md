@@ -1,4 +1,10 @@
-# Estado da entrega — atualizado em 21/11/2026
+# Estado da entrega — atualizado em 22/11/2026
+
+## Estado atual — versão integrada em 22/11
+
+A PR 2 foi integrada em `e9b7f12`, após CI aprovada e inspeção dos fluxos alterados. Produção `dpl_CaXT7zXBzbpSUnrSPkiMezM787v3` READY, saúde/banco e quatro assets conferidos contra a main. O checkout anterior foi preservado. A nova conta de apresentação recebeu matrícula normal e ficha fictícia pelo instrutor; duas séries foram sincronizadas e a sessão restaurada no site público, com 440 kg·reps e sem duplicação observada. [Evidência e limites atuais](VALIDACAO_DEMONSTRACAO_2026_11_22.md).
+
+A meta permanece ativa: ainda faltam estados da revisão geral, telefone físico, confirmação da revogação Groq e lacunas específicas de auditoria. A apresentação individual será elaborada após estabilização. As seções seguintes preservam os marcos anteriores; menções antigas à PR 2 em rascunho descrevem aquele momento, não o estado atual.
 
 O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou melhorias de confirmação/recuperação na nutrição, no registro avulso e na presença do aluno, além da expansão do histórico. A atualização seguinte acrescentou recuperação da consulta de planos na matrícula, com bloqueio até selecionar um plano ativo confirmado. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
