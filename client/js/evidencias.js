@@ -129,6 +129,7 @@ const EvidenciasView = {
       || !enums(context.equipment, labels.equipment) || !Object.hasOwn(labels.experience, context.experience)
       || !Object.hasOwn(labels.goals, context.goal) || context.adultHealthyConfirmed !== true
       || !Array.isArray(program.sessions) || !program.sessions.length || program.sessions.length > 6
+      || (Object.hasOwn(context, 'desiredSessions') && (!integer(context.desiredSessions, 1, 6) || context.desiredSessions !== program.sessions.length))
       || !Array.isArray(program.weeklySummary) || !program.weeklySummary.length || program.weeklySummary.length > 10
       || !Array.isArray(program.sessionEstimates) || program.sessionEstimates.length !== program.sessions.length) return null;
     const days = new Set(), groups = new Set(), estimates = new Map(), coverageSessions = [];
@@ -215,6 +216,7 @@ const EvidenciasView = {
     datum(context, 'Experiência interpretada', labels.experience[program.context.experience]);
     datum(context, 'Tempo disponível', `${program.context.minutesPerSession} min / sessão`);
     datum(context, 'Dias disponíveis', program.context.availableDays.map(day => labels.days[day]).join(', '));
+    if (Number.isSafeInteger(program.context.desiredSessions) && program.context.desiredSessions >= 1 && program.context.desiredSessions <= 6) datum(context, 'Sessões solicitadas', `${program.context.desiredSessions} por semana`);
     datum(context, 'Equipamentos informados', program.context.equipment.map(item => labels.equipment[item]).join(', '));
     make('p', 'ia-routine-context-help', 'Se alguma interpretação estiver errada, corrija no chat.', doc);
     for (const session of program.sessions) {
