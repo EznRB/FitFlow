@@ -445,6 +445,18 @@ textarea {
   color: var(--text-secondary);
 }
 
+#checkins-table-body td:last-child {
+  min-width: 180px;
+  max-width: 300px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#checkins-table-body details p {
+  margin-top: var(--space-1);
+  line-height: 1.5;
+}
+
 .table tbody tr {
   transition: background var(--transition-fast);
 }
