@@ -27,6 +27,18 @@ Pelo perfil instrutor foi criada a ficha **Registro de séries • demonstraçã
 
 ## Limites e próximos gates
 
+### Revisão de ficha e correção da tabela
+
+Pelo instrutor foi salva uma segunda revisão da ficha fictícia, mantendo os parâmetros e alterando somente identificação/notas. A interface confirmou a versão nova ativa e a anterior arquivada. Após novo login do aluno, o caderno ofereceu a revisão 2 para iniciar, preservando a sessão original finalizada, suas duas séries e 440 kg·reps. Nenhum registro antigo de outras contas foi alterado.
+
+A tabela revelou um defeito visual: a descrição não quebrava linha e empurrava status/ações para fora do desktop. Correção CSS `6ed384d`, restrita à primeira coluna de dados, exclui células de estado com colspan. Preview `dpl_6KMLGiyUZ86Tf32BwVBq8MhGddDe` READY:
+
+- Desktop 1280 px: tabela 905,2 px em região de 941 px; status e ações visíveis sem rolagem horizontal.
+- Em 375 px: documento 369 px, região 335 px e conteúdo rolável 709 px. Tab na região focou Ver ficha e rolou até a ação (scrollLeft 374), sem ampliar a página. Viewport restaurado.
+- [Antes](evidence/20261122-ficha-revisao-producao.jpg) · [Desktop corrigido](evidence/20261122-fichas-wrap-desktop.jpg) · [Mobile](evidence/20261122-fichas-wrap-mobile.jpg) · [Ação acessível por teclado](evidence/20261122-fichas-wrap-mobile-acoes.jpg).
+
+Essas capturas da correção são do preview identificado; sua integração será conferida pela PR 13. Não se repetiram testes funcionais sem mudança de comportamento JS/API/banco; a CI automática e a inspeção visual são os gates desta correção CSS.
+
 O teste usa navegador desktop e consulta publicada, não telefone físico nem dispositivo independente sem cache. Não foi simulada indisponibilidade de rede nesta jornada. A primeira sessão é um artefato de demonstração; não comprova progressão biológica ou adequação da dose.
 
 Continuam: demais estados da matriz visual, roteiro físico M01–M14, confirmação pelo titular da revogação da chave Groq exposta, lacunas específicas da auditoria de testes e revisão requisito por requisito. A apresentação individual de 20–30 minutos será elaborada após estabilizar esses fluxos; a integração da PR não conclui o objetivo.
