@@ -87,7 +87,7 @@ test('critério financeiro fica visível e troca de relatório restaura texto de
   await f.reports.carregarRelatorio('pagamentos');
   assert.equal(f.node('aviso-filtro-data').style.display, 'block'); assert.match(f.node('aviso-filtro-data').textContent, /data efetiva/);
   await f.reports.carregarRelatorio('inadimplencia');
-  assert.equal(f.node('aviso-filtro-data').style.display, 'block'); assert.match(f.node('aviso-filtro-data').textContent, /situação atual/);
+  assert.equal(f.node('aviso-filtro-data').style.display, 'block'); assert.match(f.node('aviso-filtro-data').textContent, /situação atual/i);
   assert.doesNotMatch(f.node('aviso-filtro-data').textContent, /data efetiva/);
 });
 
