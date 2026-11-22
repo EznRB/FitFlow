@@ -50,6 +50,50 @@ function clarify(fields, reason = 'conflicting_context') {
 }
 
 function normalized(value) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+// Reconhece apenas preferências semanais explícitas. Dias disponíveis não
+// determinam frequência. Texto interrogativo, negativo ou ambíguo é reconfirmado.
+function frequencyPreference(messages) {
+  const counts = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7 };
+  const count = '(?:[1-7]|um|uma|dois|duas|tres|quatro|cinco|seis|sete)';
+  const pattern = new RegExp(`\\b(${count})(?:\\s*(?:ou|a|ate|[-–])\\s*(${count}))?\\s*(?:x\\s*\\/\\s*semana|(?:vez(?:es)?|sessoes|sessao|treinos?|dias?)\\s*(?:por\\s+semana|semanais|semanal|\\/\\s*semana))\\b`, 'g');
+  let latest = null;
+  for (const message of messages) {
+    if (message.role !== 'user') continue;
+    let hasPriorPreference = Boolean(latest);
+    const candidates = (message.content.match(/(?:[^.!?\n]|\.(?=\d))+(?:[.!?\n]|$)/g) || []).map(value => value.trim()).filter(quote => {
+      const text = normalized(quote);
+      const weekly = /(?:semana|frequencia)/.test(text) && /(?:vezes|sessao|sessoes|treinos?|dias?|\dx|frequencia)/.test(text);
+      const intent = /\b(?:quero|prefiro|pretendo|desejo)\b|\bvou\s+treinar\b/.test(text);
+      const uncertainty = /\b(?:talvez|devo|quantas|nao sei|nao decidi|nao mais|nao consigo|nao vou|nunca|jamais|nem|so consigo)\b/.test(text);
+      const correction = /\b(?:agora|na verdade|correcao|corrigindo|mudei)\b/.test(text);
+      // "Agora posso seis dias" corrige capacidade/disponibilidade, não a
+      // quantidade desejada. Um marcador de correção sozinho não muda intenção.
+      const availability = /\b(?:posso|consigo|tenho|disponiveis|disponibilidade|livres?)\b/.test(text);
+      // Uma preferência anterior não sobrevive silenciosamente a "agora
+      // prefiro três". Sem unidade semanal explícita, reconfirmar; não inferir.
+      const ellipticalCorrection = hasPriorPreference && correction && intent && new RegExp(`\\b${count}\\b`).test(text)
+        && !/\b(?:minutos?|horas?|kg|series|repeticoes|halteres|banco)\b/.test(text);
+      const relevant = (weekly && (intent || uncertainty || (correction && !availability))) || ellipticalCorrection;
+      if (relevant) hasPriorPreference = true;
+      return relevant;
+    });
+    if (candidates.length) latest = candidates;
+  }
+  if (!latest) return null;
+  const values = new Set();
+  for (const quote of latest) {
+    const text = normalized(quote);
+    // Não transformar 3.5 em cinco sessões após segmentar a frase, nem -2
+    // em duas. Quantidades não inteiras/negativas exigem reconfirmação.
+    if (/\d[.,]\d|[-−]\s*\d/.test(text)) clarify(['availability']);
+    if (!plain(quote) || /\?|\b(?:nao|nunca|jamais|nem|talvez|devo|quantas|ainda|acho|se|caso|maximo|minimo|pelo menos|ate|ou|entre|so consigo)\b/.test(text)) clarify(['availability']);
+    const matches = [...text.matchAll(pattern)];
+    if (!matches.length || matches.some(match => match[2])) clarify(['availability']);
+    for (const match of matches) values.add(counts[match[1]] || Number(match[1]));
+  }
+  if (values.size !== 1) clarify(['availability']);
+  return { count: [...values][0], quotes: [...new Set(latest)] };
+}
 function canonicalUserQuote(quote, userTexts) {
   // Autoria tolera somente caixa. Não remover acentos, pontuação ou palavras:
   // "não" jamais vira "nao", e uma paráfrase não vira citação literal.
@@ -164,6 +208,13 @@ function createProgramSchema(messages) {
   const schema = structuredClone(programSchema);
   for (const [field, key] of Object.entries(quoteFields)) {
     schema.properties.context.properties[key] = { ...quoteSchema, enum: choices[field] };
+  }
+  const preference = frequencyPreference(messages);
+  if (preference) {
+    const properties = schema.properties.context.properties;
+    properties.desiredSessions = { type: 'integer', enum: [preference.count] };
+    properties.frequencyQuote = { ...quoteSchema, enum: preference.quotes };
+    schema.properties.context.required.push('desiredSessions', 'frequencyQuote');
   }
   return schema;
 }
@@ -332,7 +383,10 @@ function reviewDeclaredCoverage(sessions) {
 }
 
 function validateContext(value, messages) {
-  if (!keys(value, Object.keys(contextProperties))) invalid();
+  const preference = frequencyPreference(messages);
+  const expected = [...Object.keys(contextProperties), ...(preference ? ['desiredSessions', 'frequencyQuote'] : [])];
+  if (preference && (!Object.hasOwn(value || {}, 'desiredSessions') || !Object.hasOwn(value || {}, 'frequencyQuote'))) clarify(['availability']);
+  if (!keys(value, expected)) invalid();
   let context = value;
   if (!enumArray(context.availableDays, days, 1, 7) || !integer(context.minutesPerSession, 15, 150)
     || !enumArray(context.equipment, equipment) || !Object.hasOwn(experienceLabels, context.experience)
@@ -349,6 +403,13 @@ function validateContext(value, messages) {
     if (original === null) invalid();
     context[name] = original;
   }
+  if (preference) {
+    if (context.desiredSessions !== preference.count) clarify(['availability']);
+    const original = typeof context.frequencyQuote === 'string' && canonicalUserQuote(context.frequencyQuote, preference.quotes);
+    if (original === null || original === false || !preference.quotes.includes(original)) clarify(['availability']);
+    context.frequencyQuote = original;
+    if (context.desiredSessions > Math.min(context.availableDays.length, 6)) clarify(['availability']);
+  }
   checkContextEvidence(context, userTexts);
   checkExplicitContext(context);
   return context;
@@ -359,9 +420,14 @@ function createSessionsSchema(context) {
   if (!variants.length) clarify(['equipment'], 'missing_context');
   const doses = Object.fromEntries(['sets', 'repsMin', 'repsMax', 'rir', 'restSeconds']
     .map(field => [field, structuredClone(exerciseProperties[field])]));
-  return objectSchema({ sessions: arraySchema(objectSchema({ day: enumSchema([...context.availableDays]),
+  const schema = objectSchema({ sessions: arraySchema(objectSchema({ day: enumSchema([...context.availableDays]),
     exercises: arraySchema(objectSchema({ exerciseId: enumSchema(variants.map(variant => variant.id)), ...doses }), 6) }),
   Math.min(context.availableDays.length, 6)) });
+  if (context.desiredSessions !== undefined) {
+    schema.properties.sessions.minItems = context.desiredSessions;
+    schema.properties.sessions.maxItems = context.desiredSessions;
+  }
+  return schema;
 }
 
 function validateProgram(program, messages) {
@@ -369,6 +435,7 @@ function validateProgram(program, messages) {
   const context = validateContext(program.context, messages);
   if (!Array.isArray(program.sessions) || program.sessions.length < 1 || program.sessions.length > context.availableDays.length
     || program.sessions.length > 6 || new Set(program.sessions.map(session => session?.day)).size !== program.sessions.length) invalid();
+  if (context.desiredSessions !== undefined && program.sessions.length !== context.desiredSessions) clarify(['availability']);
   const weekly = new Map();
   const sessionEstimates = [];
   for (const session of program.sessions) {

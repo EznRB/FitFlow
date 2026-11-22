@@ -68,4 +68,3 @@ test('legacy catalog equipment metadata with null entries cannot prevent loading
  assert.match(history.exercises[0].contexts.join(' '), /Halteres/);
  assert.doesNotMatch(history.exercises[0].contexts.join(' '), /undefined|null/);
 });
-
