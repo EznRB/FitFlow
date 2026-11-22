@@ -11,6 +11,12 @@ A implantação `dpl_2TGRvA8Ue7R4MLrFrATApJk58NNX` foi consultada novamente em 2
 
 Permanecem: integração e revisão visual atual das melhorias de IA/UX, jornadas completas da demonstração, validação em telefone físico M01–M14 e comprovação da rotação da chave Groq. Após estabilizar, preparar apresentação individual de 20–30 minutos, demonstração e contingência. Checkout sandbox aprovado não significa habilitação de pagamentos reais.
 
+## Retomada visual — 22/11/2026
+
+O navegador integrado oficial está acessível. A revisão atual de login, chat, nutrição, menu móvel e caderno produziu [capturas novas e correções](RODADA_VISUAL_2026_11_22.md). A rejeição histórica atingia um lançamento de navegador pelo PowerShell, que não foi repetido. A meta existente está ativa; a revisão geral continua parcial e a PR 2 permanece em rascunho até os gates de integração.
+
+No preview foi gerado um rascunho real para cenário fictício de dois dias; a continuação encontrou quota e ficou preservada. Uma tentativa manual posterior respondeu com quinta-feira, 35 minutos e apenas halteres, mantendo objetivo e experiência. A API/UI passaram a exibir o prazo mínimo válido do provedor, sem repetição automática. O painel também diferencia bloqueio de consulta de ausência real de fichas. Busca de alunos por teclado, abertura/cancelamento dos editores e entrada do instrutor foram conferidos. Essas correções estão na branch de desenvolvimento, não certificam a produção nem encerram telefone físico, rotação da chave ou auditoria de segurança.
+
 ## Rodada em revisão
 
 A [PR 2](https://github.com/EznRB/FitFlow/pull/2) continua em rascunho para a revisão visual de IA/UX. A revisão funcional `103b5a8` passou em **882/882 testes locais**, sem falhas ou ignorados, e na [CI em Node 24](https://github.com/EznRB/FitFlow/actions/runs/43105305251). Os patches de dependências também foram publicados separadamente na produção; a integração da main à branch de desenvolvimento não trouxe mudanças adicionais de runtime.
@@ -74,8 +80,8 @@ Na PR 2 permanece a tela de nutrição com fontes FAO diretas, 39 testes de inte
 Rodada publicada em 12/10: contrato de contexto/esclarecimentos do chat corrigido, presenças protegidas contra callbacks/consultas antigas e composição de livro diário. Browser público confirmou restauração do aluno e conversa real: contexto incompleto gerou perguntas controladas, continuação fictícia completa gerou rascunho de segunda/quarta/sexta com 50 minutos disponíveis, fontes e contagens revisáveis. Gates locais e limites em [IA gratuita](IA_GRATUITA.md) e [revisão visual](REVISAO_VISUAL_SISTEMA.md). Documentação consolidada sem apagar as narrativas históricas.
 
 1. Continuar a revisão integral de jornadas e estados da interface; validar as próximas mudanças antes de publicar.
-   - Encerrar o gate visual da PR 2, que inclui a revisão de contagens/categorias do rascunho de dois dias e seleção de exercícios por catálogo; preservar as amostras históricas reprovadas.
-2. Quando o proprietário estiver disponível, configurar conta de teste, token e webhook Mercado Pago. Executar cartão aprovado/rejeitado/pendente, webhook assinado/replay e Pix QR/pendente **sem renovar plano**. Sandbox não comprova liquidação Pix.
+   - Conferir Git/CI e integrar a PR 2 após a inspeção dos fluxos alterados registrada em 22/11; preservar as amostras históricas reprovadas e os limites da revisão global.
+2. Preservar os gates de cartão aprovado/rejeitado/pendente, webhook assinado/replay e Pix QR/pendente já atendidos em sandbox em 21/11. Não repetir cobranças sem risco novo; sandbox não comprova liquidação Pix nem habilita dinheiro real.
 3. Executar o roteiro M01–M14 em aparelho físico e registrar plataforma, implantação e evidências.
 4. Rotacionar a chave Groq exposta anteriormente pelo titular e validar a substituição privada.
 5. Manter os gates das próximas mudanças e a documentação da entrega acadêmica. A integração dos repositórios não encerra a revisão contínua de todas as jornadas e estados.

@@ -6,6 +6,8 @@ Revisão funcional e visual pelo navegador integrado oficial, sem abrir processo
 
 Amostra inicial: preview `9febff4`, deployment `dpl_6M6vSbWvdG55vMPGkqHon4XFWT5x`. Correções de quota: `6ad3377`, CI [44992580566](https://github.com/EznRB/FitFlow/actions/runs/44992580566) aprovada. Separação entre acesso restrito e ausência de fichas: preview `da13721`, deployment `dpl_9DQaXYKfSuiqnpPkfsDRsP8psZ7h`. São previews da PR 2; não atribuir a revisão completa à produção.
 
+Correção final dos avisos conferida no [preview `4644b804`](https://fit-flow-b9m5hwubo-eznrbs-projects.vercel.app/), deployment `dpl_9J8tNiDuuZCh6E6QZgApaMFSUUGw`, com CI [44993131983](https://github.com/EznRB/FitFlow/actions/runs/44993131983) aprovada. Essa conferência também permanece restrita ao preview.
+
 Conta demonstrativa de aluno; nenhum dado corporal real, alteração de matrícula, pagamento ou gravação de simulação foi feito nesta rodada. Credenciais permaneceram no arquivo privado ignorado. Larguras verificadas: viewport padrão desktop, 375×812 e 768×1024. Emulação não prova instalação ou teclado de telefone físico.
 
 ## Passos e evidências aceitas
@@ -23,6 +25,7 @@ Conta demonstrativa de aluno; nenhum dado corporal real, alteração de matrícu
 | 9. Nutrição: edição | Alterar idade para 31 remove a estimativa anterior e desabilita Salvar até novo cálculo. Cenário restaurado para 30 e recalculado, sem persistir. | Observação atual do resultado e do botão pela árvore de acessibilidade. |
 | 10. Caderno | Resposta real diferencia ficha não confirmada por bloqueio de histórico já consultado. Não apagou sessões anteriores. | [Caderno](evidence/20261122-sessoes-tablet-sem-ficha.jpg) |
 | 11. Painel com acesso explícito | Preview `da13721` mostra Restrito e orientação de acesso em vez de declarar zero fichas. A captura ainda contém um aviso preventivo redundante, corrigido na revisão seguinte. | [Estado intermediário](evidence/20261122-painel-acesso-restrito-corrigido.jpg) |
+| 12. Painel e ficha após correção final | Preview `4644b804` mostra um único aviso de bloqueio, sem aviso contraditório de prevenção nem falso zero. A entrada em Meu treino apresenta orientação de acesso restrito e informa que os registros foram preservados. | [Painel final](evidence/20261122-painel-restrito-final.jpg); navegação de Meu treino conferida pela árvore de acessibilidade. |
 
 Capturas transitórias imediatamente após redimensionar que mostraram bitmap antigo foram rejeitadas. As capturas aceitas foram inspecionadas após atualização do layout. Em 375 px: documento 369 px; em 768 px: documento 762 px, sem overflow horizontal do documento nesses estados.
 
@@ -30,10 +33,18 @@ Capturas transitórias imediatamente após redimensionar que mostraram bitmap an
 
 1. **Quota:** `Retry-After` válido (1–86400 segundos, decimal inteiro) passa da API ao aviso do chat. Prazo mínimo, sem garantia de disponibilidade e sem nova chamada automática. Regressões antes/depois: API 8/8 e interface 11/11 após correção; não somar às suítes integrais. Valores ausentes ou inválidos mantêm orientação genérica.
 2. **Consulta das fichas:** contrato `trainingAccess` distingue bloqueio operacional 403 de ausência real. Não consulta fichas bloqueadas; falhas inesperadas ou do banco não são convertidas em vazio. Interface não mostra zero nem exercícios quando a consulta está restrita; motivo escapado e encaminhamento à mensalidade. Backend 7 novos casos + 3 de origem aprovados; UI 3/3, ambos com reprodução anterior da falha.
-3. **Avisos contraditórios:** após observar bloqueio junto de “evitar bloqueio”, o aviso preventivo passou a exigir acesso permitido. Duas regressões novas: vencido bloqueado e vencido dentro da tolerância. A nova captura e a CI dessa revisão ainda precisam ser registradas.
+3. **Avisos contraditórios:** após observar bloqueio junto de “evitar bloqueio”, o aviso preventivo passou a exigir acesso permitido. Duas regressões novas aprovadas: vencido bloqueado e vencido dentro da tolerância. CI 44993131983 aprovada e captura final conferida no preview `4644b804`, com um único aviso de bloqueio e sem falso zero. Meu treino mantém orientação informativa quando o acesso está restrito; históricos foram preservados.
 
 ## Limites e próximos passos
 
+### Ampliação da rodada
+
+- **Continuação real da IA:** depois do intervalo, uma única tentativa manual respondeu à correção para quinta-feira, 35 minutos e somente halteres, preservando hipertrofia e iniciante. Propôs uma sessão estimada em 32 minutos, cinco exercícios de três séries, incluindo supino no chão e remada curvada, sem exigir banco. A mensagem saiu do campo após sucesso. [Contexto atualizado](evidence/20261122-chat-continuacao-desktop.jpg). A falha 429 anterior continua registrada; sucesso posterior não garante disponibilidade permanente nem dose individual adequada.
+- **Gestão:** login administrativo, painel carregado, busca de aluno com ArrowDown/Enter, resultado único, abertura e cancelamento da edição cadastral. Nenhum cadastro foi alterado.
+- **Fichas e catálogo:** a ficha demonstrativa preserva seus três exercícios. O editor carregou 798 entradas; buscar “supino” retornou quatro, distinguindo cadastro local de origem wger. O editor foi cancelado sem salvar revisão. [Editor atual](evidence/20261122-editor-catalogo-desktop.jpg).
+- **Instrutor:** login e lista de alunos carregados; navegação visível limitada a fichas, fundamentos e nutrição. Isso comprova a apresentação desses controles, não substitui testes de autorização do servidor.
+- **Presenças:** resumo e histórico consultados, ambos sem registros atuais; frequência de 30 dias abriu estado vazio confirmado, e fechar devolveu foco ao botão de frequência. [375 px](evidence/20261122-presencas-mobile.jpg), documento 369 px, sem overflow horizontal nesse estado. Nenhuma presença foi criada ou cancelada; erros de rede não foram artificialmente provocados no ambiente publicado.
+
 A organização editorial, contraste entre superfícies e formulários rotulados foram observados nas capturas, sem conclusão de conformidade WCAG. As contagens do rascunho são planejadas, não treino executado; referências associadas não validam a dose individual. A distribuição gerada sinalizou grupos sem classificação principal, que precisam de revisão do instrutor.
 
-Continuar a revisão das jornadas de gestor/instrutor, estados restantes da matriz visual, continuação da IA após disponibilidade legítima, comparação da correção final no preview e integração da PR 2. O roteiro antigo chama a conta de aluno ativo, mas ela venceu com a passagem do tempo: preparar a demonstração sem adulterar históricos nem registrar pagamento real fictício. Telefone físico M01–M14 e confirmação de revogação da chave Groq continuam pendentes. A apresentação individual de 20–30 minutos será elaborada após estabilização.
+Continuar os estados restantes da matriz visual e integrar a PR 2 após revisão. A continuação descrita acima foi observada no preview inicial `9febff4`; não atribuí-la à produção. O roteiro antigo chama a conta de aluno ativo, mas ela venceu com a passagem do tempo: preparar a demonstração sem adulterar históricos nem registrar pagamento real fictício. Telefone físico M01–M14 e confirmação de revogação da chave Groq continuam pendentes. A apresentação individual de 20–30 minutos será elaborada após estabilização.
