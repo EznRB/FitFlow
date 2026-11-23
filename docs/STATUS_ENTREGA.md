@@ -21,7 +21,7 @@ A meta permanece ativa: ainda faltam estados da revisão geral, telefone físico
 O objetivo completo permanece em desenvolvimento. A rodada de 17/10 publicou melhorias de confirmação/recuperação na nutrição, no registro avulso e na presença do aluno, além da expansão do histórico. A atualização seguinte acrescentou recuperação da consulta de planos na matrícula, com bloqueio até selecionar um plano ativo confirmado. O login publicado funciona com banco Neon e contas demonstrativas novas; os dados do Aiven não foram recuperados. A demonstração local usa MariaDB nativo, sem Docker.
 
 
-## Atualização prioritária — 21/11/2026
+## Histórico — atualização de 21/11/2026
 
 Entrega em **25/11/2026**. O checkout interno Mercado Pago (Payment Brick, cartão/Pix) foi implementado e publicado em sandbox no outro chat. A revisão de continuidade conferiu os registros de 916 testes aprovados, um ignorado e zero falhas; cartão aprovado/recusado/em processamento, Pix pendente com QR, webhook automático HTTP 200 e conciliação sem renovação duplicada estão documentados em [Pagamentos sandbox](PAGAMENTOS_SANDBOX.md). Não houve cobrança real. A revisão estática adicional de tentativas, concorrência e HMAC não encontrou falha acionável no escopo examinado.
 
@@ -29,13 +29,13 @@ A implantação `dpl_2TGRvA8Ue7R4MLrFrATApJk58NNX` foi consultada novamente em 2
 
 Permanecem: integração e revisão visual atual das melhorias de IA/UX, jornadas completas da demonstração, validação em telefone físico M01–M14 e comprovação da rotação da chave Groq. Após estabilizar, preparar apresentação individual de 20–30 minutos, demonstração e contingência. Checkout sandbox aprovado não significa habilitação de pagamentos reais.
 
-## Retomada visual — 22/11/2026
+## Histórico — retomada visual de 22/11/2026, antes da integração
 
 O navegador integrado oficial está acessível. A revisão atual de login, chat, nutrição, menu móvel e caderno produziu [capturas novas e correções](RODADA_VISUAL_2026_11_22.md). A rejeição histórica atingia um lançamento de navegador pelo PowerShell, que não foi repetido. A meta existente está ativa; a revisão geral continua parcial e a PR 2 permanece em rascunho até os gates de integração.
 
 No preview foi gerado um rascunho real para cenário fictício de dois dias; a continuação encontrou quota e ficou preservada. Uma tentativa manual posterior respondeu com quinta-feira, 35 minutos e apenas halteres, mantendo objetivo e experiência. A API/UI passaram a exibir o prazo mínimo válido do provedor, sem repetição automática. O painel também diferencia bloqueio de consulta de ausência real de fichas. Busca de alunos por teclado, abertura/cancelamento dos editores e entrada do instrutor foram conferidos. Essas correções estão na branch de desenvolvimento, não certificam a produção nem encerram telefone físico, rotação da chave ou auditoria de segurança.
 
-## Rodada em revisão
+## Histórico — rodada anterior à integração da PR 2
 
 A [PR 2](https://github.com/EznRB/FitFlow/pull/2) continua em rascunho para a revisão visual de IA/UX. A revisão funcional `103b5a8` passou em **882/882 testes locais**, sem falhas ou ignorados, e na [CI em Node 24](https://github.com/EznRB/FitFlow/actions/runs/43105305251). Os patches de dependências também foram publicados separadamente na produção; a integração da main à branch de desenvolvimento não trouxe mudanças adicionais de runtime.
 
