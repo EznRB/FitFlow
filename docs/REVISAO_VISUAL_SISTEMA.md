@@ -36,6 +36,12 @@ Atualização de 23/11: [painel e catálogo](RECUPERACAO_PAINEL_CATALOGO_2026_11
 
 A coluna de evidência resume provas de versões identificadas no histórico. Não é uma nova execução de todos os cenários nem uma certificação completa de acessibilidade. Cada rodada precisa capturar e inspecionar o estado atual antes de aprová-lo.
 
+### Reconciliação atual — fechamento de 23/11
+
+A matriz histórica abaixo não deve ser lida como lista de tarefas integralmente pendentes. A [rodada de estados](VALIDACAO_ESTADOS_UI_2026_11_23.md) agora comprova: recuperação/DTO/vazio do catálogo e listas do instrutor; gravação incerta e teclado do editor; seleção perdida/vazio/erro na evolução; quota/timeout/recusa do chat; revisão explícita após criação incerta de plano; erros nutricionais e da conta; consultas dos relatórios; painel com retry, zero confirmado e fallback HTML; leitura/validação/largura/foco dos ajustes financeiros. Os cenários sintéticos comprovam a interface, sem simular aprovação do backend ou transporte real.
+
+As jornadas felizes do instrutor, presença/cancelamento e pagamentos sandbox têm evidência nas rodadas de 21–22/11 já vinculadas acima. Não se exige repetir esses casos sem mudança ou risco novo. Não foi encontrado defeito adicional concreto nas frentes concluídas desta rodada. Permanecem sem evidência utilizável a prévia/paginação de impressão e M01–M14 em telefone físico. A inspeção de contraste cobre os pares medidos, não todos os elementos ou conformidade WCAG integral. Novas alterações relevantes exigem verificação dos fluxos afetados.
+
 | Jornada / perfil | Composição e evidência já registrada | Estados e gates ainda necessários |
 |---|---|---|
 | Acesso / todos | Fotografia editorial, labels, ajuda, mostrar senha; login/restauração real, desktop/768/375 e teclado, capturas 28/29/31. | Reavaliar identidade/expiração após mudanças relevantes; não há recuperação por e-mail prometida. |
