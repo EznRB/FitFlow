@@ -48,6 +48,18 @@ O cenário local em `127.0.0.1:3121` usou PlanosView, Modal, Toast e Security re
 
 [Captura da recuperação sintética](evidence/20261123-plans-controlled-browser.png). Contagens observadas: três GETs e um POST fictício; zero gravações reais. Registro: `server/tmp/plans-controlled-browser-20261123.json`; helper/HTML `server/tmp/plans-browser-fixture-20261123.*`. Não é prova de timeout HTTP real, idempotência da criação ou reconciliação no banco. Servidor encerrado intencionalmente, saída 1 por Ctrl+C registrada.
 
+## Catálogo e fichas: recuperação controlada no navegador
+
+Helpers locais em `127.0.0.1:3123` e `3122` serviram os componentes reais, com respostas sintéticas e conexões externas bloqueadas. O wrapper da fixture usa `app-screen` para aplicar os estilos correspondentes; as três regras locais do usuário em `workspace.css` foram preservadas, sem atribuir o arquivo inteiro ao HEAD publicado.
+
+- Catálogo: falha de leitura e DTO incompleto apresentaram erro recuperável, sem falso vazio. Após escolher Costas durante o erro, “Tentar novamente” preservou o grupo e recuperou somente o registro correspondente. Uma resposta vazia posterior exibiu ausência confirmada e orientação sobre filtros.
+- Instrutor: erro de alunos preservou a busca digitada durante a falha. O retry recuperou o aluno correspondente. A consulta de fichas falhou com aviso próprio; uma resposta vazia confirmou ausência apenas naquele acesso, sem confundir restrição de autoria com inexistência global.
+- Editor de ficha: um PUT sintético incerto conservou a observação digitada e bloqueou Salvar. Uma conferência falha conservou o rascunho; a seguinte, bem-sucedida, mostrou nome/ID e avisou que a lista não confirma o envio. O reenvio permaneceu bloqueado e o editor foi cancelado. Contagens dessa sequência: nove GETs, um PUT fictício e zero POSTs/gravações reais. A fixture não apresentou o nome do aluno no campo desabilitado porque seu detalhe sintético não inclui esse relacionamento; o nome e contexto desse campo já foram conferidos no preview real.
+
+[Catálogo sintético](evidence/20261123-catalog-controlled-browser.png) · [Conferência da ficha sintética](evidence/20261123-training-controlled-browser.png). Registros locais: `server/tmp/catalog-controlled-browser-20261123.json` e `training-controlled-browser-20261123.json`. Timeout artificial não prova interrupção de transporte, reconciliação no banco ou idempotência.
+
+Foi encontrado e corrigido “1 exercícios” nas contagens do catálogo de gestão e do seletor do editor. Após recarregar os scripts, o navegador confirmou “1 exercício” nos dois locais e “2 exercícios” na biblioteca. Doze testes focados de leitura, paginação/foco e interface de treinamento passaram, Node 24, exit code 0; log `server/tmp/catalog-singular-focused-20261123.log`. A mudança de runtime limita-se ao singular/plural dessas duas mensagens; não altera consulta, filtros ou dados.
+
 ## Teclado no editor da ficha
 
 Na prévia `fit-flow-ogc62czle-eznrbs-projects.vercel.app`, o instrutor abriu a revisão 2 da conta fictícia de apresentação, sem salvar alterações. O foco inicial ficou em “Fechar modal”; Shift+Tab levou a “Salvar revisão” e Tab retornou a fechar. O próximo Tab alcançou a comparação de divisões; Enter abriu os detalhes e Tab alcançou o seletor de sessões semanais. Escape fechou o diálogo na árvore acessível e devolveu o foco a “Editar ficha”. Não houve submissão nem nova revisão. Registro técnico local: `server/tmp/editor-keyboard-preview-20261123.json`.
