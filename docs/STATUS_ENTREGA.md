@@ -1,6 +1,8 @@
-# Estado da entrega — atualizado em 22/11/2026
+# Estado da entrega — atualizado em 23/11/2026
 
-## Estado atual — versão integrada em 22/11
+## Estado atual — versão integrada em 23/11
+
+**Versão funcional vigente:** PR 20 integrada em `e0a0fa658d6e883144fa32dd1839f15722862699`, produção READY e dois assets alterados iguais ao Git; saúde/banco aprovados. CI da revisão `c2f70be`: 975 aprovados, zero falhas, um ignorado; schema/client PostgreSQL aprovados. Catálogo recupera leituras interrompidas e rejeita registros incompletos; painel distingue ausência de zero e oferece contagens diárias em HTML. [Evidências e limites](RECUPERACAO_PAINEL_CATALOGO_2026_11_23.md). Os parágrafos datados abaixo preservam marcos anteriores.
 
 **Última atualização funcional:** PR 18 integrada em `ec08647bd31828dd04916fc7340a71963ba2e5ac`, produção `dpl_9CrnrrxhifbW2tccSn7MYxPKgw9j` READY. CI 45080712549: 965 aprovados, zero falhas e um ignorado; PostgreSQL validado. Saúde/banco e oito assets iguais ao Git, incluindo checkout preservado. Chat distingue frequência explícita de disponibilidade; Evolução oferece comparação opcional por IDs, sem unir históricos. [Gates e limites da rodada](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md). A conta fictícia agora tem duas sessões, três séries e 640 kg·reps; o registro original de 440 foi preservado.
 
