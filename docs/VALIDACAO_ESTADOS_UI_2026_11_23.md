@@ -38,6 +38,12 @@ PR [22](https://github.com/EznRB/FitFlow/pull/22), integrada em `8447d1517a48374
 
 ## Evidência e limites
 
+### Consulta de alunos e fichas do instrutor
+
+Falhas de rede ou DTO inválido agora mantêm erro e nova tentativa dentro da lista, sem mostrar ausência de dados. Carregamento tem estado próprio; vazio só aparece após array válido. A busca não apaga o erro e permanece aplicada na recuperação. IDs duplicados, nomes vazios e campos de ficha incompatíveis com sua apresentação são recusados. O feedback usa o componente de estado já existente para ocupar toda a grade, agrupando mensagem e ação.
+
+RED reproduzido e 67 testes focados aprovados, sem falhas. Incluem nova tentativa consumida uma vez, clique fora da ação sem consulta e callbacks obsoletos por aluno, conta, papel, geração, epoch e substituição do DOM. Metadados históricos válidos e zero exercícios continuam legíveis. Logs locais completos: `server/tmp/treinos-list-edge-{red,green}.log`. Não houve alterações em operações de gravação, banco ou histórico. A falha foi reproduzida em testes, sem provocar indisponibilidade no backend publicado.
+
 ### Limpeza de implementação duplicada
 
 A investigação do GET sem prazo em `MeuTreinoView` confirmou que `meu-treino` não pertence a nenhum dos três menus permitidos por `App.navigateTo`. Foram removidos somente essa view duplicada, seu template/título e inicializador, além de uma exposição não utilizada no harness de testes. A tela atual `aluno-treino`, seus registros avulsos, a API e os dados persistidos não foram alterados. Busca nas fontes e testes não encontrou referências restantes à implementação removida. Os 69 testes focados de treino, acesso do aluno e painel passaram com Node 24; log privado `server/tmp/unused-training-view-green-20261123.log`. Essa limpeza não encerra as pendências gerais e não justifica excluir documentação histórica ou migrations.

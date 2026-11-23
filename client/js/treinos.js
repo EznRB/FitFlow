@@ -2,7 +2,8 @@
 const TreinosView = {
   alunosCache: [], catalogoCache: [], currentStudentId: null,
   generation: 0, requests: {}, editor: null,
-  invalidar() { this.generation++; this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = []; this.editor = null; },
+  alunosEstado: null, alunosFiltro: '',
+  invalidar() { this.generation++; this.currentStudentId = null; this.alunosCache = []; this.catalogoCache = []; this.editor = null; this.alunosEstado = null; this.alunosFiltro = ''; },
   solicitar(kind, nodeId) {
     const user = typeof Auth !== 'undefined' ? Auth.user : null;
     return { kind, token: this.requests[kind] = (this.requests[kind] || 0) + 1, generation: this.generation,
@@ -22,7 +23,11 @@ const TreinosView = {
   escapar(value) { return FitFlowSecurity.escapeHtml(value); },
   idValido(value) { return Number.isSafeInteger(value) && value > 0; },
   listaLida(response) {
-    if (!Array.isArray(response?.data) || response.data.some(item => !item || !this.idValido(item.id) || typeof item.name !== 'string'))
+    const seen = new Set();
+    if (!Array.isArray(response?.data) || response.data.some(item => {
+      if (!item || !this.idValido(item.id) || seen.has(item.id) || typeof item.name !== 'string' || !item.name.trim()) return true;
+      seen.add(item.id); return false;
+    }))
       throw new Error('Resposta incompleta. Atualize a consulta para continuar.');
     return response.data;
   },
@@ -60,14 +65,29 @@ const TreinosView = {
   },
   async carregarAlunosParaPerfis() {
     const request = this.solicitar('alunos', 'treinos-alunos-grid');
+    if (!this.atual(request)) return;
+    this.alunosEstado = 'loading'; this.estadoLista(request);
     try {
       const response = await API.get('/treinos/alunos', { timeoutMs: 15000 });
       if (!this.atual(request)) return;
-      this.alunosCache = this.listaLida(response); this.renderizarGradeAlunos(this.alunosCache);
+      this.alunosCache = this.listaLida(response); this.alunosEstado = 'ready'; this.filtrarAlunos(this.alunosFiltro);
     } catch (error) {
       if (!this.atual(request)) return;
-      this.alunosCache = []; this.renderizarGradeAlunos([]); Toast.error(error.message || 'Erro ao carregar alunos elegíveis.');
+      this.alunosCache = []; this.alunosEstado = 'error'; this.estadoLista(request, true);
     }
+  },
+  estadoLista(request, erro = false) {
+    const fichas = request.kind === 'fichas';
+    const content = erro ? `<div class="management-list-state" role="alert"><p>Não foi possível carregar ${fichas ? 'as fichas' : 'os alunos'}.</p><button type="button" class="btn btn-secondary" data-retry>Tentar novamente</button></div>`
+      : `<div class="management-list-state" role="status"><p>Carregando ${fichas ? 'fichas' : 'alunos'}…</p></div>`;
+    request.node.innerHTML = fichas ? `<tr><td colspan="5">${content}</td></tr>` : content;
+    let usado = false;
+    request.node.onclick = erro ? event => {
+      if (event && !event.target.closest('[data-retry]')) return;
+      if (usado || !this.atual(request)) return;
+      usado = true;
+      return fichas ? this.carregarTreinos(request.studentId) : this.carregarAlunosParaPerfis();
+    } : null;
   },
   renderizarGradeAlunos(alunos) {
     const grid = document.getElementById('treinos-alunos-grid'); if (!grid) return;
@@ -84,7 +104,11 @@ const TreinosView = {
     };
     this.icones(grid);
   },
-  filtrarAlunos(term) { this.renderizarGradeAlunos(this.alunosCache.filter(a => String(a.name).toLowerCase().includes(String(term).toLowerCase()))); },
+  filtrarAlunos(term) {
+    this.alunosFiltro = String(term || '');
+    if (this.alunosEstado !== 'ready') return;
+    this.renderizarGradeAlunos(this.alunosCache.filter(a => a.name.toLowerCase().includes(this.alunosFiltro.toLowerCase())));
+  },
   async abrirPerfilAluno(studentId, name) {
     if (!this.idValido(studentId)) return;
     this.generation++;
@@ -105,11 +129,17 @@ const TreinosView = {
     if (!this.idValido(studentId) || studentId !== this.currentStudentId) return;
     const request = this.solicitar('fichas', 'treinos-table-body');
     if (!this.atual(request)) return;
-    request.node.innerHTML = '';
+    this.estadoLista(request);
     try {
       const response = await API.get(`/treinos?studentId=${studentId}`, { timeoutMs: 15000 });
-      if (this.atual(request)) this.renderizarTabela(this.listaLida(response));
-    } catch (error) { if (this.atual(request)) { this.renderizarTabela([]); Toast.error(error.message || 'Erro ao carregar fichas.'); } }
+      if (!this.atual(request)) return;
+      const treinos = this.listaLida(response);
+      if (treinos.some(t => typeof t.active !== 'boolean' || !Array.isArray(t.exercises)
+        || typeof t.createdAt !== 'string' || !Number.isFinite(Date.parse(t.createdAt))
+        || !(t.description === null || typeof t.description === 'string')))
+        throw new Error('Lista de fichas incompleta.');
+      this.renderizarTabela(treinos);
+    } catch (error) { if (this.atual(request)) this.estadoLista(request, true); }
   },
   async carregarCatalogo(request = this.solicitar('catalogo', 'treinos-table-body')) {
     if (!this.atual(request)) return;
