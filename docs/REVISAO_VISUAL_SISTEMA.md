@@ -30,6 +30,8 @@ As decisões são interpretações para este produto. Fontes não provam impleme
 
 ## Matriz de jornadas e estados
 
+Complemento de 23/11: [estados e teclado](VALIDACAO_ESTADOS_UI_2026_11_23.md) registra o ciclo de foco/Escape do editor no preview, o vazio de filtro da evolução publicada e seleção perdida/consulta vazia/falha de leitura em cenário sintético local com o código real da evolução. Esses pontos específicos não precisam ser repetidos sem mudança; o cenário controlado não comprova transporte ou reconexão física. A tentativa de prévia de impressão não produziu evidência utilizável e continua pendente.
+
 Atualização de 23/11: [painel e catálogo](RECUPERACAO_PAINEL_CATALOGO_2026_11_23.md) têm recuperação e validação de dados verificadas. As linhas abaixo mantêm referências históricas; pendências de cartão/Pix externo foram atendidas em 21/11, conforme [sandbox](PAGAMENTOS_SANDBOX.md). A jornada feliz do instrutor foi executada em [22/11](VALIDACAO_DEMONSTRACAO_2026_11_22.md); presença/cancelamento, tabelas e recuperação nutricional em [gestão/landing](VALIDACAO_GESTAO_LANDING_2026_11_22.md); comparação de revisões em [treinamento](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md). Não repetir esses gates sem alteração ou risco novo. Continuam necessários os estados/teclado ainda sem prova, prévia de impressão e telefone físico; evidência parcial não encerra toda a matriz.
 
 A coluna de evidência resume provas de versões identificadas no histórico. Não é uma nova execução de todos os cenários nem uma certificação completa de acessibilidade. Cada rodada precisa capturar e inspecionar o estado atual antes de aprová-lo.
