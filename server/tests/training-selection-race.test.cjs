@@ -43,7 +43,7 @@ test('logout/entrada na mesma conta com nova geração não aplica dados nem err
   h.Auth.user = null; h.Auth.generation++; h.events.get('auth:logout')?.({ detail: { userId: 7 } });
   h.Auth.user = { id: 7, role: 'instructor' }; h.Auth.generation++;
   h.requests[0].reject(new Error('erro da conta anterior')); await request;
-  assert.equal(h.errors.length, 0); assert.equal(h.node('treinos-table-body').innerHTML, '');
+  assert.equal(h.errors.length, 0); assert.equal(h.node('treinos-table-body').innerHTML, '<tr><td colspan="5"><div class="management-list-state" role="status"><p>Carregando fichas…</p></div></td></tr>');
 });
 
 test('navegação e substituição do DOM rejeitam tabela antiga', async () => {
