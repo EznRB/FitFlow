@@ -222,7 +222,6 @@ const App = {
       'pagamentos':         'Fluxo de Pagamentos',
       'checkins':           'Registro de Presença',
       'relatorios':         'Relatórios Gerenciais',
-      'meu-treino':         'Meu Treino do Dia',
       'nutricao':           'Nutrição e Macros',
       'sessoes':            'Sessões e séries',
       'evidencias':         'Fundamentos do Treinamento',
@@ -568,23 +567,6 @@ const App = {
       `,
 
       /**
-       * TASK 06 — Página "Meu Treino" (Visão do Aluno)
-       * Exibe treinos ativos do aluno com possibilidade de registrar cargas.
-       */
-      'meu-treino': `
-        <div class="page-header" style="margin-bottom:1.5rem">
-          <h2>Meu Treino</h2>
-          <p style="color:var(--text-muted)">Visualize seus treinos ativos e registre suas cargas para acompanhar a evolução.</p>
-        </div>
-        <div id="meu-treino-container">
-          <div class="page-loading" style="text-align:center; padding:2rem;">
-            <div class="spinner"></div>
-            <p>Carregando seus treinos...</p>
-          </div>
-        </div>
-      `,
-
-      /**
        * TASK 07 — Página de Pagamentos e Mensalidades (Admin)
        * Tabela de pagamentos com filtros, registro de novos pagamentos,
        * painel de inadimplentes e resumo financeiro.
@@ -795,10 +777,6 @@ const App = {
       document.getElementById('filtro-busca-aluno').oninput = event => TreinosView.filtrarAlunos(event.target.value);
       document.getElementById('btn-voltar-perfis').onclick = () => TreinosView.voltarParaPerfis();
       TreinosView.inicializar();
-    }
-
-    if (page === 'meu-treino' && typeof MeuTreinoView !== 'undefined') {
-      MeuTreinoView.inicializar();
     }
 
     // TASK 07: Inicializa o módulo de pagamentos

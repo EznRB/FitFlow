@@ -38,4 +38,8 @@ PR [22](https://github.com/EznRB/FitFlow/pull/22), integrada em `8447d1517a48374
 
 ## Evidência e limites
 
+### Limpeza de implementação duplicada
+
+A investigação do GET sem prazo em `MeuTreinoView` confirmou que `meu-treino` não pertence a nenhum dos três menus permitidos por `App.navigateTo`. Foram removidos somente essa view duplicada, seu template/título e inicializador, além de uma exposição não utilizada no harness de testes. A tela atual `aluno-treino`, seus registros avulsos, a API e os dados persistidos não foram alterados. Busca nas fontes e testes não encontrou referências restantes à implementação removida. Os 69 testes focados de treino, acesso do aluno e painel passaram com Node 24; log privado `server/tmp/unused-training-view-green-20261123.log`. Essa limpeza não encerra as pendências gerais e não justifica excluir documentação histórica ou migrations.
+
 Registros locais em `server/tmp/account-keyboard-preview-20261123.json`, `server/tmp/reports-browser-20261123.json` e `server/tmp/nutrition-invalid-browser-20261123.json`. Não contêm senhas; ficam fora da distribuição Git. A revisão não cobre todos os limites, métodos, idiomas, erros ou tipos de dispositivo. Não equivale a certificação WCAG nem substitui M01–M14 em telefone físico.

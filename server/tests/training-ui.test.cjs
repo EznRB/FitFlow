@@ -6,7 +6,7 @@ const path = require('node:path');
 function browser(globals = {}) {
   const context = vm.createContext({ window: {}, URL, Auth: { user: { id: 7, role: 'admin' }, generation: 1 }, ...globals });
   for (const file of ['security.js', 'treinos.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../client/js', file), 'utf8'), context);
-  vm.runInContext('this.view = TreinosView; this.studentView = MeuTreinoView;', context);
+  vm.runInContext('this.view = TreinosView;', context);
   return context;
 }
 test('interface usa seleção mínima e escapa nomes/descrições no aluno, lista, modal e catálogo', async () => {
