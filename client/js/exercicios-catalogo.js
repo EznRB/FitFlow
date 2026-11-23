@@ -85,6 +85,13 @@ const ExerciciosCatalogoView = {
       && (typeof App === 'undefined' || App.currentPage === 'exercicios');
   },
   idValido(id) { return Number.isSafeInteger(id) && id > 0 && id <= 2147483647; },
+  registroValido(ex, editing = false) {
+    const text = value => typeof value === 'string' && value.trim().length > 0;
+    const optional = key => (Object.hasOwn(ex, key) ? ex[key] === null || typeof ex[key] === 'string' : !editing);
+    return ex !== null && typeof ex === 'object' && !Array.isArray(ex) && this.idValido(ex.id)
+      && text(ex.nome) && text(ex.grupo_muscular) && typeof ex.ativo === 'boolean'
+      && optional('instrucoes') && optional('imagem_url');
+  },
   async inicializar() {
     this.invalidar(); const context = this.contexto(); if (!this.atual(context)) return;
     this.configurarEventos(context);
@@ -115,8 +122,11 @@ const ExerciciosCatalogoView = {
     context.table.innerHTML = '<tr><td colspan="4" role="status" class="catalog-loading"><div class="spinner spinner-sm"></div> Carregando catálogo…</td></tr>';
     context.table.onclick = null;
     try {
-      const resp = await API.get(endpoint); if (!current()) return;
-      this.dados = (Array.isArray(resp.data) ? resp.data : []).filter(ex => this.idValido(ex.id)); this.cacheContext = context;
+      const resp = await API.get(endpoint, { timeoutMs: 15000 }); if (!current()) return;
+      const rows = resp?.data;
+      if (!Array.isArray(rows) || rows.some(ex => !this.registroValido(ex))
+        || new Set(rows.map(ex => ex.id)).size !== rows.length) throw new Error('O catálogo recebido está incompleto ou em formato inválido. Tente consultar novamente.');
+      this.dados = rows; this.cacheContext = context;
       this.controlesConsulta(true); this.renderizarResultados(); return resp;
     } catch (error) {
       if (!current()) return;
@@ -142,10 +152,11 @@ const ExerciciosCatalogoView = {
     const select = document.getElementById('filtro-grupo-muscular');
     if (!select) return;
     try {
-      const resp = await API.get('/exercicios/grupos');
+      const resp = await API.get('/exercicios/grupos', { timeoutMs: 15000 });
       if (!this.atual(context) || sequence !== this.groupSequence || document.getElementById('filtro-grupo-muscular') !== select) return;
       const selected = select.value;
-      const groups = [...new Set([...(Array.isArray(resp.data) ? resp.data.filter(g => typeof g === 'string') : []), ...(selected ? [selected] : [])])];
+      if (!Array.isArray(resp?.data) || resp.data.some(group => typeof group !== 'string' || !group.trim())) throw new Error('Grupos indisponíveis.');
+      const groups = [...new Set([...resp.data, ...(selected ? [selected] : [])])];
       select.innerHTML = '<option value="">Todos os grupos</option>' + groups.map(g => `<option value="${this.escapar(g)}">${this.escapar(g)}</option>`).join(''); select.value = selected;
     } catch { /* Group discovery is optional; the selected query and list still work. */ }
   },
@@ -243,11 +254,20 @@ const ExerciciosCatalogoView = {
     const scope = this.contexto(), sequence = ++this.modalSequence, modalRevision = Modal.revision; this.activeForm = null;
     if (!this.idValido(id) || !this.atual(scope)) return;
     try {
-      const resp = await API.get(`/exercicios/${id}`);
+      const resp = await API.get(`/exercicios/${id}`, { timeoutMs: 15000 });
       if (!this.atual(scope) || sequence !== this.modalSequence || Modal.revision !== modalRevision) return;
-      if (!resp.data || resp.data.id !== id) throw new Error('Cadastro indisponível.');
+      if (!this.registroValido(resp?.data, true) || resp.data.id !== id) throw new Error('Cadastro incompleto ou indisponível. Tente consultar novamente.');
       this.abrirFormulario(resp.data, scope, sequence);
-    } catch (error) { if (this.atual(scope) && sequence === this.modalSequence && Modal.revision === modalRevision) Toast.error(error.message || 'Não foi possível carregar o exercício.'); }
+    } catch (error) {
+      if (!this.atual(scope) || sequence !== this.modalSequence || Modal.revision !== modalRevision) return;
+      let errorRevision;
+      const current = () => this.atual(scope) && sequence === this.modalSequence && Modal.revision === errorRevision;
+      Modal.open('Não foi possível carregar o exercício', `<section role="alert"><p>${this.escapar(error.message || 'Confira a conexão e tente novamente.')}</p><p>Nenhum exercício foi alterado.</p></section>`, [
+        { text: 'Fechar', class: 'btn-secondary', action: () => { if (current()) Modal.close(); } },
+        { text: 'Tentar novamente', class: 'btn-primary', action: () => { if (current()) return this.abrirModalEditar(id); } },
+      ]);
+      errorRevision = Modal.revision;
+    }
   },
   formularioAtual(context) {
     return context && this.activeForm === context && context.sequence === this.modalSequence && this.atual(context.scope)

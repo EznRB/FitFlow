@@ -9,7 +9,7 @@ function load() {
   let modal;
   const context = { URL, window: {}, Auth: { user: { id: 7, role: 'admin' }, generation: 1 }, App: { currentPage: 'exercicios' }, document: { getElementById: () => body, querySelectorAll: () => [] },
     Modal: { confirm: html => { modal = html; }, open: (title, html) => { modal = html; } },
-    API: { get: async () => ({ data: { id: 9, nome: '"><img src=x onerror=alert(1)>',
+    API: { get: async () => ({ data: { id: 9, ativo: true, nome: '"><img src=x onerror=alert(1)>',
       grupo_muscular: '"><svg onload=alert(1)>', instrucoes: '</textarea><script>bad()</script>', imagem_url: 'javascript:bad()' } }) } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../../client/js/exercicios-catalogo.js'), 'utf8') + '\nthis.catalog = ExerciciosCatalogoView;', context);
   return { view: context.catalog, body, modal: () => modal };

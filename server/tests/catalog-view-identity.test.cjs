@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
 const tick=()=>new Promise(r=>setImmediate(r));
-const exercise=(id,nome='Exercício '+id)=>({id,nome,grupo_muscular:'Peito',ativo:true,locale:'pt',source:'wger',instrucoes:'Descrição completa '+id});
+const exercise=(id,nome='Exercício '+id)=>({id,nome,grupo_muscular:'Peito',ativo:true,locale:'pt',source:'wger',instrucoes:'Descrição completa '+id,imagem_url:null});
 function fixture(){
  const nodes=new Map(),calls=[],notices=[],listeners={};let epoch='first',opened=false,actions=[],closes=0;
  const node=(id,value='')=>{const n={id,value,innerHTML:'',textContent:'',isConnected:true,disabled:false,options:[],contains:()=>true,reportValidity:()=>true,addEventListener:(name,fn)=>{n['on'+name]=fn;},appendChild:o=>n.options.push(o)};nodes.set(id,n);return n;};

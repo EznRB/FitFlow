@@ -355,9 +355,18 @@ const App = {
                   <p>Check-ins válidos por dia · últimos 7 dias</p>
                 </div>
               </div>
-              <div class="chart-content" style="flex: 1; min-height: 350px; position: relative;">
-                <canvas id="tendencias-chart"></canvas>
+              <div id="chart-visual" class="chart-content" style="height: 300px; position: relative;">
+                <canvas id="tendencias-chart" aria-hidden="true"></canvas>
               </div>
+              <p id="chart-fallback" hidden role="status"></p>
+              <details id="chart-counts" style="margin-top:1rem;">
+                <summary>Consultar contagens por dia</summary>
+                <table class="table" style="width:100%;margin-top:0.75rem;">
+                  <caption>Check-ins válidos por dia nos últimos sete dias</caption>
+                  <thead><tr><th scope="col">Dia</th><th scope="col">Check-ins</th></tr></thead>
+                  <tbody id="chart-counts-body"></tbody>
+                </table>
+              </details>
             </div>
 
             <!-- Sidebar de Check-ins -->
@@ -865,6 +874,26 @@ const DashboardView = {
   currentStats: null,
   requestVersion: 0,
 
+  validarDados(stats) {
+    const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+    const count = value => Number.isSafeInteger(value) && value >= 0;
+    const money = value => typeof value === 'number' && Number.isFinite(value);
+    const text = value => typeof value === 'string' && value.trim().length > 0;
+    const date = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
+    const description = value => value === undefined || value === null || typeof value === 'string';
+    if (!object(stats) || !['totalAlunos', 'alunosAtivos', 'checkinsHoje', 'conferenciasProvedor'].every(key => count(stats[key]))
+      || stats.alunosAtivos > stats.totalAlunos || !money(stats.receitaEstimada)
+      || !object(stats.financeiroMes) || !['grossAmount', 'netAmount', 'adjustedAmount'].every(key => money(stats.financeiroMes[key]))
+      || !object(stats.tendencias) || !Array.isArray(stats.tendencias.labels) || !Array.isArray(stats.tendencias.data)
+      || stats.tendencias.labels.length === 0 || stats.tendencias.labels.length !== stats.tendencias.data.length
+      || !stats.tendencias.labels.every(text) || !stats.tendencias.data.every(count)
+      || !Array.isArray(stats.atividades) || !stats.atividades.every(row => object(row) && ['checkin', 'matricula'].includes(row.tipo) && text(row.nome) && date(row.data) && description(row.descricao))
+      || !Array.isArray(stats.pagamentosRecentes) || !stats.pagamentosRecentes.every(row => object(row) && text(row.nome) && money(row.valor) && row.valor >= 0 && date(row.data) && description(row.descricao))) {
+      throw new Error('O painel recebeu dados incompletos ou inválidos. Tente consultar novamente.');
+    }
+    return stats;
+  },
+
   async inicializar() {
     const version = ++this.requestVersion;
     const screen = document.querySelector('.premium-dashboard');
@@ -881,7 +910,7 @@ const DashboardView = {
 
       const resp = await API.get('/relatorios/dashboard', { timeoutMs: 15000 });
       if (!current()) return;
-      const stats = resp.data;
+      const stats = this.validarDados(resp?.data);
       this.currentStats = stats;
       const totalEl = document.getElementById('kpi-total-alunos');
       const ativosEl = document.getElementById('kpi-alunos-ativos');
@@ -890,21 +919,21 @@ const DashboardView = {
       const treinosEl = document.getElementById('kpi-treinos-ativos');
       const receitaEl = document.getElementById('kpi-receita-estimada');
 
-      if (totalEl) totalEl.textContent = stats.totalAlunos || 0;
-      if (ativosEl) ativosEl.textContent = stats.alunosAtivos || 0;
-      if (checkinsEl) checkinsEl.textContent = stats.checkinsHoje || 0;
+      if (totalEl) totalEl.textContent = stats.totalAlunos;
+      if (ativosEl) ativosEl.textContent = stats.alunosAtivos;
+      if (checkinsEl) checkinsEl.textContent = stats.checkinsHoje;
       if (receitaEl) {
         receitaEl.textContent = new Intl.NumberFormat('pt-BR', {
           style: 'currency',
           currency: 'BRL',
           maximumFractionDigits: 1,
           notation: 'compact'
-        }).format(stats.receitaEstimada || 0);
+        }).format(stats.receitaEstimada);
       }
       const financialDetail = document.getElementById('kpi-receita-detalhe');
       if (financialDetail && stats.financeiroMes) {
         const money = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-        financialDetail.textContent = `Bruto ${money(stats.financeiroMes.grossAmount)} · ajustes ${money(stats.financeiroMes.adjustedAmount)} · ${stats.conferenciasProvedor || 0} checkout(s) em conferência`;
+        financialDetail.textContent = `Bruto ${money(stats.financeiroMes.grossAmount)} · ajustes ${money(stats.financeiroMes.adjustedAmount)} · ${stats.conferenciasProvedor} checkout(s) em conferência`;
       }
 
       // Proporção atual de matrículas ativas; não representa retenção longitudinal.
@@ -920,6 +949,7 @@ const DashboardView = {
       this.renderAtividades(stats.atividades, stats.pagamentosRecentes);
     } catch (error) {
       if (!current()) return;
+      this.currentStats = null;
       const content = document.getElementById('page-content');
       if (App.currentPage === 'dashboard' && content) {
         content.innerHTML = '<section class="card" role="alert"><h3>Não foi possível carregar o painel</h3><p id="dashboard-error"></p><button class="btn btn-primary" id="dashboard-retry" type="button">Tentar novamente</button></section>';
@@ -949,22 +979,35 @@ const DashboardView = {
   renderChart(tendencias) {
     const canvas = document.getElementById('tendencias-chart');
     const fallback = document.getElementById('chart-fallback');
+    const visual = document.getElementById('chart-visual');
+    const counts = document.getElementById('chart-counts');
+    const body = document.getElementById('chart-counts-body');
+    if (body) body.innerHTML = tendencias.labels.map((label, index) => `<tr><th scope="row">${FitFlowSecurity.escapeHtml(label)}</th><td>${tendencias.data[index]}</td></tr>`).join('');
+    const showFallback = () => {
+      if (fallback) {
+        fallback.textContent = 'O gráfico está indisponível. Consulte os mesmos registros na tabela abaixo.';
+        fallback.hidden = false;
+      }
+      if (visual) visual.hidden = true;
+      if (counts) counts.open = true;
+    };
     if (!canvas) return;
 
     if (typeof Chart === 'undefined') {
-      console.error('Chart.js não carregado!');
-      if (fallback) fallback.style.display = 'block';
-      canvas.style.display = 'none';
+      showFallback();
       return;
     }
 
     // Limpa instância anterior para evitar loops de redimensionamento
     this.destroyChart();
 
-    const cleanLabels = tendencias.labels || [];
-    const cleanData = (tendencias.data || []).map(v => Number(v) || 0);
+    const cleanLabels = tendencias.labels;
+    const cleanData = tendencias.data;
 
-    this.chartInstance = new Chart(canvas, {
+    try {
+      if (visual) visual.hidden = false;
+      if (fallback) fallback.hidden = true;
+      this.chartInstance = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: cleanLabels,
@@ -1010,7 +1053,11 @@ const DashboardView = {
           }
         }
       }
-    });
+      });
+    } catch {
+      this.chartInstance = null;
+      showFallback();
+    }
   },
 
   renderAtividades(atividades, pagamentos) {
