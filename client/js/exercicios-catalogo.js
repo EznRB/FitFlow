@@ -176,7 +176,7 @@ const ExerciciosCatalogoView = {
     const start = (this.page - 1) * this.pageSize, shown = filtered.slice(start, start + this.pageSize);
     this.renderizarTabela(shown);
     const count = document.getElementById('catalog-count'), page = document.getElementById('catalog-page');
-    if (count) count.textContent = filtered.length ? `${start + 1}–${start + shown.length} de ${filtered.length} exercícios · ${this.dados.length} na consulta` : `0 exercícios encontrados · ${this.dados.length} na consulta`;
+    if (count) count.textContent = filtered.length ? `${start + 1}–${start + shown.length} de ${filtered.length} ${filtered.length === 1 ? 'exercício' : 'exercícios'} · ${this.dados.length} na consulta` : `0 exercícios encontrados · ${this.dados.length} na consulta`;
     if (page) page.textContent = `Página ${this.page} de ${pages}`;
     const previous = document.getElementById('catalog-prev'), next = document.getElementById('catalog-next');
     const focusedControl = document.activeElement;

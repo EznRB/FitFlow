@@ -345,7 +345,7 @@ const TreinosView = {
     const page = Math.max(0, Math.min(Number.isSafeInteger(requestedPage) ? requestedPage : 0, Math.ceil(items.length / pageSize) - 1));
     const start = page * pageSize;
     const visible = items.slice(start, start + pageSize);
-    list.innerHTML = items.length ? `<p class="workout-catalog-count" role="status">${start + 1}–${start + visible.length} de ${items.length} exercícios. Use a busca para refinar.</p>` + visible.map(item => `<article class="workout-catalog-item">
+    list.innerHTML = items.length ? `<p class="workout-catalog-count" role="status">${start + 1}–${start + visible.length} de ${items.length} ${items.length === 1 ? 'exercício' : 'exercícios'}. Use a busca para refinar.</p>` + visible.map(item => `<article class="workout-catalog-item">
       <button type="button" class="btn btn-ghost" data-catalog="${item.id}"><span>${this.escapar(item.nome)}</span> <i data-lucide="plus"></i></button>
       <p>${this.escapar(item.grupo_muscular)}</p>${this.fonteCatalogo(item)}</article>`).join('') + (items.length > pageSize ? `<nav class="workout-catalog-pages" aria-label="Páginas do catálogo">
         <button type="button" class="btn btn-secondary" data-catalog-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>Anteriores</button>
