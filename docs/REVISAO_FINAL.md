@@ -1,4 +1,4 @@
-# Auditoria da entrega por requisitos — revisão consolidada, atualizada em 22/11/2026
+# Auditoria da entrega por requisitos — revisão consolidada, atualizada em 23/11/2026
 
 **Atualização de integração:** PR 2 integrada e produção conferida em 22/11; nova jornada de matrícula, ficha do instrutor, duas séries e sessão restaurada registrada em [validação da demonstração](VALIDACAO_DEMONSTRACAO_2026_11_22.md). Essa evidência atualiza a integração, sem encerrar os gates gerais abaixo.
 
@@ -13,6 +13,8 @@
 As fontes abaixo registram gates já executados; esta consolidação documental não reexecutou código, banco ou navegador. A suíte integral atual comprova os casos existentes, não toda autorização, correção científica, acessibilidade ou integração externa. Subsuítes focadas estão incluídas nos totais de sua revisão e não devem ser somadas como novos testes.
 
 ## Complementos verificados em novembro
+
+- Painel e catálogo em 23/11: [recuperação de consultas, contrato íntegro e contagens acessíveis](RECUPERACAO_PAINEL_CATALOGO_2026_11_23.md), publicados pela PR 20. CI, prévia e assets públicos conferidos. Os gates gerais continuam abertos.
 
 - Treinamento em 22/11: [preferência semanal validada e comparação explícita](TREINO_FREQUENCIA_COMPARACAO_2026_11_22.md), com nova amostra real de três sessões entre seis dias disponíveis. CI 965 aprovados/um ignorado; produção/saúde/assets conferidos. Não certifica dose ótima nem resolve os gates de aparelho, rotação ou auditoria abaixo.
 
