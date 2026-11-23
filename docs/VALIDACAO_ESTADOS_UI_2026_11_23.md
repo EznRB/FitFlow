@@ -24,6 +24,18 @@ Verificação na prévia `fit-flow-ce8fo708v-eznrbs-projects.vercel.app`, revis�
 - No caso do peso, o primeiro clique não produziu feedback observável. Após inspeção, Enter no campo confirmou a validação esperada; essa ocorrência isolada não foi atribuída a defeito do aplicativo.
 - Os parâmetros fictícios foram limpos somente da tela; não houve pedido de IA nem operação sobre a simulação remota existente.
 
+## Editor: recuperação de gravações incertas
+
+PR [22](https://github.com/EznRB/FitFlow/pull/22), integrada em `8447d1517a4837433065043ac063d9dee26bac82`:
+
+- Consultas do instrutor têm prazo de 15 segundos. Catálogo inválido permite preenchimento manual com aviso; detalhe incompleto não abre edição capaz de apagar campos ausentes.
+- “Conferir fichas” consulta nomes/IDs sem fechar o editor, descartar o rascunho ou repetir a gravação. A lista não comprova aquele envio; o reenvio continua bloqueado. Campos de carga e observações exigem presença explícita, aceitando `null` legítimo.
+- RED reproduzido; 38 testes focados aprovados. A primeira CI encontrou três fixtures incompletas de testes antigos; foram ajustadas ao DTO real sem remover asserts de race/XSS. Quatro arquivos focados: 52 aprovados. CI final [45207341033](https://github.com/EznRB/FitFlow/actions/runs/45207341033): 983 aprovados, zero falhas, um ignorado por MariaDB externo ausente; schema e geração PostgreSQL aprovados. Subsuítes estão incluídas no total, não devem ser somadas a ele.
+- Revisão estática independente não encontrou regressão concreta. A leitura pendente de conferência usa os guards de identidade do editor; trocas de sessão/editor/aluno durante esse GET não ganharam um novo teste explícito nesta rodada.
+- Prévia `fit-flow-qjd66v2zm-eznrbs-projects.vercel.app`, runtime `7dce1c9` idêntico ao head validado: instrutor consultou a fixture 24, original arquivada e revisão 2 ativa. Catálogo com 798 registros; campos da ficha e exercício preservados, incluindo notas, carga explicitamente vazia, duas séries, faixa 8–12 e pausa 120 segundos. Em 375 px, corpo 375, diálogo 311, formulário 263 e rodapé 309. Editor cancelado sem salvar.
+- Produção `fit-flow-8ugq771s2-eznrbs-projects.vercel.app` READY, metadados `main/8447d15`; JavaScript alterado igual ao blob Git, saúde/banco aprovados. Não se provocou gravação incerta no banco publicado; essa recuperação foi exercitada nos testes.
+- Logs privados completos: `server/tmp/editor-recovery-ci-{red-45206924344,green-45207341033}.log`, `server/tmp/editor-recovery-fixtures-green.log`, `server/tmp/editor-read-browser-20261123.json` e `server/tmp/editor-recovery-production-proof-20261123.json`.
+
 ## Evidência e limites
 
 Registros locais em `server/tmp/account-keyboard-preview-20261123.json`, `server/tmp/reports-browser-20261123.json` e `server/tmp/nutrition-invalid-browser-20261123.json`. Não contêm senhas; ficam fora da distribuição Git. A revisão não cobre todos os limites, métodos, idiomas, erros ou tipos de dispositivo. Não equivale a certificação WCAG nem substitui M01–M14 em telefone físico.
