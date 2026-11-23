@@ -20,7 +20,10 @@ function fixture(get) {
   view.renderAtividades = value => activities.push(value);
   return { view, context, node, charts, activities, screen, replaceScreen() { currentScreen = { isConnected: true }; }, changeEpoch() { epoch = 'session-b'; } };
 }
-const response = total => ({ data: { totalAlunos: total, alunosAtivos: total, tendencias: { labels: [String(total)], data: [total] }, atividades: [total] } });
+const response = total => ({ data: { totalAlunos: total, alunosAtivos: total, checkinsHoje: 0,
+  receitaEstimada: 0, financeiroMes: { grossAmount: 0, netAmount: 0, adjustedAmount: 0 }, conferenciasProvedor: 0,
+  tendencias: { labels: [String(total)], data: [total] },
+  atividades: [{ tipo: 'checkin', nome: String(total), data: '2026-11-22T12:00:00Z' }], pagamentosRecentes: [] } });
 
 test('painel antigo não substitui indicadores, atividades ou gráfico de consulta mais nova', async () => {
   const old = deferred(); let calls = 0;
@@ -30,7 +33,7 @@ test('painel antigo não substitui indicadores, atividades ou gráfico de consul
   assert.equal(f.node('kpi-total-alunos').textContent, 20);
   assert.equal(f.view.currentStats.totalAlunos, 20);
   assert.deepEqual(f.charts.map(row => row.data[0]), [20]);
-  assert.deepEqual(f.activities, [[20]]);
+  assert.deepEqual(f.activities.map(rows => rows.map(row => row.nome)), [['20']]);
 });
 
 test('sucesso ou erro tardio não altera nova tela, conta, geração ou epoch', async () => {
