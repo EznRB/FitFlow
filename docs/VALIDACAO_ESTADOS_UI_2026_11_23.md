@@ -26,6 +26,28 @@ Tentativa posterior na prévia da PR 25: inadimplência carregada e confirmada, 
 - No caso do peso, o primeiro clique não produziu feedback observável. Após inspeção, Enter no campo confirmou a validação esperada; essa ocorrência isolada não foi atribuída a defeito do aplicativo.
 - Os parâmetros fictícios foram limpos somente da tela; não houve pedido de IA nem operação sobre a simulação remota existente.
 
+## Chat: respostas controladas no navegador local
+
+O cenário local em `127.0.0.1:3120` usou `evidencias.js`, `science.js`, `security.js` e estilos reais, sem diferença desses scripts/estilo de chat em relação ao HEAD. As funções de API da fixture retornaram respostas fictícias; a política da página bloqueou conexões. Não houve chamada à Groq, consumo de quota, dados de saúde reais ou alteração de ficha.
+
+- Quota 429 com prazo de 60 segundos: aviso conserva a mensagem e o consentimento, sem resposta fictícia de sucesso. Uma repetição **manual e local** enviou um único turno de usuário.
+- Timeout sintético: mesma mensagem preservada, ação de tentar novamente disponível e um único artigo de usuário. O teste simulou o resultado de timeout; não mediu 30 segundos nem interrompeu transporte real.
+- Ao editar a mensagem preservada, a ação passa a “Enviar mensagem”. A nova tentativa substitui o turno sem resposta, sem duplicar autores consecutivos.
+- A recusa de escopo do contrato atual (`kind: clarification`) apareceu como texto educativo, sem prescrição. A continuação subsequente enviou os papéis `user, assistant, user`, exibiu a resposta sintética e resolveu a fonte pelo identificador local. O input foi limpo após sucesso.
+
+[Captura da conversa sintética](evidence/20261123-chat-controlled-browser.png). Não certifica interpretação universal, qualidade de uma geração real, doses individuais ou recusa pelo provedor. Registro local completo: `server/tmp/chat-controlled-browser-20261123.json`; helper/HTML `server/tmp/chat-browser-fixture-20261123.*`. Servidor local encerrado intencionalmente após a verificação; saída 1 por Ctrl+C preservada no log.
+
+## Planos: vazio e recuperação de envio incerto
+
+O cenário local em `127.0.0.1:3121` usou PlanosView, Modal, Toast e Security reais, com GET e POST sintéticos e conexões bloqueadas. O CSS `workspace.css` conservou as três regras locais do usuário; não foi declarado idêntico ao HEAD nem alterado nesta rodada. Nenhum plano foi criado no banco.
+
+- GET vazio confirmou “Nenhum plano cadastrado”, com orientação para criar a primeira opção.
+- Um único POST sintético terminou como incerto: nome, preço e descrição fictícios permaneceram; Salvar ficou desabilitado e “Conferir planos” disponível.
+- Falha na conferência não apagou o rascunho nem liberou o envio. A leitura seguinte bem-sucedida apresentou a lista recebida dentro do formulário, com foco e aviso de que ela não prova falha ou conclusão da gravação anterior.
+- Salvar continuou bloqueado até “Revisei a lista; continuar”. Essa ação liberou a edição/envio, preservando os campos e o aviso contra duplicação; nenhum segundo POST foi realizado. O formulário foi cancelado ao final.
+
+[Captura da recuperação sintética](evidence/20261123-plans-controlled-browser.png). Contagens observadas: três GETs e um POST fictício; zero gravações reais. Registro: `server/tmp/plans-controlled-browser-20261123.json`; helper/HTML `server/tmp/plans-browser-fixture-20261123.*`. Não é prova de timeout HTTP real, idempotência da criação ou reconciliação no banco. Servidor encerrado intencionalmente, saída 1 por Ctrl+C registrada.
+
 ## Teclado no editor da ficha
 
 Na prévia `fit-flow-ogc62czle-eznrbs-projects.vercel.app`, o instrutor abriu a revisão 2 da conta fictícia de apresentação, sem salvar alterações. O foco inicial ficou em “Fechar modal”; Shift+Tab levou a “Salvar revisão” e Tab retornou a fechar. O próximo Tab alcançou a comparação de divisões; Enter abriu os detalhes e Tab alcançou o seletor de sessões semanais. Escape fechou o diálogo na árvore acessível e devolveu o foco a “Editar ficha”. Não houve submissão nem nova revisão. Registro técnico local: `server/tmp/editor-keyboard-preview-20261123.json`.
