@@ -26,6 +26,29 @@ Tentativa posterior na prévia da PR 25: inadimplência carregada e confirmada, 
 - No caso do peso, o primeiro clique não produziu feedback observável. Após inspeção, Enter no campo confirmou a validação esperada; essa ocorrência isolada não foi atribuída a defeito do aplicativo.
 - Os parâmetros fictícios foram limpos somente da tela; não houve pedido de IA nem operação sobre a simulação remota existente.
 
+## Teclado no editor da ficha
+
+Na prévia `fit-flow-ogc62czle-eznrbs-projects.vercel.app`, o instrutor abriu a revisão 2 da conta fictícia de apresentação, sem salvar alterações. O foco inicial ficou em “Fechar modal”; Shift+Tab levou a “Salvar revisão” e Tab retornou a fechar. O próximo Tab alcançou a comparação de divisões; Enter abriu os detalhes e Tab alcançou o seletor de sessões semanais. Escape fechou o diálogo na árvore acessível e devolveu o foco a “Editar ficha”. Não houve submissão nem nova revisão. Registro técnico local: `server/tmp/editor-keyboard-preview-20261123.json`.
+
+## Evolução: filtro sem séries correspondentes
+
+Na mesma prévia, a conta demonstrativa anterior à fixture de apresentação possui duas sessões e um exercício registrado, identificação 1. O filtro de 13 repetições mostrou zero séries e zero kg·reps **no filtro**, “Sem registro válido”, aviso de ausência de pontos válidos e tabela sem séries correspondentes. O resumo de sete dias permaneceu separado. O filtro foi limpo ao final; nenhum registro foi alterado. Isso verifica o vazio do filtro, não uma conta sem histórico. Registro local: `server/tmp/progressao-filter-empty-browser-20261123.json`.
+
+### Cobertura técnica de seleção perdida
+
+Os testes existentes em `progressao-view-state.test.cjs` exercitam consulta que substitui o ID selecionado, consulta vazia seguida de outro ID, preservação dos filtros e exigência de escolha explícita. `progressao-client.test.cjs` cobre vazio inicial e erro sem métricas fictícias. Essas fontes já passaram na CI 45211496919 da PR 27; não foram repetidas sem mudança. A inspeção desses testes não foi atribuída a validação visual desses estados.
+
+### Estados controlados no navegador local
+
+Foi montado um cenário **sintético e local**, sem banco ou dados reais, usando os arquivos reais e inalterados `progressao.js`, `security.js`, Chart.js e os estilos da evolução. O helper em loopback só fornece os assets enumerados; as respostas de sessões são fictícias e a política da página bloqueia conexões externas.
+
+- A consulta original contém Supino, identificação 3. Após selecionar 10 repetições e mostrar aquecimentos, outra resposta contém Supino com identificação 9: o seletor volta a “Escolha um exercício”, avisa que o anterior não consta na consulta e não mostra séries nem gráfico do ID substituto. Os dois filtros permanecem.
+- Depois da escolha explícita do ID 9, uma falha simulada conserva a última consulta e declara que os dados não foram atualizados. Não a apresenta como consulta vazia ou sucesso novo.
+- Uma consulta vazia confirmada remove o resumo anterior, séries e gráfico, desabilita o seletor e informa que não há exercícios disponíveis. Mantém os filtros.
+- Quando a consulta original retorna após o vazio, a seleção continua explícita: não escolhe automaticamente o ID 3 nem reconstitui o gráfico sem ação do usuário.
+
+[Captura do cenário identificado](evidence/20261123-progressao-controlled-selection.png). Registro técnico local: `server/tmp/progressao-controlled-browser-20261123.json`; helper e HTML em `server/tmp/progressao-browser-fixture-20261123.*`. A captura de página inteira falhou; a captura visível foi inspecionada e aceita. Um primeiro acionamento automatizado do checkbox não mudou seu estado; após inspecionar DOM e imagem, o clique semântico funcionou. Essa ocorrência isolada não foi atribuída a defeito do aplicativo. A validação cobre a apresentação desses estados no navegador; não é prova de transporte real interrompido, backend ou reconexão em telefone físico.
+
 ## Editor: recuperação de gravações incertas
 
 PR [22](https://github.com/EznRB/FitFlow/pull/22), integrada em `8447d1517a4837433065043ac063d9dee26bac82`:
