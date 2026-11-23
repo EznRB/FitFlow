@@ -39,7 +39,7 @@ function harness() {
     close() { this.closes++; this.revision++; this.opened = false;
       for (const [id, item] of nodes) if (id !== 'treinos-table-body') { item.isConnected = false; nodes.delete(id); }
     } };
-  const API = { get: async url => ({ data: url === '/treinos/catalogo' ? [] : { id: 20, name: 'Ficha A', exercises: [] } }),
+  const API = { get: async url => ({ data: url === '/treinos/catalogo' ? [] : { id: 20, name: 'Ficha A', description: null, notes: null, exercises: [] } }),
     post: (url, payload, options) => new Promise((resolve, reject) => requests.push({ method: 'POST', url, payload, options, resolve, reject })),
     put: (url, payload, options) => new Promise((resolve, reject) => requests.push({ method: 'PUT', url, payload, options, resolve, reject })) };
   const context = vm.createContext({ Auth, App, Modal, API, URL,
@@ -133,7 +133,9 @@ for (const failure of [{ status: 0, timeout: true }, { status: 0 }, { status: 50
     assert.equal(editor.button.disabled, true); assert.equal(h.node('treino-nome').value, 'Ficha A');
     await editor.save(); assert.equal(h.requests.length, 1);
     const check = h.node('treino-check-saved'); assert.equal(check.hidden, false);
-    await check.onclick(); assert.equal(h.Modal.closes, 1); assert.equal(h.context.reloads, 1);
+    h.API.get = async () => ({ data: [] });
+    await check.onclick(); assert.equal(h.Modal.closes, 0); assert.equal(h.context.reloads, 0);
+    assert.equal(h.node('treino-nome').value, 'Ficha A');
   });
 }
 

@@ -21,6 +21,33 @@ const TreinosView = {
   },
   escapar(value) { return FitFlowSecurity.escapeHtml(value); },
   idValido(value) { return Number.isSafeInteger(value) && value > 0; },
+  listaLida(response) {
+    if (!Array.isArray(response?.data) || response.data.some(item => !item || !this.idValido(item.id) || typeof item.name !== 'string'))
+      throw new Error('Resposta incompleta. Atualize a consulta para continuar.');
+    return response.data;
+  },
+  detalheLido(response, id) {
+    const workout = response?.data;
+    const integer = (value, min, max) => ['number', 'string'].includes(typeof value)
+      && /^\d+$/.test(String(value).trim()) && Number.isSafeInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
+    const repetitions = value => {
+      if (!['number', 'string'].includes(typeof value)) return false;
+      const match = String(value).trim().match(/^(\d+)(?:\s*[-–]\s*(\d+))?$/);
+      return Boolean(match && integer(match[1], 1, 1000) && (!match[2] || integer(match[2], Number(match[1]), 1000)));
+    };
+    const seen = new Set();
+    if (!workout || workout.id !== id || typeof workout.name !== 'string' || !workout.name.trim()
+      || !['description', 'notes'].every(key => Object.hasOwn(workout, key) && (workout[key] === null || typeof workout[key] === 'string'))
+      || !Array.isArray(workout.exercises)
+      || workout.exercises.some(ex => {
+        if (!ex || !this.idValido(ex.id) || seen.has(ex.id) || typeof ex.name !== 'string' || !ex.name.trim()
+          || !integer(ex.sets, 1, 100) || !repetitions(ex.reps) || !integer(ex.restSeconds, 0, 3600)
+          || !['muscleGroup', 'suggestedLoad', 'notes'].every(key => Object.hasOwn(ex, key) && (ex[key] === null || typeof ex[key] === 'string'))) return true;
+        seen.add(ex.id); return false;
+      }))
+      throw new Error('Ficha incompleta. Consulte novamente antes de editar.');
+    return workout;
+  },
   icones(node) { if (window.lucide) window.lucide.createIcons({ nodes: [node] }); },
   async inicializar() {
     this.invalidar();
@@ -34,9 +61,9 @@ const TreinosView = {
   async carregarAlunosParaPerfis() {
     const request = this.solicitar('alunos', 'treinos-alunos-grid');
     try {
-      const response = await API.get('/treinos/alunos');
+      const response = await API.get('/treinos/alunos', { timeoutMs: 15000 });
       if (!this.atual(request)) return;
-      this.alunosCache = response.data || []; this.renderizarGradeAlunos(this.alunosCache);
+      this.alunosCache = this.listaLida(response); this.renderizarGradeAlunos(this.alunosCache);
     } catch (error) {
       if (!this.atual(request)) return;
       this.alunosCache = []; this.renderizarGradeAlunos([]); Toast.error(error.message || 'Erro ao carregar alunos elegíveis.');
@@ -80,14 +107,20 @@ const TreinosView = {
     if (!this.atual(request)) return;
     request.node.innerHTML = '';
     try {
-      const response = await API.get(`/treinos?studentId=${studentId}`);
-      if (this.atual(request)) this.renderizarTabela(response.data || []);
+      const response = await API.get(`/treinos?studentId=${studentId}`, { timeoutMs: 15000 });
+      if (this.atual(request)) this.renderizarTabela(this.listaLida(response));
     } catch (error) { if (this.atual(request)) { this.renderizarTabela([]); Toast.error(error.message || 'Erro ao carregar fichas.'); } }
   },
   async carregarCatalogo(request = this.solicitar('catalogo', 'treinos-table-body')) {
     if (!this.atual(request)) return;
     this.catalogoCache = [];
-    try { const response = await API.get('/treinos/catalogo'); if (this.atual(request)) this.catalogoCache = response.data || []; }
+    try {
+      const response = await API.get('/treinos/catalogo', { timeoutMs: 15000 });
+      if (!this.atual(request)) return;
+      if (!Array.isArray(response?.data) || response.data.some(item => !item || !this.idValido(item.id) || typeof item.nome !== 'string'))
+        throw new Error('Catálogo incompleto.');
+      this.catalogoCache = response.data;
+    }
     catch (error) { if (this.atual(request)) Toast.warning('Catálogo indisponível. Você pode informar exercícios manualmente.'); }
   },
   renderizarTabela(treinos) {
@@ -121,7 +154,7 @@ const TreinosView = {
     const request = this.solicitar('modal', 'treinos-table-body');
     if (!this.atual(request)) return;
     try {
-      const workout = (await API.get(`/treinos/${id}`)).data;
+      const workout = this.detalheLido(await API.get(`/treinos/${id}`, { timeoutMs: 15000 }), id);
       if (!this.atual(request)) return;
       Modal.open(`Ficha: ${workout.name}`, `<p>Aluno: ${this.escapar(workout.student?.user?.name)} · Autor: ${this.escapar(workout.instructor?.name)}</p>
         <p>${this.escapar(workout.description)}</p><p>${this.escapar(workout.notes)}</p>${this.exerciciosDetalhes(workout.exercises)}`,
@@ -147,7 +180,7 @@ const TreinosView = {
     const request = this.solicitar('modal', 'treinos-table-body');
     if (!this.atual(request)) return;
     try {
-      const workout = (await API.get(`/treinos/${id}`)).data;
+      const workout = this.detalheLido(await API.get(`/treinos/${id}`, { timeoutMs: 15000 }), id);
       if (!this.atual(request)) return;
       await this.carregarCatalogo(request);
       if (!this.atual(request)) return;
@@ -220,9 +253,24 @@ const TreinosView = {
     if (editor.check) editor.check.onclick = async () => {
       if (!this.editorAtual(editor) || editor.pending || !editor.requiresCheck) return;
       const target = editor.targetStudentId;
-      Modal.close(); this.editor = null;
-      if (target === this.currentStudentId) await this.carregarTreinos(target);
-      else if (this.idValido(target)) await this.abrirPerfilAluno(target, this.alunosCache.find(student => student.id === target)?.name || `Aluno #${target}`);
+      editor.pending = {};
+      editor.checking = true;
+      this.estadoSalvamento(editor, true);
+      editor.feedback.textContent = 'Consultando fichas… Seu rascunho foi mantido.';
+      try {
+        const workouts = this.listaLida(await API.get(`/treinos?studentId=${target}`, { timeoutMs: 15000 }));
+        if (!this.editorAtual(editor)) return;
+        if (target === this.currentStudentId) this.renderizarTabela(workouts);
+        const visible = workouts.slice(0, 20).map(workout => `#${workout.id}: ${workout.name}`).join('; ');
+        const remaining = workouts.length > 20 ? ` Mais ${workouts.length - 20} ficha(s) não exibidas aqui.` : '';
+        editor.feedback.textContent = `Consulta concluída: ${workouts.length} ficha(s) disponíveis para o aluno.${visible ? ` ${visible}.` : ''}${remaining} A lista não confirma este envio. Seu rascunho continua aqui; copie as alterações antes de cancelar este editor.`;
+      } catch (error) {
+        if (this.editorAtual(editor)) editor.feedback.textContent = `Não foi possível conferir as fichas: ${error.message || 'consulta indisponível'}. Seu rascunho foi mantido. Você pode conferir novamente.`;
+      } finally {
+        editor.pending = null;
+        editor.checking = false;
+        this.estadoSalvamento(editor, false);
+      }
     };
     return editor;
   },
@@ -243,8 +291,8 @@ const TreinosView = {
     if (!this.editorAtual(editor)) return;
     editor.form.setAttribute('aria-busy', String(busy));
     if (editor.button) { editor.button.disabled = busy || editor.requiresCheck;
-      editor.button.textContent = busy ? (editor.id ? 'Salvando revisão…' : 'Salvando ficha…') : (editor.id ? 'Salvar revisão' : 'Salvar ficha'); }
-    if (editor.check) editor.check.hidden = !editor.requiresCheck;
+      editor.button.textContent = busy ? (editor.checking ? 'Consultando fichas…' : editor.id ? 'Salvando revisão…' : 'Salvando ficha…') : (editor.id ? 'Salvar revisão' : 'Salvar ficha'); }
+    if (editor.check) { editor.check.hidden = !editor.requiresCheck; editor.check.disabled = busy; }
   },
   fonteCatalogo(item) {
     if (item.source !== 'wger') return '<small>Cadastro local: confirmar equipamento e execução com o profissional.</small>';
