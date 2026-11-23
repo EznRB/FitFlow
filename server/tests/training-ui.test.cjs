@@ -16,8 +16,8 @@ test('interface usa seleção mínima e escapa nomes/descrições no aluno, list
   const context = browser({ document: { getElementById: () => node },
     API: { get: async url => { requests.push(url); return { data: url === '/treinos/alunos' ? [{ id: 11, name: evil }] :
       url === '/treinos/catalogo' ? [{ id: 9, nome: evil, grupo_muscular: evil }] :
-      { name: evil, description: evil, notes: evil, student: { user: { name: evil } }, instructor: { name: evil },
-        exercises: [{ name: evil, muscleGroup: evil, sets: 3, reps: evil, suggestedLoad: evil, notes: evil }] } }; } },
+      { id: 5, name: evil, description: evil, notes: evil, student: { user: { name: evil } }, instructor: { name: evil },
+        exercises: [{ id: 1, name: evil, muscleGroup: evil, sets: 3, reps: '8-12', restSeconds: 0, suggestedLoad: evil, notes: evil }] } }; } },
     Modal: { open: (title, html) => { modal = html; }, confirm: html => { modal = html; } },
     Toast: { error: error => { throw new Error(error); }, warning: error => { throw new Error(error); } } });
   await context.view.carregarAlunosParaPerfis(); assert.equal(requests[0], '/treinos/alunos');

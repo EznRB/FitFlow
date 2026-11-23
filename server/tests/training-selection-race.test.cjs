@@ -17,7 +17,7 @@ function harness() {
   context.view.iniciarConstrutor = () => {}; context.view.adicionarExercicio = () => {};
   return { context, view: context.view, Auth, App, nodes, node, events, requests, modals, errors };
 }
-const row = (id, name) => ({ id, name, active: true, createdAt: '2026-10-09T00:00:00.000Z', exercises: [] });
+const row = (id, name) => ({ id, name, description: null, notes: null, active: true, createdAt: '2026-10-09T00:00:00.000Z', exercises: [] });
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 test('A→voltar→B não aplica tabela de A quando a resposta chega por último', async () => {
