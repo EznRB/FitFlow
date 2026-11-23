@@ -28,6 +28,8 @@ Esses complementos atualizam os requisitos relacionados; não alteram os gates e
 
 ## Matriz de requisitos
 
+**Reconciliação de 23/11:** estados de erro/recuperação de chat, planos, catálogo, fichas e painel, teclado do editor/painel e leitura/validação responsiva de ajustes foram acrescentados à [evidência de interface](VALIDACAO_ESTADOS_UI_2026_11_23.md). O [plano visual](REVISAO_VISUAL_SISTEMA.md#reconciliação-atual--fechamento-de-2311) distingue esses casos concluídos das referências históricas. Restam, nessa frente, prévia/paginação de impressão e aparelho físico; não se declara acessibilidade integral. Rotação Groq e execução isolada das correções de testes continuam abertas. O relatório acadêmico pertence ao outro chat; esta auditoria documenta o desenvolvimento.
+
 | Requisito do objetivo | Evidência disponível | Cobertura e limite para a entrega |
 |---|---|---|
 | 1. Login/banco funcionam localmente e na Vercel | [Banco remoto/Vercel](BANCO_REMOTO_VERCEL.md), [desenvolvimento](DESENVOLVIMENTO.md), saúde atual e gates de três perfis; oito migrations MySQL e seis PostgreSQL, bancos nativos e duas branches Neon. Login/restauração observados no navegador público. | **Cobertura verificada** nos destinos e gates registrados. Usa banco/contas novos; não recupera dados do Aiven. MariaDB local não comprova sozinho compatibilidade PostgreSQL; os gates PostgreSQL são separados. |

@@ -48,6 +48,20 @@ O cenário local em `127.0.0.1:3121` usou PlanosView, Modal, Toast e Security re
 
 [Captura da recuperação sintética](evidence/20261123-plans-controlled-browser.png). Contagens observadas: três GETs e um POST fictício; zero gravações reais. Registro: `server/tmp/plans-controlled-browser-20261123.json`; helper/HTML `server/tmp/plans-browser-fixture-20261123.*`. Não é prova de timeout HTTP real, idempotência da criação ou reconciliação no banco. Servidor encerrado intencionalmente, saída 1 por Ctrl+C registrada.
 
+## Painel: teclado, recuperação e tabela alternativa
+
+Na prévia HTTPS, o gestor demonstrativo abriu “Consultar contagens por dia” com Enter. Tab alcançou a região de atividade e Shift+Tab retornou ao summary; a tabela apresentou sete linhas, sem alterar registros. O foco tinha contorno laranja de 2 px. Pelas cores computadas, texto/fundo tiveram contraste 16,55:1 e contorno/fundo 6,17:1. São pares específicos, não certificação de acessibilidade integral. [Captura do foco](evidence/20261123-dashboard-keyboard-preview.png); registro local `server/tmp/dashboard-keyboard-preview-20261123.json`.
+
+O helper local em `127.0.0.1:3125` serviu o template e o objeto DashboardView extraídos de `app.js`, cuja igualdade textual foi conferida, com API sintética e conexões externas bloqueadas. Falha de consulta mostrou erro e retry, sem métricas fictícias. “Tentar novamente” recuperou os valores sintéticos. Um DTO incompleto voltou ao erro recuperável, sem tratá-lo como zero. Uma resposta íntegra com zeros confirmou métricas zeradas; sem Chart.js, o aviso de gráfico indisponível abriu a tabela com os mesmos sete registros diários. Foram quatro leituras sintéticas e zero gravações. Registro `server/tmp/dashboard-controlled-browser-20261123.json`. Isso não prova falha de transporte real nem comportamento específico de outro perfil. A captura final cortou o aviso e não foi usada como prova completa. Servidor encerrado intencionalmente por Ctrl+C, saída 1 preservada no log.
+
+## Ajustes financeiros: leitura, formulário e foco
+
+No cenário local controlado, PagamentosView e PaymentAdjustments reais receberam somente leituras sintéticas: original R$ 100,01, correção interna R$ 10,00, devolução informada R$ 25,01 e saldo R$ 65,00. O detalhe distinguiu correção de devolução informada e conservou os efeitos de vigência no histórico. Não houve estorno bancário. [Detalhe em 375 px](evidence/20261123-adjustments-mobile-detail.png).
+
+Valor vazio, zero, valor acima do saldo e motivo curto apresentaram erros próprios. Nenhum payload inteiramente válido foi enviado: três GETs fictícios, zero chamadas de escrita, zero gravações reais. Alterar a opção de vigência revelou a nova data obrigatória. [Validação do formulário](evidence/20261123-adjustments-invalid-form.png). Em 375/768 px, documento e modal couberam na largura; o motivo longo quebrou linhas. Tab da última ação retornou a Fechar e Shift+Tab voltou à ação, dentro do diálogo. O formulário foi cancelado.
+
+Uma suspeita baseada nas variáveis CSS foi descartada após medir a cascata real: labels e ajuda usavam RGB 142/154/175 sobre 17/27/42, contraste 6,09:1. Nenhuma alteração CSS foi feita por esse indício. Registros locais `server/tmp/adjustments-controlled-browser-20261123.json` e `adjustments-contrast-browser-20261123.json`. Helpers encerrados, logs preservados. A emulação não substitui telefone físico; o cenário não repete aprovação financeira ou reconciliação no banco.
+
 ## Catálogo e fichas: recuperação controlada no navegador
 
 Helpers locais em `127.0.0.1:3123` e `3122` serviram os componentes reais, com respostas sintéticas e conexões externas bloqueadas. O wrapper da fixture usa `app-screen` para aplicar os estilos correspondentes; as três regras locais do usuário em `workspace.css` foram preservadas, sem atribuir o arquivo inteiro ao HEAD publicado.
